@@ -1,4 +1,4 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_projectiles.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_projectiles.lua" )
 
 MountedPotatoGun = class()
 MountedPotatoGun.maxParentCount = 2
@@ -6,7 +6,7 @@ MountedPotatoGun.maxChildCount = 0
 MountedPotatoGun.connectionInput = bit.bor( sm.interactable.connectionType.logic, sm.interactable.connectionType.ammo )
 MountedPotatoGun.connectionOutput = sm.interactable.connectionType.none
 MountedPotatoGun.colorNormal = sm.color.new( 0xcb0a00ff )
-MountedPotatoGun.colorHighlight = sm.color.new( 0xcb0a00ff )
+MountedPotatoGun.colorHighlight = sm.color.new( 0xe2291fff )
 MountedPotatoGun.connectIcon = "ammo"
 MountedPotatoGun.connectIconScale = 0.75
 

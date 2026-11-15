@@ -1,4 +1,4 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_constants.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_constants.lua" )
 
 WarehouseManager = class( nil )
 WarehouseManager.isSaveObject = false
@@ -150,6 +150,11 @@ function WarehouseManager.sv_destroyWarehouse( self, warehouseIndex )
 	QuestManager.Sv_SendEvent( QuestEvent.WarehouseDestruction, { warehouseIndex = warehouseIndex } )
 
 	warehouse.destroyed = true
+
+	for _, warehouseWorld in ipairs( warehouse.worlds ) do
+		RespawnManager.Sv_RemoveBedsInWorld( warehouseWorld )
+	end
+
 	for _, player in ipairs( sm.player.getAllPlayers() ) do
 		local playerCharacter = player and player.character or nil
 		local playerWorld = sm.exists( playerCharacter ) and playerCharacter:getWorld() or nil

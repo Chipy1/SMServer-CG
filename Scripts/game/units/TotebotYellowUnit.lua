@@ -1,19 +1,35 @@
-dofile "$SURVIVAL_DATA/Scripts/game/units/unit_util.lua"
-dofile "$SURVIVAL_DATA/Scripts/util.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/util/Ticker.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/util/Timer.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_shapes.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_units.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_constants.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/BaseTotebotUnit.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/JumpStompState.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/JumpRoamingState.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/JumpPathingState.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/JumpFleeState.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/managers/PatrolManager.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/PatrolState.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/unit_util.lua"
+dofile "$CONTENT_DATA/Scripts/util.lua"
+dofile "$CONTENT_DATA/Scripts/game/util/Ticker.lua"
+dofile "$CONTENT_DATA/Scripts/game/util/Timer.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_shapes.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_units.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_constants.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/BaseTotebotUnit.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/JumpStompState.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/JumpRoamingState.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/JumpPathingState.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/JumpFleeState.lua"
+dofile "$CONTENT_DATA/Scripts/game/managers/PatrolManager.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/PatrolState.lua"
 
 TotebotYellowUnit = class( BaseTotebotUnit )
+
+function TotebotYellowUnit.sv_createRaidFlee( self )
+	local fleeState = JumpFleeState()
+	fleeState:sv_onCreate( self.unit )
+	fleeState.debugName = "raidFleeRun"
+
+	local pathingState = JumpPathingState()
+	pathingState:sv_onCreate( self.unit )
+	pathingState:sv_setMovementType( "sprint" )
+	pathingState.debugName = "raidFleePathing"
+
+	local raidFlee = RaidFleeState()
+	raidFlee:sv_onCreate( self.unit, pathingState, fleeState )
+	raidFlee.debugName = "raidFlee"
+	return raidFlee
+end
 
 local SmashUuid = sm.uuid.new( "eeeaa198-6b28-11ed-a1eb-0242ac120002" )
 local HeadSmashMaxAngle = 45.0
@@ -94,11 +110,6 @@ function TotebotYellowUnit.server_onCreate( self )
 	self.lookAtState.tolerance = 0.5
 	self.lookAtState.avoidance = false
 	self.lookAtState.movementType = "stand"
-
-	-- Flee
-	self.raidFlee = JumpFleeState()
-	self.raidFlee:sv_onCreate( self.unit )
-	self.raidFlee.debugName = "raidFlee"
 
 	-- Patrol
 	self.patrolState = PatrolState()
@@ -230,22 +241,7 @@ function TotebotYellowUnit.server_onUnitUpdate( self, dt )
 	end
 
 	RobotSelectTarget( self, AllyRange, dt )
-
-	if self.saved.raidPosition and not self.lastTargetPosition and sm.exists( self.unit.character ) then
-		local raidSpots = RaidManager.Sv_GetPlantLocations( self.unit.character:getWorld().id, self.saved.raidKey )
-		local closestSpot = nil
-		if #raidSpots > 0 and ( self.saved.randomPlotTarget == nil or self.saved.randomPlotTarget > #raidSpots ) then
-			self.saved.randomPlotTarget = math.random( #raidSpots )
-			self.isDirty = true
-			closestSpot = raidSpots[self.saved.randomPlotTarget]
-		end
-		if closestSpot then
-			self.homePosition = closestSpot + sm.vec3.new( 0, 0, self.unit.character:getHeight() * 0.5 )
-			if closestSpot then
-				self.lastTargetPosition = closestSpot
-			end
-		end
-	end
+	SeekFallbackTarget( self ) -- no shape breaching, only the raid point
 
 	-- Check for positions acquired from noise
 	local noiseShape = g_unitManager:sv_getClosestNoiseShape( self.unit.character.worldPosition, HearRange )

@@ -1,10 +1,10 @@
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
 DepthBot = class( nil )
 
 -- UV frame grid: 17 columns x 9 rows
 local UvColumns = 17
 
--- Selection-state marker hosted on the shape; indicates the selected floor on the screen.
+-- Selection-state marker hosted on the kinematic; indicates the selected floor on the screen.
 local DepthscreenMarkerEffect = "Elevator - DepthscreenMarker"
 
 -- Locked marker; shown in place of the selection marker once a target floor is confirmed and
@@ -15,20 +15,8 @@ local FloorDisplayChannel = 1
 local MarkerLockChannel = 2
 
 function DepthBot.server_onCreate( self )
-    self.sv = {}
-	self.sv.saved = self.storage:load()
-	if not self.sv.saved then
-		self.sv.saved = {}
-		self.sv.saved.connectionTag = UndergroundElevatorManager.Sv_FindUndergroundConnectionTag( self.tags )
-		self.storage:save( self.sv.saved )
-
-		-- publish self so the elevator can find and update the display
-		local storageKey = TileStorageManager.Sv_GetTileStorageKeyFromObject( self.interactable )
-		local tileData = TileStorageManager.Sv_GetValueInSubTable( storageKey, UNDERGROUND_ELEVATOR_TABLE, self.sv.saved.connectionTag ) or {}
-		tileData.depthbots = tileData.depthbots or {}
-		tileData.depthbots[#tileData.depthbots + 1] = self.interactable
-		TileStorageManager.Sv_SetValueInSubTable( storageKey, UNDERGROUND_ELEVATOR_TABLE, self.sv.saved.connectionTag, tileData )
-	end
+	local connectionTag = UndergroundElevatorManager.Sv_FindUndergroundConnectionTag( self.tags )
+	UndergroundElevatorManager.Sv_RegisterDepthBot( self.harvestable, connectionTag )
 end
 
 function DepthBot.client_onCreate( self )
@@ -39,7 +27,7 @@ function DepthBot.client_onCreate( self )
 	self.cl.scrapyardUnlocked = false
 	if self.data then
 		if self.data.effectName then
-			self.cl.textEffect = sm.effect.createEffect( self.data.effectName, self.interactable )
+			self.cl.textEffect = sm.effect.createEffect( self.data.effectName, self.harvestable )
 		end
 		if self.cl.textEffect then
 			if self.data.color then
@@ -56,17 +44,17 @@ function DepthBot.client_onCreate( self )
 		end
 	end
 
-	-- Selection-state marker on the screen, hosted on the shape.
+	-- Selection-state marker on the screen, hosted on the kinematic.
 	self.cl.markerLocked = false
-	self.cl.markerEffect = sm.effect.createEffect( DepthscreenMarkerEffect, self.interactable )
-	self.cl.markerLockedEffect = sm.effect.createEffect( DepthscreenMarkerLockedEffect, self.interactable )
+	self.cl.markerEffect = sm.effect.createEffect( DepthscreenMarkerEffect, self.harvestable )
+	self.cl.markerLockedEffect = sm.effect.createEffect( DepthscreenMarkerLockedEffect, self.harvestable )
 	self:cl_updateScreenMarker()
 	self.cl.markerEffect:start()
 
 	-- Submesh visibility: idle shown, direction submeshes hidden
-	self.interactable:setSubMeshVisible( "display_idle", true )
-	self.interactable:setSubMeshVisible( "display_up", false )
-	self.interactable:setSubMeshVisible( "display_down", false )
+	self.harvestable:setSubMeshVisible( "display_idle", true )
+	self.harvestable:setSubMeshVisible( "display_up", false )
+	self.harvestable:setSubMeshVisible( "display_down", false )
 
 	-- The m_locked submesh covers the scrapyard level light until the player has unlocked it.
 	self:cl_updateLockedSubMesh()
@@ -130,7 +118,7 @@ end
 
 function DepthBot.cl_updateLockedSubMesh( self )
 	local locked = not self.cl.scrapyardUnlocked
-	self.interactable:setSubMeshVisible( "m_locked", locked )
+	self.harvestable:setSubMeshVisible( "m_locked", locked )
 end
 
 function DepthBot.client_onDestroy( self )
@@ -152,7 +140,7 @@ function DepthBot.cl_updateUvFrame( self )
 	local row = math.max( math.min( 8 - numLocked, 8 ), 0 )
 	row = row - selectedFloor
 	local frameIndex = row * UvColumns + column
-	self.interactable:setUvFrameIndex( frameIndex )
+	self.harvestable:setUvFrameIndex( frameIndex )
 end
 
 function DepthBot.sv_e_updateFloorDisplay( self, data )
@@ -169,9 +157,9 @@ end
 
 function DepthBot.cl_n_goDown( self )
 	self.cl.elevatorMoving = true
-	self.interactable:setSubMeshVisible( "display_idle", false )
-	self.interactable:setSubMeshVisible( "display_down", true )
-	self.interactable:setSubMeshVisible( "display_up", false )
+	self.harvestable:setSubMeshVisible( "display_idle", false )
+	self.harvestable:setSubMeshVisible( "display_down", true )
+	self.harvestable:setSubMeshVisible( "display_up", false )
 end
 
 function DepthBot.sv_e_goUp( self )
@@ -180,9 +168,9 @@ end
 
 function DepthBot.cl_n_goUp( self )
 	self.cl.elevatorMoving = true
-	self.interactable:setSubMeshVisible( "display_idle", false )
-	self.interactable:setSubMeshVisible( "display_down", false )
-	self.interactable:setSubMeshVisible( "display_up", true )
+	self.harvestable:setSubMeshVisible( "display_idle", false )
+	self.harvestable:setSubMeshVisible( "display_down", false )
+	self.harvestable:setSubMeshVisible( "display_up", true )
 end
 
 function DepthBot.sv_e_arrived( self )
@@ -191,9 +179,9 @@ end
 
 function DepthBot.cl_n_arrived( self )
 	self.cl.elevatorMoving = false
-	self.interactable:setSubMeshVisible( "display_idle", true )
-	self.interactable:setSubMeshVisible( "display_up", false )
-	self.interactable:setSubMeshVisible( "display_down", false )
+	self.harvestable:setSubMeshVisible( "display_idle", true )
+	self.harvestable:setSubMeshVisible( "display_up", false )
+	self.harvestable:setSubMeshVisible( "display_down", false )
 	self:cl_updateUvFrame()
 end
 
@@ -215,5 +203,4 @@ function DepthBot.cl_setMarkerLocked( self, locked )
 		end
 	end
 end
-
 

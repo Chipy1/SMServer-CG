@@ -1,4 +1,4 @@
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
 
 MininghubCasterDispenser = class()
 
@@ -28,7 +28,6 @@ function MininghubCasterDispenser.server_onFixedUpdate( self )
 		end
 
 		TileStorageManager.Sv_SetValue( self.sv.tileStorageKey, STORAGE_VALUE_KEY, {} )
-		TileStorageManager.Sv_Save()
 		self.storage:save( self.sv.saved )
 	end
 

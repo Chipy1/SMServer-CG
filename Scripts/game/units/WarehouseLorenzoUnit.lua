@@ -1,6 +1,6 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/units/unit_util.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/units/states/QuestWaypointState.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/QuestManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/units/unit_util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/units/states/QuestWaypointState.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/QuestManager.lua" )
 
 WarehouseLorenzoUnit = class( BaseUnit )
 

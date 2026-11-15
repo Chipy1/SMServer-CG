@@ -1,4 +1,4 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_meleeattacks.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_meleeattacks.lua" )
 
 TotebotSmash = class( nil )
 

@@ -1,13 +1,13 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/worlds/BaseWorld.lua")
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/WaterManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/PackingStationManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/RaidManager.lua" )
-dofile( "$GAME_DATA/Scripts/game/managers/WeatherManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/AmbienceManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/worlds/BaseWorld.lua")
+dofile( "$CONTENT_DATA/Scripts/game/managers/WaterManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/PackingStationManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/RaidManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/WeatherManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/AmbienceManager.lua" )
 
 Overworld = class( BaseWorld )
 
-Overworld.terrainScript = "$SURVIVAL_DATA/Scripts/terrain/terrain_overworld.lua"
+Overworld.terrainScript = "$CONTENT_DATA/Scripts/terrain/terrain_overworld.lua"
 Overworld.groundMaterialSet = "$GAME_DATA/Terrain/Materials/gnd_standard_materialset.json"
 Overworld.voxelMaterialSet = "$SURVIVAL_DATA/Terrain/Materials/voxel_materialset_outdoor.voxelmaterialset"
 Overworld.enableSurface = true
@@ -96,23 +96,19 @@ end
 function Overworld.client_onDestroy( self )
 end
 
-function Overworld.server_onRefresh( self )
-end
-
 function Overworld.server_onFixedUpdate( self )
 	BaseWorld.server_onFixedUpdate( self )
-	TornadoManager.Sv_OnWorldFixedUpdate( self.world )
-	RaidManager.Sv_OnWorldFixedUpdate( self.world )
+	sm.pcall( "TornadoManager.Sv_OnWorldFixedUpdate", TornadoManager.Sv_OnWorldFixedUpdate, self.world )
+	sm.pcall( "RaidManager.Sv_OnWorldFixedUpdate", RaidManager.Sv_OnWorldFixedUpdate, self.world )
 end
 
 function Overworld.client_onFixedUpdate( self )
 	BaseWorld.client_onFixedUpdate( self )
-	TornadoManager.Cl_OnWorldFixedUpdate( self.world )
+	sm.pcall( "TornadoManager.Cl_OnWorldFixedUpdate", TornadoManager.Cl_OnWorldFixedUpdate, self.world )
 end
 
 function Overworld.client_onUpdate( self, dt )
-	BaseWorld.client_onUpdate( self, dt )
-	RaidManager.Cl_OnWorldUpdate( self.world.id, dt )
+    RaidManager.Cl_OnWorldUpdate( self.world.id, dt)
 end
 
 function Overworld.sv_loadShipOrStationOnCell( self, x, y )
@@ -166,6 +162,15 @@ function Overworld.sv_reloadSpawnersOnCell( self, x, y )
 	g_respawnManager:sv_setLatestSpawners( nodes )
 end
 
+function Overworld.sv_loadQuestCardReaderOnCell( self, x, y, tags )
+	if valueExists( tags, "WAREHOUSE4QUEST" ) then
+		local objects = sm.cell.getInteractablesByTags( x, y, { "QUEST_WAREHOUSE_KEY_READER", "KEYCARD_READER" } )
+		if #objects == 1 then
+			objects[1]:setParams( { isQuestCardReader = true } )
+		end
+	end
+end
+
 function Overworld.sv_spawnNewCharacter( self, params )
 	local spawnPosition = g_survivalDev and SURVIVAL_DEV_SPAWN_POINT or START_AREA_SPAWN_POINT
 	if params.fallbackPosition then
@@ -211,40 +216,34 @@ end
 
 function Overworld.server_onCellCreated( self, x, y )
 	BaseWorld.server_onCellCreated( self, x, y )
-	ScannerbotManager.Sv_OnWorldCellLoaded( x, y )
-	TornadoManager.Sv_OnCellLoaded( self.world, x, y )
+	sm.pcall( "ScannerbotManager.Sv_OnWorldCellLoaded", ScannerbotManager.Sv_OnWorldCellLoaded, x, y )
+	sm.pcall( "TornadoManager.Sv_OnCellLoaded", TornadoManager.Sv_OnCellLoaded, self.world, x, y )
 
-	self:sv_loadSpawnersOnCell( x, y )
+	sm.pcall( "sv_loadSpawnersOnCell", self.sv_loadSpawnersOnCell, self, x, y )
 
 	local tags = sm.cell.getTags( x, y )
 
-	if valueExists( tags, "WAREHOUSE4QUEST" ) then
-		local objects = sm.cell.getInteractablesByTags( x, y, { "QUEST_WAREHOUSE_KEY_READER", "KEYCARD_READER" } )
-		if #objects == 1 then
-			objects[1]:setParams( { isQuestCardReader = true } )
-		end
-	end
+	sm.pcall( "sv_loadQuestCardReaderOnCell", Overworld.sv_loadQuestCardReaderOnCell, self, x, y, tags )
 
-	self:sv_loadHideoutOnCell( x, y )
-	self:sv_loadShipOrStationOnCell( x, y )
+	sm.pcall( "sv_loadHideoutOnCell", self.sv_loadHideoutOnCell, self, x, y )
+	sm.pcall( "sv_loadShipOrStationOnCell", self.sv_loadShipOrStationOnCell, self, x, y )
 
-	ElevatorManager.Sv_LoadElevatorsOnOverworldCell( x, y, tags )
+	sm.pcall( "ElevatorManager.Sv_LoadElevatorsOnOverworldCell", ElevatorManager.Sv_LoadElevatorsOnOverworldCell, x, y, tags )
 
-	self.packingStationManager:sv_onCellLoaded( x, y )
+	sm.pcall( "packingStationManager.sv_onCellLoaded", self.packingStationManager.sv_onCellLoaded, self.packingStationManager, x, y )
 end
 
 function Overworld.server_onCellLoaded( self, x, y )
 	BaseWorld.server_onCellLoaded( self, x, y )
-	ScannerbotManager.Sv_OnWorldCellLoaded( x, y )
-	TornadoManager.Sv_OnCellLoaded( self.world, x, y )
-	
-	self:sv_reloadSpawnersOnCell( x, y )
+	sm.pcall( "ScannerbotManager.Sv_OnWorldCellLoaded", ScannerbotManager.Sv_OnWorldCellLoaded, x, y )
+	sm.pcall( "TornadoManager.Sv_OnCellLoaded", TornadoManager.Sv_OnCellLoaded, self.world, x, y )
+	sm.pcall( "sv_reloadSpawnersOnCell", self.sv_reloadSpawnersOnCell, self, x, y )
 end
 
 function Overworld.server_onCellUnloaded( self, x, y )
 	BaseWorld.server_onCellUnloaded( self, x, y )
-	ScannerbotManager.Sv_OnWorldCellUnloaded( x, y )
-	TornadoManager.Sv_OnCellUnloaded( x, y )
+	sm.pcall( "ScannerbotManager.Sv_OnWorldCellUnloaded", ScannerbotManager.Sv_OnWorldCellUnloaded, x, y )
+	sm.pcall( "TornadoManager.Sv_OnCellUnloaded", TornadoManager.Sv_OnCellUnloaded, x, y )
 end
 
 function Overworld.server_onProjectile( self, hitPos, hitTime, hitVelocity, _, attacker, damage, userData, hitNormal, target, projectileUuid )

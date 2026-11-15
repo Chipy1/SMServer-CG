@@ -1,8 +1,8 @@
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/terrain/overworld/overworld_util.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/terrain/overworld/processing.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/terrain/overworld/generate_roads.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/terrain/overworld/biome_roads.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/terrain/overworld/overworld_util.lua" )
+dofile( "$CONTENT_DATA/Scripts/terrain/overworld/processing.lua" )
+dofile( "$CONTENT_DATA/Scripts/terrain/overworld/generate_roads.lua" )
+dofile( "$CONTENT_DATA/Scripts/terrain/overworld/biome_roads.lua" )
 
 
 ExcavationIsland = { x = 32, y = 16, worldFile = "$SURVIVAL_DATA/Terrain/Worlds/overworld_excavation_island.world", rotation = 0 }

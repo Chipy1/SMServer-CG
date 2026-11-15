@@ -1,7 +1,7 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/characters/BaseCharacter.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/QuestEntityManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/characters/shared_animation.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/characters/BaseCharacter.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/QuestEntityManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/characters/shared_animation.lua" )
 
 BaseQuestActorCharacter = class( BaseCharacter )
 

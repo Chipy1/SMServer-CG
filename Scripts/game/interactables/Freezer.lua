@@ -1,4 +1,4 @@
-dofile("$SURVIVAL_DATA/Scripts/game/survival_items.lua")
+dofile("$CONTENT_DATA/Scripts/game/survival_items.lua")
 
 Freezer = class( nil )
 Freezer.poseWeightCount = 1

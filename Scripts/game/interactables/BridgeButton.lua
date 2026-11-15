@@ -1,4 +1,4 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/interactables/LockedActivationButton.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/interactables/LockedActivationButton.lua" )
 
 BridgeButton = class( LockedActivationButton )
 

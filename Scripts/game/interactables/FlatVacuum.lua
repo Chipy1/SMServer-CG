@@ -1,8 +1,8 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/util/Curve.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_shapes.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/util/pipes.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_projectiles.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/util/Curve.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_shapes.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/util/pipes.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_projectiles.lua" )
 
 FlatVacuum = class()
 FlatVacuum.poseWeightCount = 1

@@ -1,5 +1,5 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_projectiles.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/units/states/BaseState.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_projectiles.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/units/states/BaseState.lua" )
 
 VolleyBombState = class( BaseState )
 local TerrainCollisionMask = bit.bor( sm.physics.filter.terrainSurface, sm.physics.filter.terrainAsset )

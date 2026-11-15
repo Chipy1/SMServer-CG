@@ -1,0 +1,51 @@
+{
+	"characters" : 
+	[
+		{
+			"animateOnServer" : true,
+			"rootMotion" : true,
+			"capsule" : 
+			{
+				"height" : 10.0,
+				"radius" : 10.0
+			},
+			"character" : 
+			{
+				"data" : {},
+				"scriptClass" : "CinematicDrillbotCharacter",
+				"scriptPath" : "$CONTENT_DATA/Scripts/game/characters/CinematicDrillbotCharacter.lua"
+			},
+			"movement" : 
+			{
+				"canSwim" : false,
+				"crouchSpeed" : 3,
+				"facingRotationSpeed" : 3.0,
+				"headingRotationSpeed" : 3.0,
+				"ladderMoveSpeed" : 3.200000048,
+				"moveSpeed" : 3,
+				"slowDownSpeed" : 2.5,
+				"sprintSpeed" : 8,
+				"static" : true
+			},
+			"name" : "cinematic_drillbot",
+			"paint" : 
+			{
+				"defaultColor" : "cb0a00",
+				"effect" : "Paintcharacter - Small",
+				"enable" : false
+			},
+			"renderables" : 
+			[
+				"$SURVIVAL_DATA/Character/Char_Drillbot/char_drillbot_fullbody.rend"
+			],
+			"showInEditor" : true,
+			"unit" : 
+			{
+				"data" : {},
+				"scriptClass" : "CinematicDrillbotUnit",
+				"scriptPath" : "$CONTENT_DATA/Scripts/game/units/CinematicDrillbotUnit.lua"
+			},
+			"uuid" : "de4924b9-89e8-427d-bbe1-10d4da10bb27"
+		}
+	]
+}

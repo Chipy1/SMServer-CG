@@ -1,9 +1,9 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_units.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_constants.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/QuestManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/QuestEntityManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/ProgressionManager.lua" )
-dofile( "$GAME_DATA/Scripts/game/managers/EffectManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_units.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_constants.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/QuestManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/QuestEntityManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/ProgressionManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/EffectManager.lua" )
 
 ScannerbotManager = class()
 

@@ -1,6 +1,6 @@
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/ElevatorManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/WorldManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/ElevatorManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/WorldManager.lua" )
 
 MinidungeonElevatorManager = class( ElevatorManager )
 
@@ -215,7 +215,7 @@ function MinidungeonElevatorManager.sv_e_worldReady( self, params )
 end
 
 function MinidungeonElevatorManager.sv_e_createMinidungeonDestination( self, params )
-	local createdWorld = sm.world.createWorld( "$SURVIVAL_DATA/Scripts/game/worlds/DungeonWorld.lua", "DungeonWorld", { path = params.path, poiType = params.poiType, portalId = params.portal.id }, math.random( 1073741823 ) )
+	local createdWorld = sm.world.createWorld( "$CONTENT_DATA/Scripts/game/worlds/DungeonWorld.lua", "DungeonWorld", { path = params.path, poiType = params.poiType, portalId = params.portal.id }, math.random( 1073741823 ) )
 	sm.portal.addWorldPortalHook( createdWorld, params.name, params.portal )
 end
 

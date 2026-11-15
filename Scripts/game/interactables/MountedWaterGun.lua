@@ -1,4 +1,4 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_projectiles.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_projectiles.lua" )
 
 MountedWaterGun = class()
 MountedWaterGun.maxParentCount = 2
@@ -6,7 +6,7 @@ MountedWaterGun.maxChildCount = 0
 MountedWaterGun.connectionInput = bit.bor( sm.interactable.connectionType.logic, sm.interactable.connectionType.water )
 MountedWaterGun.connectionOutput = sm.interactable.connectionType.none
 MountedWaterGun.colorNormal = sm.color.new( 0x00acfcff )
-MountedWaterGun.colorHighlight = sm.color.new( 0x00acfcff )
+MountedWaterGun.colorHighlight = sm.color.new( 0x51c8ffff )
 MountedWaterGun.connectIcon = "water"
 MountedWaterGun.connectIconScale = 0.75
 

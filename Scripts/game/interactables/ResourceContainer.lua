@@ -1,4 +1,4 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_collections.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_collections.lua" )
 
 ResourceContainer = class( nil )
 ResourceContainer.ContainerSize = 25

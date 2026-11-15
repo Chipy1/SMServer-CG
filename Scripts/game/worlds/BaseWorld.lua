@@ -1,24 +1,24 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/FireManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/WaterManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_constants.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_harvestable.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_shapes.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_spawns.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_projectiles.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/QuestEntityManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/LogEntryManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/ElevatorManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
-dofile( "$GAME_DATA/Scripts/game/managers/TileStorageManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/RaidManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/AttachedFireManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/CablebotManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/MinerbotWaypointManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_items.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_sob.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/MiningManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/AreaReactionManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_explosions.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/FireManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/WaterManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_constants.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_harvestable.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_shapes.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_spawns.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_projectiles.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/QuestEntityManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/LogEntryManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/ElevatorManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/TileStorageManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/RaidManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/AttachedFireManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/CablebotManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/MinerbotWaypointManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_items.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_sob.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/MiningManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/AreaReactionManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_explosions.lua" )
 
 ---@class BaseWorld : WorldClass
 ---@field sv table
@@ -87,28 +87,29 @@ function BaseWorld.client_onCreate( self )
 end
 
 function BaseWorld.server_onFixedUpdate( self )
-	self.fireManager:sv_onFixedUpdate()
-	self.waterManager:sv_onFixedUpdate()
-	AttachedFireManager.Sv_OnWorldFixedUpdate( self.world )
-	g_tileStorageManager:sv_onFixedUpdate(self.world)
-	CablebotManager.Sv_OnWorldFixedUpdate( self.world )
+	sm.pcall( "fireManager.sv_onFixedUpdate", self.fireManager.sv_onFixedUpdate, self.fireManager )
+	sm.pcall( "waterManager.sv_onFixedUpdate", self.waterManager.sv_onFixedUpdate, self.waterManager )
+	sm.pcall( "AttachedFireManager.Sv_OnWorldFixedUpdate", AttachedFireManager.Sv_OnWorldFixedUpdate, self.world )
+	sm.pcall( "CablebotManager.Sv_OnWorldFixedUpdate", CablebotManager.Sv_OnWorldFixedUpdate, self.world )
+	
+
+
 end
 
 function BaseWorld.client_onFixedUpdate( self )
-	self.waterManager:cl_onFixedUpdate()
-	AttachedFireManager.Cl_OnWorldFixedUpdate( self.world )
-	CablebotManager.Cl_OnWorldFixedUpdate( self.world )
+	sm.pcall( "waterManager.cl_onFixedUpdate", self.waterManager.cl_onFixedUpdate, self.waterManager )
+	sm.pcall( "AttachedFireManager.Cl_OnWorldFixedUpdate", AttachedFireManager.Cl_OnWorldFixedUpdate, self.world )
+	sm.pcall( "CablebotManager.Cl_OnWorldFixedUpdate", CablebotManager.Cl_OnWorldFixedUpdate, self.world )
 
-	if self.cl.trashSprayEffect then
-		local tick = sm.game.getCurrentTick()
-		if not self.cl.trashSprayLastTick or tick > self.cl.trashSprayLastTick + TrashSprayResetTime then
-			self.cl.trashSprayEffect:stop()
-			self.cl.trashSprayLastTick = nil
+	sm.pcall( "trashSprayEffect", function( self )
+		if self.cl.trashSprayEffect then
+			local tick = sm.game.getCurrentTick()
+			if self.cl.trashSprayLastTick and tick > self.cl.trashSprayLastTick + TrashSprayResetTime then
+				self.cl.trashSprayEffect:stop()
+				self.cl.trashSprayLastTick = nil
+			end
 		end
-	end
-end
-
-function BaseWorld.client_onUpdate( self, dt )
+	end, self )
 end
 
 function BaseWorld.sv_n_fireMsg( self, msg, player )
@@ -169,40 +170,21 @@ function BaseWorld.sv_spawnHarvestable( self, params )
 end
 
 function BaseWorld.server_onTerrainCreated( self )
-	QuestEntityManager.Sv_OnTerrainLoaded( self.world )
-	UndergroundElevatorManager.Sv_OnTerrainLoaded( self.world )
-	LogEntryManager.Sv_RefreshLocations()
-	DialogManager.Sv_RefreshBondBuilderExclusionTiles()
-	GlowstickManager.Sv_WorldReady( self.world )
+	sm.pcall( "QuestEntityManager.Sv_OnTerrainLoaded", QuestEntityManager.Sv_OnTerrainLoaded, self.world )
+	sm.pcall( "UndergroundElevatorManager.Sv_OnTerrainLoaded", UndergroundElevatorManager.Sv_OnTerrainLoaded, self.world )
+	sm.pcall( "LogEntryManager.Sv_RefreshLocations", LogEntryManager.Sv_RefreshLocations )
+	sm.pcall( "DialogManager.Sv_RefreshBondBuilderExclusionTiles", DialogManager.Sv_RefreshBondBuilderExclusionTiles )
+	sm.pcall( "GlowstickManager.Sv_WorldReady", GlowstickManager.Sv_WorldReady, self.world )
 end
 
 function BaseWorld.server_onTerrainLoaded( self )
-	QuestEntityManager.Sv_OnTerrainLoaded( self.world )
-	UndergroundElevatorManager.Sv_OnTerrainLoaded( self.world )
-	LogEntryManager.Sv_RefreshLocations()
-	GlowstickManager.Sv_WorldReady( self.world )
+	sm.pcall( "QuestEntityManager.Sv_OnTerrainLoaded", QuestEntityManager.Sv_OnTerrainLoaded, self.world )
+	sm.pcall( "UndergroundElevatorManager.Sv_OnTerrainLoaded", UndergroundElevatorManager.Sv_OnTerrainLoaded, self.world )
+	sm.pcall( "LogEntryManager.Sv_RefreshLocations", LogEntryManager.Sv_RefreshLocations )
+	sm.pcall( "GlowstickManager.Sv_WorldReady", GlowstickManager.Sv_WorldReady, self.world )
 end
 
-function BaseWorld.server_onCellCreated( self, x, y )
-	local tags = sm.cell.getTags( x, y )
-	local cell = { x = x, y = y, worldId = self.world.id, tags = tags, isStartArea = valueExists( tags, "STARTAREA" ), isPoi = valueExists( tags, "POI" ) }
-
-	AttachedLootManager.Sv_OnCellLoaded( x,y )
-	ElevatorManager.Sv_OnCellLoaded( self.world, x, y )
-	UndergroundElevatorManager.Sv_OnCellLoaded( self.world, x, y )
-	MinidungeonElevatorManager.Sv_OnCellLoaded( self.world, x, y )
-	QuestEntityManager.Sv_OnWorldCellLoaded( self.world, x, y )
-	NodeSpawnManager.Sv_OnCellCreated( x, y, self.world )
-	NodeScriptableManager.Sv_OnCellCreated( x, y, self.world )
-	PatrolManager.Sv_OnCellLoaded( x, y, self.world )
-	MinerbotWaypointManager.Sv_OnCellLoaded( x, y, self.world )
-	EffectManager.Sv_OnCellLoaded( self.world, x, y )
-	RespawnManager.Sv_OnCellLoaded( x, y, self.world )
-	ExplosionTriggerManager.Sv_OnCellLoaded( x, y, self.world )
-	KinematicManager.Sv_OnCellCreated( self.world, x, y )
-	AreaReactionManager.Sv_OnCellLoaded( self.world, x, y )
-	TileStorageManager.Sv_OnCellLoaded( self.world, x, y) 
-
+function BaseWorld.sv_spawnOnCellCreated( self, cell )
 	RespawningInteractableOnCellCreated( cell, ITEMS.obj_survivalobject_ruinchest )
 	RespawningInteractableOnCellCreated( cell, ITEMS.obj_survivalobject_farmerball )
 
@@ -236,15 +218,14 @@ function BaseWorld.server_onCellCreated( self, x, y )
 	if self.world.publicData.type ~= "WarehouseWorld" then
 		SpawnFromNodeOnCellCreated( cell, "TAPEBOT" )
 	end
-	if self.world.publicData.type ~= "Overworld" or x > -8 or y > -8 or valueExists( tags, "SCRAPYARD" ) then
+	if self.world.publicData.type ~= "Overworld" or cell.x > -8 or cell.y > -8 or valueExists( cell.tags, "SCRAPYARD" ) then
 		SpawnFromNodeOnCellCreated( cell, "FARMBOT" )
 	end
+end
 
-	self.fireManager:sv_onCellLoaded( x, y )
-	self.waterManager:sv_onCellLoaded( x, y )
-
+function BaseWorld.sv_randomizeStacksOnCellCreated( self, cell )
 	-- Randomize stacks
-	local stackedList = sm.cell.getInteractablesByAnyUuid( x, y, {
+	local stackedList = sm.cell.getInteractablesByAnyUuid( cell.x, cell.y, {
 		ITEMS.obj_consumable_gas, ITEMS.obj_consumable_battery,
 		ITEMS.obj_consumable_fertilizer, ITEMS.obj_consumable_chemical,
 		ITEMS.obj_consumable_inkammo,
@@ -269,41 +250,51 @@ function BaseWorld.server_onCellCreated( self, x, y )
 	end
 end
 
-function BaseWorld.client_onCellLoaded( self, x, y )
-	self.fireManager:cl_onCellLoaded( x, y )
-	self.waterManager:cl_onCellLoaded( x, y )
-	AmbienceManager.Cl_OnCellLoaded( self.world, x, y )
-	EffectManager.Cl_AlertOnWorldLoadCell( self.world, x, y )
-	UndergroundElevatorManager.Cl_OnCellLoaded( self.world, x, y )
-	QuestEntityManager.Cl_OnWorldCellLoaded( self.world, x, y )
-	RenderSettingsManager.Cl_onCellLoaded( x, y )
-	GlowstickManager.Cl_WorldReady( self.world )
+function BaseWorld.server_onCellCreated( self, x, y )
+	sm.pcall( "AttachedLootManager.Sv_OnCellLoaded", AttachedLootManager.Sv_OnCellLoaded, x, y )
+	sm.pcall( "ElevatorManager.Sv_OnCellLoaded", ElevatorManager.Sv_OnCellLoaded, self.world, x, y )
+	sm.pcall( "UndergroundElevatorManager.Sv_OnCellLoaded", UndergroundElevatorManager.Sv_OnCellLoaded, self.world, x, y )
+	sm.pcall( "MinidungeonElevatorManager.Sv_OnCellLoaded", MinidungeonElevatorManager.Sv_OnCellLoaded, self.world, x, y )
+	sm.pcall( "QuestEntityManager.Sv_OnWorldCellLoaded", QuestEntityManager.Sv_OnWorldCellLoaded, self.world, x, y )
+	sm.pcall( "NodeSpawnManager.Sv_OnCellCreated", NodeSpawnManager.Sv_OnCellCreated, x, y, self.world )
+	sm.pcall( "NodeScriptableManager.Sv_OnCellCreated", NodeScriptableManager.Sv_OnCellCreated, x, y, self.world )
+	sm.pcall( "PatrolManager.Sv_OnCellLoaded", PatrolManager.Sv_OnCellLoaded, x, y, self.world )
+	sm.pcall( "MinerbotWaypointManager.Sv_OnCellLoaded", MinerbotWaypointManager.Sv_OnCellLoaded, x, y, self.world )
+	sm.pcall( "EffectManager.Sv_OnCellLoaded", EffectManager.Sv_OnCellLoaded, self.world, x, y )
+	sm.pcall( "RespawnManager.Sv_OnCellLoaded", RespawnManager.Sv_OnCellLoaded, x, y, self.world )
+	sm.pcall( "ExplosionTriggerManager.Sv_OnCellLoaded", ExplosionTriggerManager.Sv_OnCellLoaded, x, y, self.world )
+	sm.pcall( "KinematicManager.Sv_OnCellCreated", KinematicManager.Sv_OnCellCreated, self.world, x, y )
+	sm.pcall( "AreaReactionManager.Sv_OnCellLoaded", AreaReactionManager.Sv_OnCellLoaded, self.world, x, y )
+	
+
+
+
+	local tags = sm.cell.getTags( x, y )
+	local cell = { x = x, y = y, worldId = self.world.id, tags = tags, isStartArea = valueExists( tags, "STARTAREA" ), isPoi = valueExists( tags, "POI" ) }
+	sm.pcall( "sv_spawnOnCellCreated", BaseWorld.sv_spawnOnCellCreated, self, cell )
+	sm.pcall( "sv_randomizeStacksOnCellCreated", BaseWorld.sv_randomizeStacksOnCellCreated, self, cell )
+
+	sm.pcall( "fireManager.sv_onCellLoaded", self.fireManager.sv_onCellLoaded, self.fireManager, x, y )
+	sm.pcall( "waterManager.sv_onCellLoaded", self.waterManager.sv_onCellLoaded, self.waterManager, x, y )
 end
 
-function BaseWorld.server_onCellLoaded( self, x, y )
+function BaseWorld.client_onCellLoaded( self, x, y )
+	sm.pcall( "fireManager.cl_onCellLoaded", self.fireManager.cl_onCellLoaded, self.fireManager, x, y )
+	sm.pcall( "waterManager.cl_onCellLoaded", self.waterManager.cl_onCellLoaded, self.waterManager, x, y )
+	sm.pcall( "AmbienceManager.Cl_OnCellLoaded", AmbienceManager.Cl_OnCellLoaded, self.world, x, y )
+	sm.pcall( "EffectManager.Cl_AlertOnWorldLoadCell", EffectManager.Cl_AlertOnWorldLoadCell, self.world, x, y )
+	sm.pcall( "UndergroundElevatorManager.Cl_OnCellLoaded", UndergroundElevatorManager.Cl_OnCellLoaded, self.world, x, y )
+	sm.pcall( "QuestEntityManager.Cl_OnWorldCellLoaded", QuestEntityManager.Cl_OnWorldCellLoaded, self.world, x, y )
+	sm.pcall( "RenderSettingsManager.Cl_onCellLoaded", RenderSettingsManager.Cl_onCellLoaded, x, y )
+	sm.pcall( "GlowstickManager.Cl_WorldReady", GlowstickManager.Cl_WorldReady, self.world )
+end
+
+function BaseWorld.sv_respawnOnCellLoaded( self, x, y )
 	local tags = sm.cell.getTags( x, y )
 	local cell = { x = x, y = y, worldId = self.world.id, isStartArea = valueExists( tags, "STARTAREA" ), isPoi = valueExists( tags, "POI" ) }
-	
-	AttachedLootManager.Sv_OnCellLoaded( x,y )
-	ElevatorManager.Sv_OnCellLoaded( self.world, x, y )
-	UndergroundElevatorManager.Sv_OnCellLoaded( self.world, x, y )
-	MinidungeonElevatorManager.Sv_OnCellLoaded( self.world, x, y )
-	QuestEntityManager.Sv_OnWorldCellLoaded( self.world, x, y )
-	NodeSpawnManager.Sv_OnCellLoaded( x, y, self.world )
-	PatrolManager.Sv_OnCellLoaded( x, y, self.world )
-	MinerbotWaypointManager.Sv_OnCellLoaded( x, y, self.world )
-	EffectManager.Sv_OnCellLoaded( self.world, x, y )
-	RespawnManager.Sv_OnCellLoaded( x, y, self.world )
-	ExplosionTriggerManager.Sv_OnCellLoaded( x, y, self.world )
-	AreaReactionManager.Sv_OnCellLoaded( self.world, x, y )
-	TileStorageManager.Sv_OnCellLoaded( self.world, x, y) 
-
-	self.fireManager:sv_onCellReloaded( x, y )
-	self.waterManager:sv_onCellReloaded( x, y )
-
 	if not cell.isStartArea then
-		TryRespawnInteractableOnCellLoaded( cell, obj_survivalobject_ruinchest )
-		TryRespawnInteractableOnCellLoaded( cell, obj_survivalobject_farmerball )
+		TryRespawnInteractableOnCellLoaded( cell, ITEMS.obj_survivalobject_ruinchest )
+		TryRespawnInteractableOnCellLoaded( cell, ITEMS.obj_survivalobject_farmerball )
 
 		RespawnFromNodeOnCellLoaded( cell, "LOOTCRATE")
 		RespawnFromNodeOnCellLoaded( cell, "EPICLOOTCRATE" )
@@ -334,28 +325,53 @@ function BaseWorld.server_onCellLoaded( self, x, y )
 	end
 end
 
+function BaseWorld.server_onCellLoaded( self, x, y )
+	sm.pcall( "AttachedLootManager.Sv_OnCellLoaded", AttachedLootManager.Sv_OnCellLoaded, x, y )
+	sm.pcall( "ElevatorManager.Sv_OnCellLoaded", ElevatorManager.Sv_OnCellLoaded, self.world, x, y )
+	sm.pcall( "UndergroundElevatorManager.Sv_OnCellLoaded", UndergroundElevatorManager.Sv_OnCellLoaded, self.world, x, y )
+	sm.pcall( "MinidungeonElevatorManager.Sv_OnCellLoaded", MinidungeonElevatorManager.Sv_OnCellLoaded, self.world, x, y )
+	sm.pcall( "QuestEntityManager.Sv_OnWorldCellLoaded", QuestEntityManager.Sv_OnWorldCellLoaded, self.world, x, y )
+	sm.pcall( "NodeSpawnManager.Sv_OnCellLoaded", NodeSpawnManager.Sv_OnCellLoaded, x, y, self.world )
+	sm.pcall( "PatrolManager.Sv_OnCellLoaded", PatrolManager.Sv_OnCellLoaded, x, y, self.world )
+	sm.pcall( "MinerbotWaypointManager.Sv_OnCellLoaded", MinerbotWaypointManager.Sv_OnCellLoaded, x, y, self.world )
+	sm.pcall( "EffectManager.Sv_OnCellLoaded", EffectManager.Sv_OnCellLoaded, self.world, x, y )
+	sm.pcall( "RespawnManager.Sv_OnCellLoaded", RespawnManager.Sv_OnCellLoaded, x, y, self.world )
+	sm.pcall( "ExplosionTriggerManager.Sv_OnCellLoaded", ExplosionTriggerManager.Sv_OnCellLoaded, x, y, self.world )
+	sm.pcall( "AreaReactionManager.Sv_OnCellLoaded", AreaReactionManager.Sv_OnCellLoaded, self.world, x, y )
+	
+
+
+
+	sm.pcall( "fireManager.sv_onCellReloaded", self.fireManager.sv_onCellReloaded, self.fireManager, x, y )
+	sm.pcall( "waterManager.sv_onCellReloaded", self.waterManager.sv_onCellReloaded, self.waterManager, x, y )
+
+	sm.pcall( "sv_respawnOnCellLoaded", BaseWorld.sv_respawnOnCellLoaded, self, x, y )
+end
+
 function BaseWorld.server_onCellUnloaded( self, x, y )
-	ElevatorManager.Sv_OnCellUnloaded( self.world, x, y )
-	UndergroundElevatorManager.Sv_OnCellUnloaded( self.world, x, y )
-	MinidungeonElevatorManager.Sv_OnCellUnloaded( self.world, x, y )
-	QuestEntityManager.Sv_OnWorldCellUnloaded( self.world, x, y )
-	NodeSpawnManager.Sv_OnCellUnloaded( x, y, self.world )
-	self.fireManager:sv_onCellUnloaded( x, y )
-	self.waterManager:sv_onCellUnloaded( x, y )
-	MinerbotWaypointManager.Sv_OnCellUnloaded( x, y, self.world )
-	RespawnManager.Sv_OnCellUnloaded( x, y, self.world )
-	ExplosionTriggerManager.Sv_OnCellUnloaded( x, y, self.world )
-	AreaReactionManager.Sv_OnCellUnloaded( self.world, x, y )
-	PatrolManager.Sv_OnCellUnloaded( x, y, self.world )
-	TileStorageManager.Sv_OnCellUnLoaded( self.world, x, y )
+	sm.pcall( "ElevatorManager.Sv_OnCellUnloaded", ElevatorManager.Sv_OnCellUnloaded, self.world, x, y )
+	sm.pcall( "UndergroundElevatorManager.Sv_OnCellUnloaded", UndergroundElevatorManager.Sv_OnCellUnloaded, self.world, x, y )
+	sm.pcall( "MinidungeonElevatorManager.Sv_OnCellUnloaded", MinidungeonElevatorManager.Sv_OnCellUnloaded, self.world, x, y )
+	sm.pcall( "QuestEntityManager.Sv_OnWorldCellUnloaded", QuestEntityManager.Sv_OnWorldCellUnloaded, self.world, x, y )
+	sm.pcall( "NodeSpawnManager.Sv_OnCellUnloaded", NodeSpawnManager.Sv_OnCellUnloaded, x, y, self.world )
+	sm.pcall( "fireManager.sv_onCellUnloaded", self.fireManager.sv_onCellUnloaded, self.fireManager, x, y )
+	sm.pcall( "waterManager.sv_onCellUnloaded", self.waterManager.sv_onCellUnloaded, self.waterManager, x, y )
+	sm.pcall( "MinerbotWaypointManager.Sv_OnCellUnloaded", MinerbotWaypointManager.Sv_OnCellUnloaded, x, y, self.world )
+	sm.pcall( "RespawnManager.Sv_OnCellUnloaded", RespawnManager.Sv_OnCellUnloaded, x, y, self.world )
+	sm.pcall( "ExplosionTriggerManager.Sv_OnCellUnloaded", ExplosionTriggerManager.Sv_OnCellUnloaded, x, y, self.world )
+	sm.pcall( "AreaReactionManager.Sv_OnCellUnloaded", AreaReactionManager.Sv_OnCellUnloaded, self.world, x, y )
+	sm.pcall( "PatrolManager.Sv_OnCellUnloaded", PatrolManager.Sv_OnCellUnloaded, x, y, self.world )
+	
+
+
 end
 
 function BaseWorld.client_onCellUnloaded( self, x, y )
-	AmbienceManager.Cl_OnCellUnloaded( self.world, x, y )
-	EffectManager.Cl_AlertOnWorldUnloadCell( self.world, x, y )
-	QuestEntityManager.Cl_OnWorldCellUnloaded( self, x, y )
-	self.waterManager:cl_onCellUnloaded( x, y )
-	RenderSettingsManager.Cl_onCellUnloaded( x, y )
+	sm.pcall( "AmbienceManager.Cl_OnCellUnloaded", AmbienceManager.Cl_OnCellUnloaded, self.world, x, y )
+	sm.pcall( "EffectManager.Cl_AlertOnWorldUnloadCell", EffectManager.Cl_AlertOnWorldUnloadCell, self.world, x, y )
+	sm.pcall( "QuestEntityManager.Cl_OnWorldCellUnloaded", QuestEntityManager.Cl_OnWorldCellUnloaded, self, x, y )
+	sm.pcall( "waterManager.cl_onCellUnloaded", self.waterManager.cl_onCellUnloaded, self.waterManager, x, y )
+	sm.pcall( "RenderSettingsManager.Cl_onCellUnloaded", RenderSettingsManager.Cl_onCellUnloaded, x, y )
 end
 
 -- Beacons
@@ -401,17 +417,23 @@ function BaseWorld.server_onProjectileFire( self, firePos, fireVelocity, _, atta
 	end
 end
 
+function BaseWorld.server_onProjectileBounce( self, bouncePos, bounceVelocity, attacker, projectileUuid )
+	if projectileUuid == projectile_cornade_explosive then
+		sm.message.send( MESSAGE_TYPES.GENERAL.ProjectileBounce, { world = self.world, position = bouncePos, attacker = attacker } )
+	end
+end
+
 function BaseWorld.server_onInteractableCreated( self, interactable )
-	g_unitManager:sv_onInteractableCreated( interactable )
-	QuestEntityManager.Sv_OnInteractableCreated( interactable )
-	QuestPinManager.Sv_InteractableCreated( interactable )
+	sm.pcall( "g_unitManager.sv_onInteractableCreated", g_unitManager.sv_onInteractableCreated, g_unitManager, interactable )
+	sm.pcall( "QuestEntityManager.Sv_OnInteractableCreated", QuestEntityManager.Sv_OnInteractableCreated, interactable )
+	sm.pcall( "QuestPinManager.Sv_InteractableCreated", QuestPinManager.Sv_InteractableCreated, interactable )
 end
 
 function BaseWorld.server_onInteractableDestroyed( self, interactable )
-	g_unitManager:sv_onInteractableDestroyed( interactable )
-	QuestEntityManager.Sv_OnInteractableDestroyed( interactable )
+	sm.pcall( "g_unitManager.sv_onInteractableDestroyed", g_unitManager.sv_onInteractableDestroyed, g_unitManager, interactable )
+	sm.pcall( "QuestEntityManager.Sv_OnInteractableDestroyed", QuestEntityManager.Sv_OnInteractableDestroyed, interactable )
 	if g_questPinManagerServer then
-		QuestPinManager.Sv_InteractableDestroyed( interactable )
+		sm.pcall( "QuestPinManager.Sv_InteractableDestroyed", QuestPinManager.Sv_InteractableDestroyed, interactable )
 	end
 end
 
@@ -536,8 +558,6 @@ function BaseWorld.server_onProjectile( self, hitPos, hitTime, hitVelocity, _, a
 		if spawnChance <= 0.05 and attacker and type( attacker ) == "Unit" and sm.exists( attacker ) then -- 5% chance
 			self:sv_spawnTrashbubbleLoot( hitPos, attacker )
 		end
-	elseif projectileUuid == projectile_trashbubble_green or projectileUuid ==  projectile_trashbubble_purple then
-		self.network:sendToClients( "cl_n_updateTrashSpray", { hitPos = hitPos } )
 	elseif isAnyOf( projectileUuid, g_spawnerProjectiles ) then
 		if userData and userData.unit then
 			local yaw = math.random() * 2 * math.pi
@@ -938,25 +958,21 @@ end
 function BaseWorld.sv_e_spawnRaiders( self, params )
 	local attackPos = params.attackPos
 	local raiders = params.raiders
+	local raiderPositions = params.raiderPositions or GenerateRaiderSpawnPositions( self.world, params.spawnPos, #raiders )
 
 	print( #raiders, "raiders incoming" )
 
 	for i = 1, #raiders do
-		local spawnAttempts = 0
-		spawnAttempts = spawnAttempts + 1
-		local spawnDirection = sm.vec3.new( 0, 1, 0 )
-		spawnDirection = spawnDirection:rotateZ( math.rad( math.random() * 360 ) )
-		local unitPos = params.spawnPos
+		local unitPos = raiderPositions[i]
 
 		local direction = attackPos - unitPos
 		local yaw = math.atan2( direction.y, direction.x ) - math.pi / 2
-		local unitSpawnParams = { raider = true, tetherPoint = attackPos }
+		local unitSpawnParams = { raidKey = params.raidKey }
 		unitSpawnParams.lootType = "farmraid"
-		unitSpawnParams.raidKey = params.raidKey
-		unitSpawnParams.marked = true
-		unitSpawnParams.raidCenter = params.raidCenter
 		local unit = sm.unit.createUnit( raiders[i], unitPos, yaw, unitSpawnParams )
-		if not unit then
+		if unit then
+			RaidManager.Sv_AddRaider( params.raidKey, self.world.id, unit, raiders[i], unitPos )
+		else
 			print("raid unit failed to spawn")
 		end
 	end
@@ -1106,13 +1122,17 @@ function BaseWorld.server_onVoxelDestruction( self, destructions )
 	end
 end
 
-function BaseWorld.cl_n_updateTrashSpray( self, params )
+function BaseWorld.client_onProjectile( self, hitPos, _, _, _, _, _, _, _, projectileUuid )
+	if projectileUuid ~= projectile_trashbubble_green and projectileUuid ~= projectile_trashbubble_purple then
+		return
+	end
+
 	self.cl.trashSprayLastTick = sm.game.getCurrentTick()
 	if not self.cl.trashSprayEffect then
 		self.cl.trashSprayEffect = sm.effect.createEffect( "audio:event:/char/npc/bots/enemies/trashbot/spray_impact_loop" )
 	end
 
-	self.cl.trashSprayEffect:setPosition( params.hitPos )
+	self.cl.trashSprayEffect:setPosition( hitPos )
 	if not self.cl.trashSprayEffect:isPlaying() then
 		self.cl.trashSprayEffect:start()
 	end

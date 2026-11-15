@@ -1,9 +1,9 @@
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/terrain/terrain_util2.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/kinematic_util.lua")
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
-dofile "$SURVIVAL_DATA/Scripts/terrain/tile_database.lua"
-dofile( "$GAME_DATA/Scripts/terrain/terrain_prepare_cell_util.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/terrain/terrain_util2.lua" )
+dofile( "$CONTENT_DATA/Scripts/kinematic_util.lua")
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
+dofile "$CONTENT_DATA/Scripts/terrain/tile_database.lua"
+dofile( "$CONTENT_DATA/Scripts/terrain/terrain_prepare_cell_util.lua" )
 
 local LOCATION_STORAGE_VERSION = 1
 

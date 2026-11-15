@@ -1,6 +1,6 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_loot.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_items.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_constants.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_loot.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_items.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_constants.lua" )
 
 -- OBS: currently does not restart effects if game is quit while active. fix later
 BalloonCrate = class()

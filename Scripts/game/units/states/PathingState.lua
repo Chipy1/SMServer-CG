@@ -1,7 +1,7 @@
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/units/states/FollowPathState2.lua" )
-dofile "$SURVIVAL_DATA/Scripts/game/survival_constants.lua"
-dofile( "$SURVIVAL_DATA/Scripts/game/units/states/BaseState.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/units/states/FollowPathState2.lua" )
+dofile "$CONTENT_DATA/Scripts/game/survival_constants.lua"
+dofile( "$CONTENT_DATA/Scripts/game/units/states/BaseState.lua" )
 
 PathingState = class( BaseState )
 
@@ -22,7 +22,6 @@ function PathingState.sv_onCreate( self, unit )
 	self.idleState.debugName = "idleState"
 	
 	self.destination = nil
-	self.isRaider = false
 	
 	self.progressTimeout = 5.0 -- seconds without progress
 	self.ticksWithoutProgress = 0
@@ -73,10 +72,6 @@ function PathingState.sv_setDestination( self, toPosition )
 	self.newDestination = true
 end
 
-function PathingState.sv_setRaider( self, isRaider )
-	self.isRaider = isRaider
-end
-
 -- AiState common interface
 
 function PathingState.start( self )
@@ -106,9 +101,10 @@ function PathingState.sv_updatePath( self )
 	local path = sm.pathfinder.getPath( self.unit.character, self.destination, true, { canSwim = not self.waterAvoidance } )
 	self.mainPath = {}
 	self.mainPath[1] = self.unit.character.worldPosition
+	local isRaider = self.unit.publicData and self.unit.publicData.raider
 	for index, link in ipairs( path ) do
 		local pathPosition = link.toNode:getPosition() + sm.vec3.new( 0, 0, self.unit.character:getHeight() * 0.5 )
-		if self.isRaider then -- add a random offset to each point based on distance to them. causes a semi spreading behavior
+		if isRaider then -- add a random offset to each point based on distance to them. causes a semi spreading behavior
 			if index ~= 1 then
 				local distanceToEnd = math.max( ( self.unit.character.worldPosition - pathPosition ):length() - 5, 0 )
 				local success, result = sm.physics.raycast( pathPosition + ( self.raidRandomOffset * math.min( distanceToEnd * 0.8, 6 ) ) + sm.vec3.new( 0, 0, 128 ), pathPosition + ( self.raidRandomOffset * math.min( distanceToEnd * 0.8, 6 ) ) + sm.vec3.new( 0, 0, -128 ), nil, sm.physics.filter.terrainAsset + sm.physics.filter.terrainSurface )

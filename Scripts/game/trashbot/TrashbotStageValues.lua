@@ -9,8 +9,8 @@ TRASHBOT_ARM = {
 TRASHBOT_ROTATION_SPEED = 45 -- degrees per second
 TRASHBOT_EXPLOSION_RADIUS = 30.0
 
-dofile "$SURVIVAL_DATA/Scripts/game/trashbot/Fight1Patterns.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/trashbot/Fight2Patterns.lua"
+dofile "$CONTENT_DATA/Scripts/game/trashbot/Fight1Patterns.lua"
+dofile "$CONTENT_DATA/Scripts/game/trashbot/Fight2Patterns.lua"
 
 
 -- Sequence requirements: type (TrashbotAttack), count (int)

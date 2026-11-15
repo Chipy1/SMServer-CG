@@ -1,8 +1,8 @@
-dofile "$SURVIVAL_DATA/Scripts/game/survival_items.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_spawns.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/loot/lootconditions.lua"
-dofile "$SURVIVAL_DATA/Scripts/terrain/overworld/poi_types.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_logs.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_items.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_spawns.lua"
+dofile "$CONTENT_DATA/Scripts/game/loot/lootconditions.lua"
+dofile "$CONTENT_DATA/Scripts/terrain/overworld/poi_types.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_logs.lua"
 
 ProgressionManager = class()
 

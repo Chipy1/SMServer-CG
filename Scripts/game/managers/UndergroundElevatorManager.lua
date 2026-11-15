@@ -1,10 +1,10 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_constants.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/QuestManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/DialogManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/ProgressionManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_dialogs.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/quest_util.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_constants.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/QuestManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/DialogManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/ProgressionManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_dialogs.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/quest_util.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
 
 local ScrapyardFloorIndex = 6
 local ScrapyardQuestName = "quest_scrapyard"
@@ -87,13 +87,21 @@ function UndergroundElevatorManager.server_onCreate( self )
 		for floorIndex, _ in pairs( elevator.floors ) do
 			elevator.doorStates[floorIndex] = currentFloor == floorIndex
 		end
+
+		-- Ceil destinationTick in order to restart world-loading state
+		if elevator.ticksToDestination < ELEVATOR_LOAD_WORLDS_TICK and elevator.ticksToDestination >= ELEVATOR_TRANSFER_TICK then
+			elevator.ticksToDestination = ELEVATOR_LOAD_WORLDS_TICK
+		end
 	end
     self.activeElevators = {}
+	self.tileObjects = {}
 	self.loadedCells = {}
 	self.loadCellHandles = {}
+	self.loadDestinationQueues = {}
 
 	for _, elevator in pairs( self.elevators ) do
-		if elevator.ticksToDestination >= 0 and elevator.currentFloor > 0 then
+		if elevator.ticksToDestination >= 0 and elevator.destinationFloor > 0 then
+			self.loadDestinationQueues[elevator.name] = self.loadDestinationQueues[elevator.name] or {}
 			addToArrayIfNotExists( self.activeElevators, elevator )
 		end
 	end
@@ -292,7 +300,7 @@ function UndergroundElevatorManager.server_onFixedUpdate( self )
 			end
 			if elevator.ticksToDestination == moveWallsTick then
 				self:sv_activateElevatorEffects( currentFloor.tileKey, currentFloor.world, currentFloor.connectionTag )
-				self:sv_activateDepthbot( currentFloor.tileKey, elevator.name, elevator.currentFloor, elevator.destinationFloor )
+				self:sv_sendDepthbotEvent( elevator.name, elevator.currentFloor, elevator.destinationFloor, elevator.destinationFloor > elevator.currentFloor and "sv_e_goDown" or "sv_e_goUp" )
 				self.network:sendToClients( "cl_n_startTravelSound", { world = currentFloor.world, tileKey = currentFloor.tileKey, connection = currentFloor.connectionTag } )
 				self.network:sendToClients( "cl_n_startMovingEffects", { world = currentFloor.world, tileKey = currentFloor.tileKey, connection = currentFloor.connectionTag, direction = travelDirection } )
 
@@ -340,6 +348,7 @@ function UndergroundElevatorManager.server_onFixedUpdate( self )
 
 		if elevator.ticksToDestination == ELEVATOR_LOAD_WORLDS_TICK then
 			self:sv_loadWorlds( elevator )
+			save = true
 		end
 
 		if elevator.ticksToDestination < ELEVATOR_LOAD_WORLDS_TICK and elevator.ticksToDestination > ELEVATOR_TRANSFER_TICK then
@@ -352,7 +361,7 @@ function UndergroundElevatorManager.server_onFixedUpdate( self )
 			local destinationFloorDebug = UNDERGROUND_ELEVATORS[elevator.name].floors[elevator.destinationFloor].debug
 			if self:sv_tryTransfer( elevator, elevator.currentFloor, elevator.destinationFloor ) then
 				sm.log.info( "Underground elevator '"..elevator.name.."' transferred from floor "..elevator.currentFloor.." ("..currentFloorDebug..") to floor "..elevator.destinationFloor.." ("..destinationFloorDebug..")" )
-				for floorIndex, floor in pairs( elevator.floors ) do
+				for floorIndex, _ in pairs( elevator.floors ) do
 					if floorIndex ~= elevator.currentFloor and floorIndex ~= elevator.destinationFloor then
 						if self:sv_tryTransfer( elevator, floorIndex, elevator.destinationFloor ) then
 							local floorDebug = UNDERGROUND_ELEVATORS[elevator.name].floors[floorIndex].debug
@@ -363,13 +372,11 @@ function UndergroundElevatorManager.server_onFixedUpdate( self )
 				if destinationFloor then
 					self:sv_lockDepthbotMarker( destinationFloor.tileKey, elevator.name, elevator.destinationFloor )
 				end
+				save = true
 			else
 				sm.log.info( "Underground elevator '"..elevator.name.."' wants to transfer from floor "..elevator.currentFloor.." ("..currentFloorDebug..") to floor "..elevator.destinationFloor.." ("..destinationFloorDebug..") but destination is not ready, added 1 second" )
 				elevator.ticksToDestination = elevator.ticksToDestination + 40
-				self:sv_loadWorlds( elevator )
-				self:sv_prepareCells( elevator )
 			end
-			save = true
 		end
 
 		-- End Fade
@@ -446,10 +453,7 @@ function UndergroundElevatorManager.server_onFixedUpdate( self )
 		elevator.ticksToDestination = elevator.ticksToDestination - 1
 		if elevator.ticksToDestination < 0 then
 			sm.log.info( "Underground elevator '"..elevator.name.."' arrived at floor "..elevator.destinationFloor )
-			local arrivedTileKey = elevator.floors[elevator.destinationFloor] and elevator.floors[elevator.destinationFloor].tileKey or (currentFloor and currentFloor.tileKey)
-			if arrivedTileKey then
-				self:sv_depthbotArrive( arrivedTileKey, elevator.name, elevator.currentFloor, elevator.destinationFloor )
-			end
+			self:sv_sendDepthbotEvent( elevator.name, elevator.currentFloor, elevator.destinationFloor, "sv_e_arrived" )
 			self:sv_releaseLoadCellHandles( elevator )
 			elevator.currentFloor = elevator.destinationFloor
 			elevator.ticksToDestination = -1
@@ -463,16 +467,49 @@ function UndergroundElevatorManager.server_onFixedUpdate( self )
 end
 
 function UndergroundElevatorManager.sv_loadWorlds( self, elevator )
-	if elevator.currentFloor ~= 0 then
-		local elevatorCurrentFloor = elevator.floors[elevator.currentFloor]
-		if elevatorCurrentFloor and elevatorCurrentFloor.world and not sm.exists( elevatorCurrentFloor.world ) then
-			sm.world.loadWorld( elevatorCurrentFloor.world )
+	local function loadFloor( floorIndex )
+		local floorToLoad = elevator.floors[floorIndex]
+		local hasWorld = floorToLoad and floorToLoad.world
+		if hasWorld and not sm.exists( floorToLoad.world ) then
+			hasWorld = sm.world.loadWorld( floorToLoad.world )
+		end
+
+		if not hasWorld then
+			local world = nil
+			local floorToCreate = UNDERGROUND_ELEVATORS[elevator.name].floors[floorIndex]
+			if floorToCreate.depth == 0 then -- Overworld is always created when game loads. We might end up here if teleporting to underground, bypassing cells with overworld elevators!
+				world = WorldManager.Sv_GetWorld( "overworld" )
+				if world and not sm.exists( world ) then
+					sm.world.loadWorld( world )
+				end
+			else
+				local def = UNDERGROUND_DEFS[floorToCreate.depth]
+				for _, worldToCheck in ipairs( sm.world.getWorlds() ) do
+					if worldToCheck:getScriptClass() == def.script.class then
+						world = worldToCheck
+						break
+					end
+				end
+				if not world then
+					world = sm.world.createWorld( def.script.file, def.script.class, { depth = floorToCreate.depth, worldFilePath = def.world }, math.random( 1073741823 ) )
+					sm.event.sendToGame( "sv_e_addUndergroundWorld", { depth = floorToCreate.depth, world = world }, sm.event.types.instant )
+				elseif not sm.exists( world ) then
+					sm.world.loadWorld( world )
+				end
+			end
+
+			assert( world, "Failed to create or load world for floor " .. floorIndex )
+			local loadDestinationQueue = self.loadDestinationQueues[elevator.name]
+			loadDestinationQueue[#loadDestinationQueue + 1] = { world = world, connectionTag = floorToCreate.connectionTag }
+			self:sv_checkLoadDestinationQueue( world )
 		end
 	end
-	local elevatorDestinationFloor = elevator.floors[elevator.destinationFloor]
-	if elevatorDestinationFloor and elevatorDestinationFloor.world and not sm.exists( elevatorDestinationFloor.world ) then
-		sm.world.loadWorld( elevatorDestinationFloor.world )
+
+	if elevator.currentFloor > 0 then
+		loadFloor( elevator.currentFloor )
 	end
+
+	loadFloor( elevator.destinationFloor )
 end
 
 function UndergroundElevatorManager.sv_prepareCells( self, elevator )
@@ -541,72 +578,33 @@ function UndergroundElevatorManager.sv_releaseLoadCellHandles( self, elevator )
 end
 
 function UndergroundElevatorManager.sv_activateElevatorEffects( self, tileKey, world, connectionTag )
-	local tileData = TileStorageManager.Sv_GetValueInSubTable( tileKey, UNDERGROUND_ELEVATOR_TABLE, connectionTag )
-	if tileData.elevator and sm.exists( tileData.elevator ) then
-		local elevatorPosition = tileData.elevator.shape.worldPosition
-		EffectManager.Sv_ActivateEventEffect( world, "ElevatorInside_trigger", elevatorPosition )
+	local elevator = self:sv_getTileObjects( connectionTag, tileKey ).elevator
+	if elevator and sm.exists( elevator ) then
+		EffectManager.Sv_ActivateEventEffect( world, "ElevatorInside_trigger", elevator.worldPosition )
 	end
 end
 
-function UndergroundElevatorManager.sv_activateDepthbot( self, tileKey, elevatorName, currentFloor, destinationFloor )
-	if g_tileStorageManager then
-		local depthBotsGo = function( depthbots )
-			if depthbots then
-				for _,depthbot in ipairs( depthbots ) do
-					if sm.exists( depthbot ) then
-						if destinationFloor > currentFloor then
-							sm.event.sendToInteractable( depthbot, "sv_e_goDown" )
-						else
-							sm.event.sendToInteractable( depthbot, "sv_e_goUp" )
-						end
-					end
-				end
+function UndergroundElevatorManager.sv_sendDepthbotEvent( self, elevatorName, currentFloor, destinationFloor, eventName )
+	local sendToFloor = function( floorIndex )
+		local elevatorFloor = self.elevators[elevatorName].floors[floorIndex]
+		if elevatorFloor then
+			local depthbot = self:sv_getTileObjects( elevatorFloor.connectionTag, elevatorFloor.tileKey ).depthbot
+			if depthbot and sm.exists( depthbot ) then
+				sm.event.sendToHarvestable( depthbot, eventName, sm.event.types.instant )
 			end
 		end
-		if currentFloor ~= 0 then
-			local elevatorFloor = UNDERGROUND_ELEVATORS[elevatorName].floors[currentFloor]
-			local tileData = TileStorageManager.Sv_GetValueInSubTable( tileKey, UNDERGROUND_ELEVATOR_TABLE, elevatorFloor.connectionTag ) or {}
-			depthBotsGo( tileData.depthbots )
-		end
-		local elevatorFloor = UNDERGROUND_ELEVATORS[elevatorName].floors[destinationFloor]
-		local tileData = TileStorageManager.Sv_GetValueInSubTable( tileKey, UNDERGROUND_ELEVATOR_TABLE, elevatorFloor.connectionTag ) or {}
-		depthBotsGo( tileData.depthbots )
 	end
+	if currentFloor ~= 0 then
+		sendToFloor( currentFloor )
+	end
+	sendToFloor( destinationFloor )
 end
 
 function UndergroundElevatorManager.sv_lockDepthbotMarker( self, tileKey, elevatorName, floor )
-	if g_tileStorageManager then
-		local elevatorFloor = UNDERGROUND_ELEVATORS[elevatorName].floors[floor]
-		local tileData = TileStorageManager.Sv_GetValueInSubTable( tileKey, UNDERGROUND_ELEVATOR_TABLE, elevatorFloor.connectionTag ) or {}
-		if tileData and tileData.depthbots then
-			for _, depthbot in ipairs( tileData.depthbots  ) do
-				if sm.exists( depthbot ) then
-					sm.event.sendToInteractable( depthbot, "sv_e_setMarkerLocked", { markerLocked = true }, sm.event.types.instant )
-				end
-			end
-		end
-	end
-end
-
-function UndergroundElevatorManager.sv_depthbotArrive( self, tileKey, elevatorName, currentFloor, destinationFloor )
-	if g_tileStorageManager then
-		local depthBotsArrive = function( depthbots )
-			if depthbots then
-				for _, depthbot in ipairs( depthbots ) do
-					if sm.exists( depthbot ) then
-						sm.event.sendToInteractable( depthbot, "sv_e_arrived" )
-					end
-				end
-			end
-		end
-		if currentFloor ~= 0 then
-			local elevatorFloor = UNDERGROUND_ELEVATORS[elevatorName].floors[currentFloor]
-			local tileData = TileStorageManager.Sv_GetValueInSubTable( tileKey, UNDERGROUND_ELEVATOR_TABLE, elevatorFloor.connectionTag ) or {}
-			depthBotsArrive( tileData.depthbots )
-		end
-		local elevatorFloor = UNDERGROUND_ELEVATORS[elevatorName].floors[destinationFloor]
-		local tileData = TileStorageManager.Sv_GetValueInSubTable( tileKey, UNDERGROUND_ELEVATOR_TABLE, elevatorFloor.connectionTag ) or {}
-		depthBotsArrive( tileData.depthbots )
+	local elevatorFloor = UNDERGROUND_ELEVATORS[elevatorName].floors[floor]
+	local depthbot = self:sv_getTileObjects( elevatorFloor.connectionTag, tileKey ).depthbot
+	if depthbot and sm.exists( depthbot ) then
+		sm.event.sendToHarvestable( depthbot, "sv_e_setMarkerLocked", { markerLocked = true }, sm.event.types.instant )
 	end
 end
 
@@ -708,7 +706,7 @@ function UndergroundElevatorManager.sv_go( self, elevatorName, currentFloor, tar
 			if elevator.currentFloor ~= 0 then
 				local departureFloor = elevator.floors[elevator.currentFloor]
 				-- Immediately lock the depthbot markers so pressing "go" gives instant feedback. The
-				-- direction submesh swaps still happen later at moveWallsTick via sv_activateDepthbot.
+				-- direction submesh swaps still happen later at moveWallsTick.
 				if departureFloor then
 					self:sv_lockDepthbotMarker( departureFloor.tileKey, elevator.name, elevator.currentFloor )
 				end
@@ -756,13 +754,15 @@ function UndergroundElevatorManager.sv_isScrapyardUnlocked( self, elevatorName )
 	return elevator ~= nil and elevator.scrapyardUnlocked == true
 end
 
-function UndergroundElevatorManager.sv_registerElevatorFloor( self, elevatorName, floor, world, worldPos, connectionTag, transferArea )
+function UndergroundElevatorManager.sv_registerElevatorFloor( self, elevatorName, floor, world, worldPos, connectionTag, transferArea, harvestable )
 	local tileKey = TileStorageManager.Sv_GetTileStorageKeyFromPosition( world, worldPos )
 	if tileKey == nil then
 		sm.log.error( "UndergroundElevatorManager.sv_registerElevatorFloor could not calculate tile storage key for position: " .. tostring( worldPos ) .. " in world: " .. tostring( world.id ) )
 		return
 	end
 	sm.log.info( "Registering elevator: name", elevatorName, "floor", floor, "world", world, "worldPos", worldPos, "tileKey", tileKey, "connectionTag", connectionTag, "transferArea", transferArea )
+	self:sv_getTileObjects( connectionTag, tileKey ).elevator = harvestable
+	self.loadDestinationQueues[elevatorName] = self.loadDestinationQueues[elevatorName] or {}
 	self.elevators[elevatorName] = self.elevators[elevatorName] or {
 		name = elevatorName,
 		floors = {},
@@ -771,7 +771,6 @@ function UndergroundElevatorManager.sv_registerElevatorFloor( self, elevatorName
 		destinationFloor = 0,
 		ticksToDestination = -1, -- At destination
 		size = transferArea.scale / 2,
-		loadDestinationQueue = {}
 	}
 	local elevator = self.elevators[elevatorName]
 	local elevatorFloor = elevator.floors[floor]
@@ -1037,15 +1036,16 @@ function UndergroundElevatorManager.sv_checkLoadDestinationQueue( self, world )
 			local isDestinationNode = function( destination )
 				return destination.world == world and isAnyOf( destination.connectionTag, locationNode.tags )
 			end
-			for _,elevator in pairs( self.elevators ) do
-				local idx = indexOf( elevator.loadDestinationQueue, isDestinationNode )
+			for elevatorName, elevator in pairs( self.elevators ) do
+				local loadDestinationQueue = self.loadDestinationQueues[elevatorName]
+				local idx = loadDestinationQueue and indexOf( loadDestinationQueue, isDestinationNode )
 				if idx then
 					local x = math.floor( locationNode.pos.x / 64 )
 					local y = math.floor( locationNode.pos.y / 64 )
 					print( "Loading destination world cell from location node", locationNode )
 					if self.loadCellHandles[elevator.name..elevator.destinationFloor] == nil then
 						self.loadCellHandles[elevator.name..elevator.destinationFloor] = world:loadCellWithHandle( x, y, "sv_checkLoadDestinationQueueDone", nil, self )
-						table.remove( elevator.loadDestinationQueue, idx )
+						table.remove( loadDestinationQueue, idx )
 					end
 				end
 			end
@@ -1055,20 +1055,6 @@ end
 
 function UndergroundElevatorManager.sv_checkLoadDestinationQueueDone( self, world, x, y, params )
 	print( "UndergroundElevatorManager.sv_checkLoadDestinationQueue DONE!", world, x, y, params )
-end
-
-function UndergroundElevatorManager.sv_loadDestinationWorldCell( self, world, elevatorName, connectionTag )
-	local elevator = self.elevators[elevatorName]
-	if elevator then
-		elevator.loadDestinationQueue[#elevator.loadDestinationQueue + 1] = { world = world, connectionTag = connectionTag }
-		self:sv_checkLoadDestinationQueue( world )
-	end
-end
-
-function UndergroundElevatorManager.Sv_LoadDestinationWorldCell( world, elevatorName, connectionTag )
-	if g_undergroundElevatorManager then
-		g_undergroundElevatorManager:sv_loadDestinationWorldCell( world, elevatorName, connectionTag )
-	end
 end
 
 function UndergroundElevatorManager.Sv_OnTerrainLoaded( world )
@@ -1132,9 +1118,50 @@ function UndergroundElevatorManager.Sv_Call( elevatorName, floor )
 	return false
 end
 
-function UndergroundElevatorManager.Sv_RegisterElevatorFloor( elevatorName, floor, world, worldPos, connectionTag, transferArea )
+function UndergroundElevatorManager.Sv_RegisterElevatorFloor( elevatorName, floor, world, worldPos, connectionTag, transferArea, harvestable )
 	if g_undergroundElevatorManager then
-		g_undergroundElevatorManager:sv_registerElevatorFloor( elevatorName, floor, world, worldPos, connectionTag, transferArea )
+		g_undergroundElevatorManager:sv_registerElevatorFloor( elevatorName, floor, world, worldPos, connectionTag, transferArea, harvestable )
+	end
+end
+
+function UndergroundElevatorManager.Sv_RegisterDepthBot( depthbot, connectionTag )
+	local tileKey = TileStorageManager.Sv_GetTileStorageKeyFromObject( depthbot )
+	if g_undergroundElevatorManager == nil or tileKey == nil or connectionTag == nil then
+		sm.log.error( "UndergroundElevatorManager.Sv_RegisterDepthBot could not register depthbot", depthbot, "tileKey", tileKey, "connectionTag", connectionTag )
+		return
+	end
+	g_undergroundElevatorManager:sv_getTileObjects( connectionTag, tileKey ).depthbot = depthbot
+end
+
+function UndergroundElevatorManager.sv_getTileObjects( self, connectionTag, tileKey )
+	assert( tileKey ~= nil and connectionTag ~= nil, "Missing tile key or connection tag for elevator objects" )
+	return InitializeNestedTables( self, "tileObjects", connectionTag, tileKey )
+end
+
+function UndergroundElevatorManager.Sv_NotifyDepthBots( harvestable, connectionTag, data, markerLocked )
+	local tileKey = TileStorageManager.Sv_GetTileStorageKeyFromObject( harvestable )
+	if g_undergroundElevatorManager == nil or tileKey == nil or connectionTag == nil then
+		sm.log.error( "UndergroundElevatorManager.Sv_NotifyDepthBots could not resolve elevator", harvestable, "tileKey", tileKey, "connectionTag", connectionTag )
+		return false
+	end
+	local depthbot = g_undergroundElevatorManager:sv_getTileObjects( connectionTag, tileKey ).depthbot
+	if depthbot and sm.exists( depthbot ) then
+		sm.event.sendToHarvestable( depthbot, "sv_e_updateFloorDisplay", data, sm.event.types.instant )
+		sm.event.sendToHarvestable( depthbot, "sv_e_setMarkerLocked", { markerLocked = markerLocked }, sm.event.types.instant )
+		return true
+	end
+	return false
+end
+
+function UndergroundElevatorManager.Sv_CallFromButton( interactable, connectionTag )
+	local tileKey = TileStorageManager.Sv_GetTileStorageKeyFromObject( interactable )
+	if g_undergroundElevatorManager == nil or tileKey == nil or connectionTag == nil then
+		sm.log.error( "UndergroundElevatorManager.Sv_CallFromButton could not resolve button", interactable, "tileKey", tileKey, "connectionTag", connectionTag )
+		return
+	end
+	local elevator = g_undergroundElevatorManager:sv_getTileObjects( connectionTag, tileKey ).elevator
+	if elevator and sm.exists( elevator ) then
+		sm.event.sendToHarvestable( elevator, "sv_e_callButtonPressed", sm.event.types.instant )
 	end
 end
 

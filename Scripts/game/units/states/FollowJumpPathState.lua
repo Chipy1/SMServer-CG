@@ -1,8 +1,8 @@
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/util/Timer.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_constants.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/units/states/JumpMoveState.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/units/states/BaseState.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/util/Timer.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_constants.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/units/states/JumpMoveState.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/units/states/BaseState.lua" )
 
 FollowJumpPathState = class( BaseState )
 

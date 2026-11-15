@@ -1,18 +1,18 @@
-dofile "$SURVIVAL_DATA/Scripts/game/units/unit_util.lua"
-dofile "$SURVIVAL_DATA/Scripts/util.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/util/Ticker.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/util/Timer.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_shapes.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_units.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/PathingState.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/BreachState.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/CombatAttackState.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/VoxelBreachState.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_constants.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/BaseTotebotUnit.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/managers/PatrolManager.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/PatrolState.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/LaunchAttackState.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/unit_util.lua"
+dofile "$CONTENT_DATA/Scripts/util.lua"
+dofile "$CONTENT_DATA/Scripts/game/util/Ticker.lua"
+dofile "$CONTENT_DATA/Scripts/game/util/Timer.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_shapes.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_units.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/PathingState.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/BreachState.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/CombatAttackState.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/VoxelBreachState.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_constants.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/BaseTotebotUnit.lua"
+dofile "$CONTENT_DATA/Scripts/game/managers/PatrolManager.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/PatrolState.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/LaunchAttackState.lua"
 
 TotebotGreenUnit = class( BaseTotebotUnit )
 
@@ -117,7 +117,6 @@ function TotebotGreenUnit.server_onCreate( self )
 	self.pathingState:sv_setTolerance( 1.0 )
 	self.pathingState:sv_setMovementType( "sprint" )
 	self.pathingState:sv_setWaterAvoidance( false )
-	self.pathingState:sv_setRaider( self.saved.raider )
 	self.pathingState.debugName = "pathingState"
 	
 	-- Attacks
@@ -182,13 +181,6 @@ function TotebotGreenUnit.server_onCreate( self )
 	self.lookAtState.tolerance = 0.5
 	self.lookAtState.avoidance = false
 	self.lookAtState.movementType = "stand"
-
-	-- Flee
-	self.raidFlee = self.unit:createState( "flee" )
-	self.raidFlee.movementAngleThreshold = math.rad( 180 )
-	self.raidFlee.maxFleeTime = 0.0
-	self.raidFlee.maxDeviation = 45 * math.pi / 180
-	self.raidFlee.debugName = "raidFlee"
 
 	-- Patrol
 	self.patrolState = PatrolState()
@@ -333,39 +325,11 @@ function TotebotGreenUnit.server_onUnitUpdate( self, dt )
 		return
 	end
 
+	local raidPoint = IsRaiding( self ) and GetRaidPoint( self )
+
 	RobotSelectTarget( self, AllyRange, dt )
 
-	-- Raiders without a target search for shapes to destroy
-	if self.saved.raidPosition and not self.target and sm.exists( self.unit.character ) then
-		local raidSpots = RaidManager.Sv_GetPlantLocations( self.unit.character:getWorld().id, self.saved.raidKey )
-		local closestSpot = nil
-		if #raidSpots > 0 and ( self.saved.randomPlotTarget == nil or self.saved.randomPlotTarget > #raidSpots ) then
-			self.saved.randomPlotTarget = math.random( #raidSpots )
-			self.isDirty = true
-			closestSpot = raidSpots[self.saved.randomPlotTarget]
-		end
-		if closestSpot then
-			self.homePosition = closestSpot + sm.vec3.new( 0, 0, self.unit.character:getHeight() * 0.5 )
-			if self.lastTargetPosition == nil or ( self.lastTargetPosition - closestSpot ):length2() > ( RAIDER_TARGETING_RADIUS * 1.5 ) then
-				local attackableShape, attackPosition = FindAttackableShape( closestSpot, RAIDER_TARGETING_RADIUS, MeleeBreachLevel )
-				if attackableShape and attackPosition then
-					self.lastTargetPosition = attackPosition
-				elseif self.unit.character then
-					self.pathingState:sv_setDestination( closestSpot )
-					self.saved.raidPosition = closestSpot
-					self.lastTargetPosition = closestSpot
-				end
-			end
-		end
-	end
-
-	-- Units with destroyShape spawn param set will attack nearby shapes if they have no player to attack
-	if self.saved.destroyShapes and not self.lastTargetPosition and not self.target then
-		local attackableShape, attackPosition = FindAttackableShape( self.unit.character.worldPosition, RAIDER_TARGETING_RADIUS, MeleeBreachLevel )
-		if attackableShape and attackPosition then
-			self.lastTargetPosition = attackPosition
-		end
-	end
+	SeekFallbackTarget( self, MeleeBreachLevel )
 
 	-- Cooldown after attacking a crop
 	if type( self.target ) == "Harvestable" then
@@ -469,11 +433,7 @@ function TotebotGreenUnit.server_onUnitUpdate( self, dt )
 		end
 		-- Always check for breachable in front of the unit
 		if nextTargetPosition == nil then
-			if self.saved.raider and self.saved.raidPosition then
-				nextTargetPosition = self.saved.raidPosition
-			else
-				nextTargetPosition = self.unit.character.worldPosition + self.unit.character.direction
-			end
+			nextTargetPosition = raidPoint or ( self.unit.character.worldPosition + self.unit.character.direction )
 		end
 		
 		local breachDepth = 0.25
@@ -563,8 +523,8 @@ function TotebotGreenUnit.server_onUnitUpdate( self, dt )
 			-- Continue pathing after voxel breach, cooldown to prevent immediate re-entry
 			self.voxelBreachCooldownTicks = 40 * 3
 			self.currentState = self.pathingState
-		elseif self.currentState == self.idleState and self.saved.raider then
-			self.pathingState:sv_setDestination( self.saved.raidPosition )
+		elseif self.currentState == self.idleState and raidPoint then
+			self.pathingState:sv_setDestination( raidPoint )
 			self.currentState = self.pathingState
 		elseif self.currentState == self.pathingState and result == "failed" then
 			self.avoidState.desiredDirection = self.unit.character.direction

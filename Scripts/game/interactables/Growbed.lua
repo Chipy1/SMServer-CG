@@ -1,8 +1,8 @@
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_constants.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_items.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_shapes.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_projectiles.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_constants.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_items.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_shapes.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_projectiles.lua" )
 
 ---@class Growbed : ShapeClass
 ---@field sv table
@@ -14,7 +14,7 @@ Growbed.maxChildCount = 0
 Growbed.connectionOutput = sm.interactable.connectionType.none
 Growbed.poseWeightCount = 3
 Growbed.colorNormal = sm.color.new( 0xffca1aff )
-Growbed.colorHighlight = sm.color.new( 0xffca1aff )
+Growbed.colorHighlight = sm.color.new( 0xfbd967ff )
 Growbed.connectIcon = "electrical"
 Growbed.connectIconScale = 0.75
 
@@ -184,6 +184,12 @@ local WaterRetentionTickTime = 40 * DAYCYCLE_TIME * 1.5
 local ElectricityRetentionTickTime = 40 * DAYCYCLE_TIME * 0.25
 local TimeStep = 0.025
 
+local function SpawnLootProjectile( self, lootUuid, lootQuantity )
+	local loot = { lootUid = lootUuid, lootQuantity = lootQuantity }
+	local offsetPos = sm.vec3.new( 0.0, 0.75, 0.0 )
+	sm.projectile.shapeCustomProjectileAttack( loot, projectile_loot, 0, offsetPos, sm.noise.gunSpread( sm.vec3.new( 0, 1, 0 ), 20 ) * 5, self.shape, 0 )
+end
+
 -- Server
 function Growbed.server_onCreate( self )
 	self.sv = {}
@@ -196,10 +202,10 @@ function Growbed.server_onCreate( self )
 	if self.sv.saved.electricityTicks == nil then self.sv.saved.electricityTicks = 0 end
 	self.sv.replaceTick= 0
 
+	self.interactable.publicData = {}
+	self:sv_updateGrowbedData( self.shape.uuid )
 	self:sv_performUpdate()
 	self:sv_saveAndSynch( true )
-
-	self.interactable.publicData = {}
 end
 
 function Growbed.server_onReceiveUpdate( self )
@@ -213,9 +219,6 @@ function Growbed.server_onMelee( self, hitPos, attacker, damage, power, hitDirec
 		if self:sv_canReplace() then
 			sm.effect.playEffect( "Plants - Destroyed", self.shape.worldPosition )
 			self:sv_replace( obj_interactive_growbed_soil )
-			self.sv.saved.fertilizer = false
-			self.sv.saved.growTicks = 0
-			self.sv.saved.lastTickUpdate = sm.game.getCurrentTick()
 			self:sv_saveAndSynch()
 		end
 	elseif data.type == "mature" then
@@ -225,25 +228,14 @@ function Growbed.server_onMelee( self, hitPos, attacker, damage, power, hitDirec
 					sm.effect.playEffect( "Plants - Destroyed", self.shape.worldPosition )
 				elseif type( attacker ) == "Player" then
 					sm.effect.playEffect( "Plants - Picked", self.shape.worldPosition )
-					local harvest = {
-						lootUid = data.harvest,
-						lootQuantity = data.amount
-					}
-					local seed = {
-						lootUid = data.seed,
-						lootQuantity = PlantSeedDropAmount( data.seed )
-					}
-					local offsetPos = sm.vec3.new( 0.0, 0.75, 0.0 )
-					sm.projectile.shapeCustomProjectileAttack( harvest, projectile_loot, 0, offsetPos, sm.noise.gunSpread( sm.vec3.new( 0, 1, 0 ), 20 ) * 5, self.shape, 0 )
-					if seed.lootQuantity > 0 then
-						sm.projectile.shapeCustomProjectileAttack( seed, projectile_loot, 0, offsetPos, sm.noise.gunSpread( sm.vec3.new( 0, 1, 0 ), 20 ) * 5, self.shape, 0 )
+					SpawnLootProjectile( self, data.harvest, data.amount )
+					local seedDropAmount = PlantSeedDropAmount( data.seed )
+					if seedDropAmount > 0 then
+						SpawnLootProjectile( self, data.seed, seedDropAmount )
 					end
 				end
 				self:sv_replace( obj_interactive_growbed_soil )
 				self.interactable.publicData.harvested = true
-				self.sv.saved.fertilizer = false
-				self.sv.saved.growTicks = 0
-				self.sv.saved.lastTickUpdate = sm.game.getCurrentTick()
 				self:sv_saveAndSynch()
 			end
 		end
@@ -256,9 +248,12 @@ function Growbed.server_onProjectile( self, hitPos, hitTime, hitVelocity, _, att
 		self.sv.saved.waterTicks = WaterRetentionTickTime
 		self:sv_saveAndSynch() -- Save and synch water
 	elseif projectileUuid == projectile_fertilizer then
-		self:sv_performUpdate() -- Catch up to current time
-		self.sv.saved.fertilizer = true
-		self:sv_saveAndSynch() -- Save and synch fertilizer
+		local data = self:getData()
+		if data.type ~= "mature" then
+			self:sv_performUpdate() -- Catch up to current time
+			self.sv.saved.fertilizer = true
+			self:sv_saveAndSynch() -- Save and synch fertilizer
+		end
 	end
 
 	local data = self:getData()
@@ -275,10 +270,7 @@ function Growbed.server_onProjectile( self, hitPos, hitTime, hitVelocity, _, att
 				self:sv_replace( obj_interactive_growbed_soil )
 				if data.type == "mature" then
 					self.interactable.publicData.harvested = true
-					self.sv.saved.fertilizer = false
 				end
-				self.sv.saved.growTicks = 0
-				self.sv.saved.lastTickUpdate = sm.game.getCurrentTick()
 				self:sv_saveAndSynch()
 			end
 		end
@@ -326,21 +318,39 @@ function Growbed.sv_performUpdate( self )
 		end
 		self.sv.saved.electricityTicks = math.max( self.sv.saved.electricityTicks - elapsedActiveTicks, 0 )
 
-		self.interactable:setPublicData( { isActive = self.sv.saved.electricityTicks > 0 } )
-
 		if self:sv_canReplace() then
 			local growFraction = self.sv.saved.growTicks / data.growTickTime
 			if growFraction >= 1.0 then
 				sm.effect.playEffect( "Plants - Done", self.shape.worldPosition )
 				self:sv_replace( data.mature )
-				self.sv.saved.growTicks = 0
 			end
 		end
-	else
-		self.interactable:setPublicData( { isActive = false } )
 	end
 	self.sv.saved.waterTicks = math.max( self.sv.saved.waterTicks - elapsedTicks, 0 )
-	self.interactable.publicData = {}
+end
+
+function Growbed.sv_updateGrowbedData( self, shapeUuid )
+	local growbedData = GrowbedData[tostring(shapeUuid)]
+	if growbedData.type == "mature" then
+		self.sv.saved.fertilizer = nil
+	else
+		if self.sv.saved.fertilizer == nil then
+			self.sv.saved.fertilizer = false
+		end
+	end
+
+	self.interactable.publicData.type = growbedData.type
+	if growbedData.type == "mature" then
+		-- harvest info for vacuum
+		self.interactable.publicData.harvest = growbedData.harvest
+		self.interactable.publicData.amount = growbedData.amount
+		self.interactable.publicData.seed = growbedData.seed
+	else
+		self.interactable.publicData.harvest = nil
+		self.interactable.publicData.amount = nil
+		self.interactable.publicData.seed = nil
+	end
+	self.interactable.publicData.harvested = growbedData.type == "soil"
 end
 
 function Growbed.sv_saveAndSynch( self, fromCreate )
@@ -350,11 +360,15 @@ end
 
 function Growbed.sv_replace( self, shapeUuid )
 	self.shape:replaceShape( shapeUuid )
-	self.sv.replaceTick= sm.game.getCurrentTick()
+	local currentTick = sm.game.getCurrentTick()
+	self.sv.replaceTick = currentTick
+	self.sv.saved.lastTickUpdate = currentTick
+	self.sv.saved.growTicks = 0
+	self:sv_updateGrowbedData( shapeUuid )
 end
 
 function Growbed.sv_canReplace( self )
-	return self.sv.replaceTick< sm.game.getCurrentTick()
+	return self.sv.replaceTick < sm.game.getCurrentTick()
 end
 
 function Growbed.sv_e_plant( self, params )
@@ -386,8 +400,7 @@ function Growbed.sv_plant( self, params )
 			sm.effect.playEffect( "Plants - Planted", self.shape.worldPosition )
 			if params.sproutUuid then
 				self:sv_replace( params.sproutUuid )
-				self.sv.saved.growTicks = 0
-				self.sv.saved.lastTickUpdate = sm.game.getCurrentTick()
+				self.interactable.publicData.harvested = false
 				self:sv_saveAndSynch()
 			end
 		end
@@ -395,7 +408,8 @@ function Growbed.sv_plant( self, params )
 end
 
 function Growbed.sv_e_fertilize( self, params )
-	if not self.sv.saved.fertilizer then
+	local data = self:getData()
+	if data.type ~= "mature" and not self.sv.saved.fertilizer then
 		if sm.container.beginTransaction() then
 			sm.container.spendFromSlot( params.playerInventory, params.slot, ITEMS.obj_consumable_fertilizer, 1 )
 			if sm.container.endTransaction() then
@@ -404,6 +418,13 @@ function Growbed.sv_e_fertilize( self, params )
 				self:sv_saveAndSynch() -- Save and synch fertilizer
 			end
 		end
+	end
+end
+
+function Growbed.sv_e_onVacuumHarvest( self, params )
+	local data = self:getData()
+	if data.type == "mature" and not self.interactable.publicData.harvested and self:sv_canReplace() then
+		self:sv_onHarvest()
 	end
 end
 
@@ -434,18 +455,10 @@ function Growbed.sv_n_harvest( self, _, player )
 					local seedAmount = PlantSeedDropAmount( data.seed )
 					local seedsCollected = sm.container.collect( container, data.seed, seedAmount, false )
 					if sm.container.endTransaction() then
-						sm.effect.playEffect( "Plants - Picked", self.shape.worldPosition )
-						self:sv_replace( obj_interactive_growbed_soil )
-						self.interactable.publicData.harvested = true
-						self.sv.saved.fertilizer = false
-						self.sv.saved.growTicks = 0
-						self.sv.saved.lastTickUpdate = sm.game.getCurrentTick()
-						self:sv_saveAndSynch()
+						self:sv_onHarvest()
 						if seedsCollected < seedAmount then
 							self.network:sendToClient( player, "cl_n_onInventoryFull" )
-							local loot = { lootUid = data.seed, lootQuantity = seedAmount - seedsCollected }
-							local offsetPos = sm.vec3.new( 0.0, 0.75, 0.0 )
-							sm.projectile.shapeCustomProjectileAttack( loot, projectile_loot, 0, offsetPos, sm.noise.gunSpread( sm.vec3.new( 0, 1, 0 ), 20 ) * 5, self.shape, 0 )
+							SpawnLootProjectile( self, data.seed, seedAmount - seedsCollected )
 						end
 					else
 						self.network:sendToClient( player, "cl_n_onInventoryFull" )
@@ -454,6 +467,13 @@ function Growbed.sv_n_harvest( self, _, player )
 			end
 		end
 	end
+end
+
+function Growbed.sv_onHarvest( self )
+	sm.effect.playEffect( "Plants - Picked", self.shape.worldPosition )
+	self:sv_replace( obj_interactive_growbed_soil )
+	self.interactable.publicData.harvested = true
+	self:sv_saveAndSynch()
 end
 
 -- Client

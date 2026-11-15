@@ -1,6 +1,6 @@
-dofile( "$SURVIVAL_DATA/Scripts/terrain/overworld/poi_types.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_logs.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_items.lua" )
+dofile( "$CONTENT_DATA/Scripts/terrain/overworld/poi_types.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_logs.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_items.lua" )
 
 -- Debug printing
 DEBUG_AI_STATES = false
@@ -102,6 +102,8 @@ STORAGE_CHANNEL_BONDBUILDER_EXCLUSION_TILES = 101 -- Written by world generation
 
 LUA_TYPE = sm.types
 
+BOSS_ARENA_RADIUS = 80
+
 -- Select player spawn point
 START_AREA_SPAWN_POINT = sm.vec3.new( -2336, -2592, 16 )
 
@@ -166,7 +168,6 @@ KINEMATIC_STORAGE_TABLE = "kinematicStorage"
 DRILLBOT_KINEMATICS_TABLE = "drillbotKinematicsStorage"
 BUILDERGUIDE_PLATFORM_TABLE = "builderGuidePlatform"
 KINEMATIC_SPINNER_DOOR_TABLE = "kinematicSpinnerDoor"
-UNDERGROUND_ELEVATOR_TABLE = "undergroundElevator"
 TILE_ELEVATOR_TABLE = "tileElevator"
 NON_PLAYER_CRAFTER_TABLE = "nonPlayerCrafter"
 MININGHUB_POWER_ACTIVATOR_TABLE = "mininghubPowerActivator"
@@ -196,9 +197,10 @@ PAINT_COLORS =
 }
 
 -- Units
-RAIDER_TARGETING_RADIUS = 6.0 -- The area of which the raiders will try and target structures around the farm
+RAIDER_TARGETING_RADIUS = 6.0 -- How far from itself a unit with nothing to chase looks for structures to attack
 RAIDER_BREACH_DISTANCE = 12.0 -- The distance of which the enemies will begin attacking their way through structures instead of pathing
 RAIDER_TICK_LIFETIME = 40 * 60 * 10 -- Despawn after 10 minutes flee only when raid is over
+RAIDER_FLEE_TICK_DURATION = 40 * 30 -- Duration for which raiders will flee after a raid is over
 AGGRESSIVE_TARGET_DISTANCE = 60
 RAIDER_LOOTBOT_TICK_LIFETIME = 40 * 60 -- Despawn after 60 seconds (flee after 50)
 RAID_RADIUS = 96.0
@@ -326,6 +328,7 @@ MESSAGE_TYPES = {
 	GENERAL = {
 		ProjectileHit = "ProjectileHit",
 		ProjectileFire = "ProjectileFire",
+		ProjectileBounce = "ProjectileBounce",
 		Collision = "Collision",
 		TrashbotDefeated = "TrashbotDefeated",
 		SetTrashbotBossMusic = "SetTrashbotBossMusic"
@@ -367,14 +370,14 @@ DrillbotTrackNames = {
 }
 
 UNDERGROUND_DEFS = {
-	{ script = { file = "$SURVIVAL_DATA/Scripts/game/worlds/UndergroundWorld.lua", class = "UndergroundWorldMiningHub" }, world = "$SURVIVAL_DATA/Terrain/Worlds/undergroundworld_mininghub.world" },
-	{ script = { file = "$SURVIVAL_DATA/Scripts/game/worlds/UndergroundWorld.lua", class = "UndergroundWorldTutorial" }, world = "$SURVIVAL_DATA/Terrain/Worlds/undergroundworld_onboarding.world" },
-	{ script = { file = "$SURVIVAL_DATA/Scripts/game/worlds/UndergroundWorld.lua", class = "UndergroundWorldStation1" }, world = "$SURVIVAL_DATA/Terrain/Worlds/undergroundworld_station_01.world" },
-	{ script = { file = "$SURVIVAL_DATA/Scripts/game/worlds/UndergroundWorld.lua", class = "UndergroundWorldDrill1" }, world = "$SURVIVAL_DATA/Terrain/Worlds/undergroundworld_drill_01.world" },
-	{ script = { file = "$SURVIVAL_DATA/Scripts/game/worlds/UndergroundWorld.lua", class = "UndergroundWorldScrapyard" }, world = "$SURVIVAL_DATA/Terrain/Worlds/undergroundworld_scrapyard.world" },
-	{ script = { file = "$SURVIVAL_DATA/Scripts/game/worlds/UndergroundWorld.lua", class = "UndergroundWorldDrill2" }, world = "$SURVIVAL_DATA/Terrain/Worlds/undergroundworld_drill_02.world" },
-	{ script = { file = "$SURVIVAL_DATA/Scripts/game/worlds/UndergroundWorld.lua", class = "UndergroundWorldStation2" }, world = "$SURVIVAL_DATA/Terrain/Worlds/undergroundworld_station_02.world" },
-	{ script = { file = "$SURVIVAL_DATA/Scripts/game/worlds/UndergroundWorld.lua", class = "UndergroundWorldFinalBossLobby" }, world = "$SURVIVAL_DATA/Terrain/Worlds/undergroundworld_final_boss_lobby.world" },
+	{ script = { file = "$CONTENT_DATA/Scripts/game/worlds/UndergroundWorld.lua", class = "UndergroundWorldMiningHub" }, world = "$SURVIVAL_DATA/Terrain/Worlds/undergroundworld_mininghub.world" },
+	{ script = { file = "$CONTENT_DATA/Scripts/game/worlds/UndergroundWorld.lua", class = "UndergroundWorldTutorial" }, world = "$SURVIVAL_DATA/Terrain/Worlds/undergroundworld_onboarding.world" },
+	{ script = { file = "$CONTENT_DATA/Scripts/game/worlds/UndergroundWorld.lua", class = "UndergroundWorldStation1" }, world = "$SURVIVAL_DATA/Terrain/Worlds/undergroundworld_station_01.world" },
+	{ script = { file = "$CONTENT_DATA/Scripts/game/worlds/UndergroundWorld.lua", class = "UndergroundWorldDrill1" }, world = "$SURVIVAL_DATA/Terrain/Worlds/undergroundworld_drill_01.world" },
+	{ script = { file = "$CONTENT_DATA/Scripts/game/worlds/UndergroundWorld.lua", class = "UndergroundWorldScrapyard" }, world = "$SURVIVAL_DATA/Terrain/Worlds/undergroundworld_scrapyard.world" },
+	{ script = { file = "$CONTENT_DATA/Scripts/game/worlds/UndergroundWorld.lua", class = "UndergroundWorldDrill2" }, world = "$SURVIVAL_DATA/Terrain/Worlds/undergroundworld_drill_02.world" },
+	{ script = { file = "$CONTENT_DATA/Scripts/game/worlds/UndergroundWorld.lua", class = "UndergroundWorldStation2" }, world = "$SURVIVAL_DATA/Terrain/Worlds/undergroundworld_station_02.world" },
+	{ script = { file = "$CONTENT_DATA/Scripts/game/worlds/UndergroundWorld.lua", class = "UndergroundWorldFinalBossLobby" }, world = "$SURVIVAL_DATA/Terrain/Worlds/undergroundworld_final_boss_lobby.world" },
 }
 
 UNDERGROUND_ELEVATORS = {
@@ -421,12 +424,6 @@ UNDERGROUND_CONNECTIONS = {
 	"UNDERGROUND_ELEVATOR_MAIN_BOTTOM",
 	"UNDERGROUND_ELEVATOR_EXCAVATION",
 	"UNDERGROUND_ELEVATOR_MECHANICSTATION",
-}
-
-UNDERGROUND_CONNECTION_TO_KEY_UUID = {
-    ["UNDERGROUND_ELEVATOR_EXCAVATION"] = LOGS.log_underground_elevator_key_01,
-    ["UNDERGROUND_ELEVATOR_MAIN"] = LOGS.log_underground_elevator_key_01,
-    ["UNDERGROUND_ELEVATOR_MECHANICSTATION"] = LOGS.log_underground_elevator_key_01,
 }
 
 GROWLAB_POI_ORDER = {

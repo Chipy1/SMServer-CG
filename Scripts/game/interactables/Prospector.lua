@@ -1,5 +1,5 @@
-dofile "$SURVIVAL_DATA/Scripts/util.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_collections.lua"
+dofile "$CONTENT_DATA/Scripts/util.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_collections.lua"
 
 Prospector = class( nil )
 Prospector.maxParentCount = 1
@@ -7,7 +7,7 @@ Prospector.maxChildCount = 0
 Prospector.connectionInput = sm.interactable.connectionType.water
 Prospector.connectionOutput = sm.interactable.connectionType.none
 Prospector.colorNormal = sm.color.new( 0x00acfcff )
-Prospector.colorHighlight = sm.color.new( 0x00acfcff )
+Prospector.colorHighlight = sm.color.new( 0x51c8ffff )
 Prospector.connectIcon = "water"
 Prospector.connectIconScale = 0.75
 

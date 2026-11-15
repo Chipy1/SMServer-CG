@@ -1,8 +1,8 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_constants.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/units/states/BaseState.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/ScannerbotManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/units/states/ScannerbotAttackState.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/util/Timer.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_constants.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/units/states/BaseState.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/ScannerbotManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/units/states/ScannerbotAttackState.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/util/Timer.lua" )
 
 ScannerbotMoveAttackState = class( BaseState )
 

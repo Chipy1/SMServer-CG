@@ -1,10 +1,10 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/QuestManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/quest_util.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/powerladder_util.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
-dofile("$SURVIVAL_DATA/Scripts/game/managers/WorldManager.lua")
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_logs.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_dialogs.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/QuestManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/quest_util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/powerladder_util.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
+dofile("$CONTENT_DATA/Scripts/game/managers/WorldManager.lua")
+dofile( "$CONTENT_DATA/Scripts/game/survival_logs.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_dialogs.lua" )
 
 ActivateMininghubQuest = class()
 ActivateMininghubQuest.isSaveObject = true
@@ -159,14 +159,14 @@ end
 
 function ActivateMininghubQuest.sv_completePowerStations( self )
     self.sv.saved.stage = Stages.listen_stations_dialog
-    KinematicManager.Sv_Activate( self.sv.storageKey, "mininghub.pylon", { persistent = true } )
+    KinematicManager.Sv_Activate( self.sv.storageKey, "mininghub.pylon", { persistent = true }, true )
     DialogManager.Sv_PlayDialogBeat( "activated_all_stations_pull_the_switch", self.scriptableObject )
     self.sv.dirty = true
 end
 
 function ActivateMininghubQuest.sv_recoverLightsOn( self )
     if TileStorageManager.Sv_SyncedGetValueInSubTable( self.sv.storageKey, TILESTORAGE_FLAGS_TABLE, "minehub:lights.activated" ) == true then
-        KinematicManager.Sv_Activate( self.sv.storageKey, "vaultKinematic" )
+        KinematicManager.Sv_Activate( self.sv.storageKey, "vaultKinematic", { persistent = true } )
         self.sv.saved.stage = Stages.enter_vault
         self.sv.dirty = true
     end
@@ -275,6 +275,15 @@ function ActivateMininghubQuest.server_onFixedUpdate( self )
         end
     end
 
+    -- Recovery from a vault door that never opened: saves from before the activation was persistent can be past the lights with the door still closed. Resetting to the end pose is a no-op for a door that is already open.
+    if not self.sv.vaultChecked and self.sv.saved.stage >= Stages.enter_vault and not KinematicManager.Sv_IsMoving( self.sv.storageKey, "vaultKinematic" ) then
+        local world = WorldManager.Sv_GetWorld( "undergroundworld1" )
+        if sm.exists( world ) and world:isCellLoadedServer( MininghubCell.x, MininghubCell.y ) and KinematicManager.Sv_GetRegistered( self.sv.storageKey, "vaultKinematic" ) then
+            KinematicManager.Sv_ResetTrack( self.sv.storageKey, "vaultKinematic", { toBack = true } )
+            self.sv.vaultChecked = true
+        end
+    end
+
     -- Retry unlocking the vault valuables while on the pickup stage.
     if self.sv.saved.stage == Stages.pickup_valuable and not self.sv.valuablesUnlocked then
         if self:sv_unlockValuables() then
@@ -336,7 +345,7 @@ function ActivateMininghubQuest.sv_e_onQuestEvent( self, data )
         end
     elseif self.sv.saved.stage == Stages.wait_for_lights then
         if data.event == "mininghub_lights_on" then
-            KinematicManager.Sv_Activate( self.sv.storageKey, "vaultKinematic" )
+            KinematicManager.Sv_Activate( self.sv.storageKey, "vaultKinematic", { persistent = true }, true )
             self.sv.saved.stage = Stages.enter_vault
             self.sv.dirty = true
             sm.achievement.seti("322bd992-a72d-4311-88b6-9417a663c10a", 1 )

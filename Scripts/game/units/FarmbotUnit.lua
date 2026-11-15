@@ -1,20 +1,20 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/units/unit_util.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/util/Ticker.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/util/Timer.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_shapes.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/units/states/PathingState.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/units/states/BreachState.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/units/states/VoxelBreachState.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/units/states/CombatAttackState.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/units/states/CombatFollowAttackState.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_loot.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_constants.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_meleeattacks.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/units/BaseUnit.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/PatrolManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/units/states/PatrolState.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_explosions.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/units/unit_util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/util/Ticker.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/util/Timer.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_shapes.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/units/states/PathingState.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/units/states/BreachState.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/units/states/VoxelBreachState.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/units/states/CombatAttackState.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/units/states/CombatFollowAttackState.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_loot.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_constants.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_meleeattacks.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/units/BaseUnit.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/PatrolManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/units/states/PatrolState.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_explosions.lua" )
 
 FarmbotUnit = class( BaseUnit )
 
@@ -64,6 +64,7 @@ function FarmbotUnit.server_onCreate( self )
 
 	sm.message.subscribe( MESSAGE_TYPES.GENERAL.ProjectileHit, "sv_m_projectileHit" )
 	sm.message.subscribe( MESSAGE_TYPES.GENERAL.ProjectileFire, "sv_m_projectileFire" )
+	sm.message.subscribe( MESSAGE_TYPES.GENERAL.ProjectileBounce, "sv_m_projectileBounce" )
 	sm.message.subscribe( MESSAGE_TYPES.GENERAL.Collision, "sv_m_collision" )
 
 	self.unit.eyeHeight = self.unit.character:getHeight() * 0.75
@@ -257,13 +258,6 @@ function FarmbotUnit.server_onCreate( self )
 	self.lookAtState.avoidance = false
 	self.lookAtState.movementType = "stand"
 
-	-- Flee
-	self.raidFlee = self.unit:createState( "flee" )
-	self.raidFlee.movementAngleThreshold = math.rad( 180 )
-	self.raidFlee.maxFleeTime = 0.0
-	self.raidFlee.maxDeviation = 45 * math.pi / 180
-	self.raidFlee.debugName = "raidFlee"
-
 	-- Patrol
 	self.patrolState = PatrolState()
 	self.patrolState:sv_onCreate( self.unit, self.saved.patrolKey )
@@ -454,21 +448,7 @@ function FarmbotUnit.server_onUnitUpdate( self, dt )
 
 	RobotSelectTarget( self, AllyRange, dt )
 
-	-- Raiders without a target search for shapes to destroy
-	if self.saved.raidPosition and not self.ambushPosition and not self.lastTargetPosition and not self.target then
-		local attackableShape, attackPosition = FindAttackableShape( self.saved.raidPosition, RAIDER_TARGETING_RADIUS, MeleeBreachLevel )
-		if attackableShape and attackPosition then
-			self.lastTargetPosition = attackPosition
-		end
-	end
-
-	-- Units with destroyShape spawn param set will attack nearby shapes if they have no player to attack
-	if self.saved.destroyShapes and not self.lastTargetPosition and not self.target then
-		local attackableShape, attackPosition = FindAttackableShape( self.unit.character.worldPosition, RAIDER_TARGETING_RADIUS, MeleeBreachLevel )
-		if attackableShape and attackPosition then
-			self.lastTargetPosition = attackPosition
-		end
-	end
+	SeekFallbackTarget( self, MeleeBreachLevel )
 
 	local inFireRange = false
 	local atUnreachableHeight = false
@@ -816,6 +796,10 @@ end
 function FarmbotUnit.server_onExplosion( self, center, destructionLevel, radius, damage, src, explosionuuid )
 	if not sm.exists( self.unit ) then
 		return
+	end
+	if self.eventTarget == nil and type( src ) == "Player" and sm.exists( src ) then
+		local attackingCharacter = src:getCharacter()
+        self.eventTarget = sm.exists( attackingCharacter ) and attackingCharacter or nil
 	end
 	local explosionDamage = self.saved.stats.maxhp * 0.25 -- base explosion damage
 	if explosionuuid == EXPLOSIONS.explosion_cornade then

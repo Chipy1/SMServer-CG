@@ -1,4 +1,4 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/quests/GenericBuilderQuest.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/quests/GenericBuilderQuest.lua" )
 
 GenericBuilderQuestCharacter = class( nil )
 

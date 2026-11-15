@@ -1,5 +1,5 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/kinematics/ParentedKinematic.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/DrillbotManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/kinematics/ParentedKinematic.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/DrillbotManager.lua" )
 
 BosstrainParentedKinematic = class( ParentedKinematic )
 

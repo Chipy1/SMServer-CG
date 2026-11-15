@@ -1,5 +1,5 @@
-dofile "$SURVIVAL_DATA/Scripts/game/survival_harvestable.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_units.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_harvestable.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_units.lua"
 
 ------------------------------------------- CONTROL VALUES -------------------------------------------
 

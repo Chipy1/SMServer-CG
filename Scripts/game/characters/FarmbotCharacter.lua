@@ -1,5 +1,5 @@
-dofile "$SURVIVAL_DATA/Scripts/util.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/characters/BaseEnemyCharacter.lua"
+dofile "$CONTENT_DATA/Scripts/util.lua"
+dofile "$CONTENT_DATA/Scripts/game/characters/BaseEnemyCharacter.lua"
 FarmbotCharacter = class( BaseEnemyCharacter )
 
 local alertRenderableTp = "$SURVIVAL_DATA/Character/Char_Farmbot/char_farmbot_alert.rend"
@@ -161,6 +161,7 @@ function FarmbotCharacter.cl_initAnimationSwitch( self )
 end
 
 function FarmbotCharacter.client_onUpdate( self, deltaTime )
+	BaseEnemyCharacter.client_onUpdate( self, deltaTime )
 	if not self.graphicsLoaded then
 		return
 	end

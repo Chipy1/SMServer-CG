@@ -1,9 +1,9 @@
-dofile "$GAME_DATA/Scripts/game/AnimationUtil.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/managers/BabyWocManager.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/managers/BeaconManager.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/managers/QuestManager.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_logs.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/managers/DialogManager.lua"
+dofile "$CONTENT_DATA/Scriptspts/game/AnimationUtil.lua"
+dofile "$CONTENT_DATA/Scripts/game/managers/BabyWocManager.lua"
+dofile "$CONTENT_DATA/Scripts/game/managers/BeaconManager.lua"
+dofile "$CONTENT_DATA/Scripts/game/managers/QuestManager.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_logs.lua"
+dofile "$CONTENT_DATA/Scripts/game/managers/DialogManager.lua"
 
 local GuiData = dofile( "$SURVIVAL_DATA/Gui/JsonGuis/LogbookJson.gui" )
 local Tabs = {
@@ -968,12 +968,10 @@ function LogBook.cl_updateBeaconGui( self, forceUpdate )
 		local beaconPosition = WorldMarkerManager.Cl_GetMarkerWorldPosition( beacon.markerName )
 		if beaconPosition == nil then
 			sm.log.error( "WorldMarkerManager does not know the position of a beacon marker: ", beacon.markerName )
-			beaconDistanceText.Caption = "--- m"
+			beaconDistanceText.Caption = "---"
 		else
 			local characterPos = character:getWorldPosition()
-			-- Round to nearest to match the compass HUD, which formats the same distance with "%.0f".
-			local distance = math.floor( (characterPos - beaconPosition):length() + 0.5 )
-			beaconDistanceText.Caption = tostring( distance ) .. " m"
+			beaconDistanceText.Caption = sm.gui.formatDistance( ( characterPos - beaconPosition ):length() )
 		end
 
 		local beaconToggleButton = FindWidget( beaconBase, "BeaconToggleButton" )

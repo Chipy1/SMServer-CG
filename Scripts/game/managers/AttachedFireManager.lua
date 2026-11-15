@@ -1,8 +1,8 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_collections.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_constants.lua" )
-dofile( "$GAME_DATA/Scripts/game/managers/WeatherManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_sob.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_sob.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_collections.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_constants.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/WeatherManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_sob.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_sob.lua" )
 
 AttachedFireManager = class()
 

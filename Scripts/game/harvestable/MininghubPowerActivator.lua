@@ -1,7 +1,7 @@
 
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/QuestManager.lua" )
-dofile( "$GAME_DATA/Scripts/game/managers/EffectManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/powerladder_util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/QuestManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/EffectManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/powerladder_util.lua" )
 
 MininghubPowerActivator = class( nil )
 

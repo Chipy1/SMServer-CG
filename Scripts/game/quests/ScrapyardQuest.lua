@@ -1,9 +1,9 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/QuestManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/DialogManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/quest_util.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_constants.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_dialogs.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/QuestEntityManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/QuestManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/DialogManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/quest_util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_constants.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_dialogs.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/QuestEntityManager.lua" )
 
 ScrapyardQuest = class()
 ScrapyardQuest.isSaveObject = true
@@ -67,7 +67,6 @@ function ScrapyardQuest.sv_setElevatorDisabled( self, disabled )
     if elevatorData then
         elevatorData.disabled = disabled
         TileStorageManager.Sv_SetValueInSubTable( self.sv.saved.tileKey, TILE_ELEVATOR_TABLE, ELEVATOR_CONNECTION, elevatorData )
-        TileStorageManager.Sv_Save()
     end
 end
 

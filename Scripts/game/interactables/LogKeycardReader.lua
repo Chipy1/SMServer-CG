@@ -1,7 +1,7 @@
 -- LogKeycardReader.lua --
-dofile("$SURVIVAL_DATA/Scripts/game/survival_shapes.lua")
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/TutorialManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/QuestManager.lua" )
+dofile("$CONTENT_DATA/Scripts/game/survival_shapes.lua")
+dofile( "$CONTENT_DATA/Scripts/game/managers/TutorialManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/QuestManager.lua" )
 
 local log_entries = dofile ( "$SURVIVAL_DATA/Logs/log_entries.json" ).logList
 

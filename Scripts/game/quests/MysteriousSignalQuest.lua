@@ -2,14 +2,14 @@
 -- Quest: Mysterious Signal
 -- Guides the player to station1 (depth 3) and culminates in meeting Phae in the control room.
 
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/QuestManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/QuestActorManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/DialogManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/NodeSpawnManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/WorldManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_dialogs.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/quest_util.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/QuestManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/QuestActorManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/DialogManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/NodeSpawnManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/WorldManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_dialogs.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/quest_util.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
 
 MysteriousSignalQuest = class()
 MysteriousSignalQuest.isSaveObject = true

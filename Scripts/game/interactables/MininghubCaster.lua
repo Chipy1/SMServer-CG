@@ -77,7 +77,6 @@ function MininghubCaster.sv_n_castingFinished( self )
 	end
 
 	TileStorageManager.Sv_SetValue( self.sv.tileStorageKey, "caster", queue )
-	TileStorageManager.Sv_Save()
 
 	self.sv.saved.casterQueue = {}
 	self:sv_save()

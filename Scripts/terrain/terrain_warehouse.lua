@@ -1,9 +1,9 @@
-dofile( "$SURVIVAL_DATA/Scripts/terrain/random_generation.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/terrain/terrain_util2.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/kinematic_util.lua" )
-dofile( "$GAME_DATA/Scripts/terrain/terrain_prepare_cell_util.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/terrain/tile_database.lua" )
+dofile( "$CONTENT_DATA/Scripts/terrain/random_generation.lua" )
+dofile( "$CONTENT_DATA/Scripts/terrain/terrain_util2.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/kinematic_util.lua" )
+dofile( "$CONTENT_DATA/Scripts/terrain/terrain_prepare_cell_util.lua" )
+dofile( "$CONTENT_DATA/Scripts/terrain/tile_database.lua" )
 
 -- Version history:
 -- 2:	Changes int tile id to tile uuid

@@ -1,4 +1,4 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/UndergroundElevatorManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/UndergroundElevatorManager.lua" )
 
 UndergroundSimpleElevator = class()
 UndergroundSimpleElevator.poseWeightCount = 2
@@ -12,32 +12,19 @@ local buttons = {
 }
 
 function UndergroundSimpleElevator.server_onCreate( self )
-    self.sv = {}
-    self.sv.saved = self.storage:load()
+	self.sv = {}
+	self.sv.connectionTag = UndergroundElevatorManager.Sv_FindUndergroundConnectionTag( self.tags )
 
-    if not self.sv.saved then
-        self.sv.saved = {}
-        self.sv.saved.connectionTag = UndergroundElevatorManager.Sv_FindUndergroundConnectionTag( self.tags )
-        self.storage:save( self.sv.saved )
+	self.sv.elevatorName = CONNECTION_TO_ELEVATOR_NAME[self.sv.connectionTag]
 
-    	local storageKey = TileStorageManager.Sv_GetTileStorageKeyFromObject( self.interactable )
-		local tileData = TileStorageManager.Sv_GetValueInSubTable( storageKey, UNDERGROUND_ELEVATOR_TABLE, self.sv.saved.connectionTag ) or {}
-		tileData.elevator = self.interactable
-		tileData.locked = true
-		tileData.lockUuid = UNDERGROUND_CONNECTION_TO_KEY_UUID[self.sv.saved.connectionTag]
-		TileStorageManager.Sv_SetValueInSubTable( storageKey, UNDERGROUND_ELEVATOR_TABLE, self.sv.saved.connectionTag, tileData )
-    end
-
-	self.sv.elevatorName = CONNECTION_TO_ELEVATOR_NAME[self.sv.saved.connectionTag]
-
-	self.sv.elevatorFloorIndex = UndergroundElevatorManager.Sv_FindElevatorFloor( sm.world.getCurrentWorld(), self.sv.saved.connectionTag )
+	self.sv.elevatorFloorIndex = UndergroundElevatorManager.Sv_FindElevatorFloor( sm.world.getCurrentWorld(), self.sv.connectionTag )
 	assert( self.sv.elevatorFloorIndex, "Elevator floor not found" )
 	self.sv.targetFloor = 3 - self.sv.elevatorFloorIndex
 	self.network:setClientData( { goingUp = self.sv.targetFloor < self.sv.elevatorFloorIndex } )
 
-	local transportArea = FindFirstNearbyNode( self.shape.worldPosition, { "UNDERGROUND_ELEVATOR_AREA", self.sv.saved.connectionTag } )
+	local transportArea = FindFirstNearbyNode( self.harvestable.worldPosition, { "UNDERGROUND_ELEVATOR_AREA", self.sv.connectionTag } )
 	if transportArea then
-		UndergroundElevatorManager.Sv_RegisterElevatorFloor( self.sv.elevatorName, self.sv.elevatorFloorIndex, sm.world.getCurrentWorld(), self.shape.worldPosition, self.sv.saved.connectionTag, transportArea )
+		UndergroundElevatorManager.Sv_RegisterElevatorFloor( self.sv.elevatorName, self.sv.elevatorFloorIndex, sm.world.getCurrentWorld(), self.harvestable.worldPosition, self.sv.connectionTag, transportArea, self.harvestable )
 	end
 
 	self:sv_updateClientData()
@@ -59,22 +46,12 @@ function UndergroundSimpleElevator.sv_updateClientData( self )
 	end
 end
 
-function UndergroundSimpleElevator.sv_activateElevator( self )
-	local started = UndergroundElevatorManager.Sv_Go( self.sv.elevatorName, self.sv.elevatorFloorIndex, self.sv.targetFloor )
-	if started and not self.destinationCreated then
-		local floor = UNDERGROUND_ELEVATORS[self.sv.elevatorName].floors[self.sv.targetFloor]
-		sm.event.sendToGame( "sv_e_createUndergroundElevatorDestination", { depth = floor.depth, elevatorName = self.sv.elevatorName, connectionTag = floor.connectionTag } )
-		self.destinationCreated = true
-	end
-	return started
-end
-
 function UndergroundSimpleElevator.sv_e_callButtonPressed( self )
 	UndergroundElevatorManager.Sv_Call( self.sv.elevatorName, self.sv.elevatorFloorIndex )
 end
 
 function UndergroundSimpleElevator.sv_n_onInteract( self, button )
-	if self:sv_activateElevator() then
+	if UndergroundElevatorManager.Sv_Go( self.sv.elevatorName, self.sv.elevatorFloorIndex, self.sv.targetFloor ) then
 		self.network:sendToClients( "cl_n_pressButton", self.sv.targetFloor < self.sv.elevatorFloorIndex )
 	end
 	self:sv_updateClientData()
@@ -90,11 +67,11 @@ function UndergroundSimpleElevator.client_onCreate( self )
 	self.cl.pressedButton = nil
 	self.cl.buttonPoseWeight = 0.0
 	self.cl.loopingIndex = 0
-	self.interactable:setUvFrameIndex( 0 )
+	self.harvestable:setUvFrameIndex( 0 )
 end
 
 function UndergroundSimpleElevator.cl_updateButtonUvFrame( self )
-	self.interactable:setUvFrameIndex( math.floor( self.cl.loopingIndex ) )
+	self.harvestable:setUvFrameIndex( math.floor( self.cl.loopingIndex ) )
 end
 
 function UndergroundSimpleElevator.client_onClientDataUpdate( self, params )
@@ -121,7 +98,7 @@ end
 function UndergroundSimpleElevator.cl_updateButtonPoseWeights( self )
 	local poseWeight = self.cl.buttonPoseWeight or 0.0
 	for button, data in pairs( buttons ) do
-		self.interactable:setPoseWeight( data.poseIndex, self.cl.pressedButton == button and poseWeight or 0.0 )
+		self.harvestable:setPoseWeight( data.poseIndex, self.cl.pressedButton == button and poseWeight or 0.0 )
 	end
 end
 
@@ -138,7 +115,7 @@ end
 
 function UndergroundSimpleElevator.cl_n_pressButton( self, goingUp )
 	self:cl_pressButton( goingUp )
-	sm.effect.playHostedEffect( buttonEffectName, self.interactable )
+	sm.effect.playHostedEffect( buttonEffectName, self.harvestable )
 end
 
 function UndergroundSimpleElevator.client_onInteract( self, _, state )

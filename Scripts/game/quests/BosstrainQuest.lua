@@ -1,11 +1,11 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/QuestManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/quest_util.lua" )
-dofile "$SURVIVAL_DATA/Scripts/game/survival_dialogs.lua"
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/NodeSpawnManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/DialogManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/DrillbotManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_constants.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_logs.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/QuestManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/quest_util.lua" )
+dofile "$CONTENT_DATA/Scripts/game/survival_dialogs.lua"
+dofile( "$CONTENT_DATA/Scripts/game/managers/NodeSpawnManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/DialogManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/DrillbotManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_constants.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_logs.lua" )
 
 BosstrainQuest = class()
 BosstrainQuest.isSaveObject = true
@@ -17,8 +17,6 @@ local SpawnTrainStationEvent = "event.quest_bosstrain.spawn_train_station" -- si
 local OutsideSpawnEvent = "spawn.bosstrain.outside" -- shared node trigger: spawns the outside NPCs at the wreck after the boss is defeated
 
 local QuestName = "quest_bosstrain"
-
-local CinematicName = "cinematic.bosstrainstart"
 
 local WAIT_FOR_EFFECT_TICKS = 40 -- 1 second delay so the insert_core checkmark plays before the quest completes
 local FinishEvent = "event.quest_bosstrain.finish"
@@ -64,6 +62,13 @@ local PlayerBoardsTrainBeat = "player_steps_onto_bosstrain" -- Lorenzo's call on
 
 local QuestStartBeat = "after_bosstrain_quest_start" -- Hubert's call shortly after the quest first starts
 local QuestStartBeatDelay = 10 * 40 -- ticks after the quest first starts before Hubert's intro call plays
+
+local CinematicName = "cinematic.bosstrainstart"
+
+-- The departure plays the stock named cinematic. EffectManager owns its timeline: on a dedicated
+-- server, where no client can play the effect, it replays the cinematic's own server callbacks
+-- (train start, Drillbot drop, teleports, enter_bossfight) at the offsets from the effect set.
+-- The quest only supplies the world, the participants and the tile storage key.
 
 local Stages = {
     -- Part 1: descent to the boss floor (prepended before the original train sequence)
@@ -124,7 +129,44 @@ function BosstrainQuest.server_onCreate( self )
 
         -- Hubert's delayed intro call; tracked so it can be cancelled if the player reaches the elevator first.
         self.sv.saved.questStartActivator = PlayDialogBeatDelayed( QuestStartBeat, QuestStartBeatDelay )
+    else
+        local savedStage = self.sv.saved.stage
+        print( "BosstrainQuest: loaded saved stage " .. tostring( savedStage ) .. " (complete=" .. tostring( QuestManager.Sv_IsQuestComplete( QuestName ) ) .. ")" )
+
+        -- A saved quest without a stage is corrupt (the new-game branch always writes one). Falling back
+        -- to the pre-departure beat keeps the station NPCs and the departure trigger reachable.
+        if savedStage == nil then
+            print( "BosstrainQuest: saved stage is missing; restoring pre-departure stage " .. tostring( Stages.listen_lorenzo ) )
+            savedStage = Stages.listen_lorenzo
+            self.sv.saved.stage = savedStage
+        end
+
+        -- A save can carry the "completed" flag while the quest never actually finished (the object is
+        -- still alive at a pre-insert stage). That flag blocks every respawn/progression path below.
+        if savedStage and savedStage < Stages.insert_core then
+            self:sv_repairStaleCompletion()
+        end
+
+        -- Departure/cinematic window: roll back to the pre-departure beat so the ride can be retried.
+        if savedStage and savedStage > Stages.listen_lorenzo and savedStage <= Stages.ride then
+            print( "BosstrainQuest: resetting saved stage " .. tostring( savedStage ) .. " back to pre-departure stage " .. tostring( Stages.listen_lorenzo ) )
+            self.sv.saved.stage = Stages.listen_lorenzo
+            self.sv.saved.departPending = nil
+            self:sv_cancelRideCinematic()
+            savedStage = Stages.listen_lorenzo
+        end
+
+        -- The player is at the train: Lorenzo and Hubert must exist, even when a previous session
+        -- unregistered them (boss-fight start) and their spawn node is already marked expended.
+        if savedStage and savedStage >= Stages.board and savedStage <= Stages.ride then
+            self.sv.saved.trainStationWorld = self.sv.saved.trainStationWorld or self:sv_getTrainStationWorldFromActorTrack()
+            self:sv_reprimeTrainStationNpcSpawn()
+        end
     end
+
+    -- Reconcile after the load sequence has recreated units, so a save where the station NPCs were
+    -- unregistered (their spawn already marked expended) still gets them back.
+    self:sv_scheduleTrainNpcReconcile()
 
     QuestManager.Sv_SubscribeEvent( FinishEvent, self.scriptableObject, "sv_finishQuest" )
     QuestManager.Sv_SubscribeEvent( QuestEvent.ActorTrackLoaded, self.scriptableObject, "sv_e_onQuestEvent" )
@@ -159,7 +201,51 @@ function BosstrainQuest.server_onCreate( self )
 
 
 
+    self:sv_resumeRideCinematic()
     self:sv_saveAndSync()
+end
+
+-- Supplies the runtime data the EffectManager cinematic callbacks need: the world the ride plays
+-- in, the participants and the tile storage key used to start the train kinematic.
+function BosstrainQuest.sv_getRideCallbackData( self )
+    local world = self.sv.saved.trainStationWorld or self:sv_getTrainStationWorldFromActorTrack()
+    local players = {}
+
+    for _, player in ipairs( sm.player.getAllPlayers() ) do
+        local character = player:getCharacter()
+        if character and sm.exists( character ) and ( world == nil or character:getWorld() == world ) then
+            world = world or character:getWorld()
+            players[#players + 1] = player
+        end
+    end
+
+    local tileStorageKey
+    local unit = QuestManager.Sv_GetQuestUnit( QuestUnits.Lorenzo )
+    if unit and unit.character and sm.exists( unit.character ) then
+        tileStorageKey = TileStorageManager.Sv_GetTileStorageKeyFromObject( unit.character )
+    end
+
+    return { world = world, players = players, tileStorageKey = tileStorageKey }
+end
+
+-- A reload during the ride resumes the EffectManager timeline at the cue it had reached. Without a
+-- saved cursor the timeline starts over, which matches pre-timeline saves. EffectManager can be
+-- created after this quest, so the caller retries until the request is dispatched.
+function BosstrainQuest.sv_resumeRideCinematic( self )
+    if self.sv.saved.stage ~= Stages.ride then
+        self.sv.rideCinematicResumed = nil
+        return
+    end
+    if self.sv.rideCinematicResumed then
+        return
+    end
+    if EffectManager.Sv_ResumeNamedCinematic( { name = CinematicName, callbackData = self:sv_getRideCallbackData() } ) then
+        self.sv.rideCinematicResumed = true
+    end
+end
+
+function BosstrainQuest.sv_cancelRideCinematic( self )
+    EffectManager.Sv_CancelNamedCinematic( CinematicName )
 end
 
 function BosstrainQuest.client_onRefresh( self )
@@ -197,6 +283,185 @@ function BosstrainQuest.sv_removeStartingNpcs( self )
         if unit then
             sm.unit.forceDestroy( unit )
         end
+    end
+end
+
+-- World position where the station NPC spawn nodes sit, taken from the saved actor home or the
+-- actor track. Used to rescan exactly the cells that own those spawn nodes.
+function BosstrainQuest.sv_getTrainStationSpawnPosition( self, world )
+    for _, npc in ipairs( TrainNpcs ) do
+        local actorData = QuestActorManager.Sv_GetActor( npc.actorName )
+        local home = actorData and actorData.home
+        if home and home.world == world and home.position then
+            return home.position
+        end
+    end
+
+    local actorTrack = QuestEntityManager.Sv_GetNamedActorTrack( TrainWaypointNameLorenzo )
+    if actorTrack and actorTrack.world == world then
+        return actorTrack.position
+    end
+    return nil
+end
+
+-- Re-run the node scan for the (already loaded) cells around the station. Activating a spawn trigger
+-- only spawns from cells that were recorded as inactive; cells that are loaded while the trigger is
+-- primed are never revisited, so a cleared "expended" marker alone does not respawn anything.
+function BosstrainQuest.sv_rescanTrainStationCells( self, world )
+    local spawnPos = self:sv_getTrainStationSpawnPosition( world )
+    if not spawnPos then
+        print( "BosstrainQuest: cannot rescan train station cells, spawn position unknown" )
+        return false
+    end
+
+    local xMin, xMax, yMin, yMax = GetTileRanges( spawnPos, world.id )
+    if not xMin then
+        print( "BosstrainQuest: cannot rescan train station cells, tile ranges unavailable" )
+        return false
+    end
+
+    local scanned = 0
+    for x = xMin, xMax do
+        for y = yMin, yMax do
+            if world:isCellLoadedServer( x, y ) then
+                if g_nodeSpawnManager then
+                    NodeSpawnManager.Sv_OnCellLoaded( x, y, world )
+                end
+                scanned = scanned + 1
+            end
+        end
+    end
+
+    print( "BosstrainQuest: rescanned " .. tostring( scanned ) .. " loaded train station cells for NPC spawn" )
+    return scanned > 0
+end
+
+-- A save can carry the "completed" flag while the quest never actually finished: the scriptable
+-- object is still alive at a pre-insert stage, the quest tracker is gone and every respawn path is
+-- blocked by Sv_IsQuestComplete. Clear the flag and re-link this very object as the active quest.
+function BosstrainQuest.sv_repairStaleCompletion( self )
+    if not QuestManager.Sv_IsQuestComplete( QuestName ) then
+        return false
+    end
+
+    local manager = g_questManagerServer
+    local saved = manager and manager.sv and manager.sv.saved
+    if not saved then
+        sm.log.warning( "BosstrainQuest: quest is flagged complete but the quest manager state is unavailable" )
+        return false
+    end
+
+    local changed = false
+    for index = #( saved.completedQuests or {} ), 1, -1 do
+        if saved.completedQuests[index] == QuestName then
+            table.remove( saved.completedQuests, index )
+            changed = true
+        end
+    end
+
+    if changed and saved.activeQuests and saved.activeQuests[QuestName] == nil then
+        saved.activeQuests[QuestName] = self.scriptableObject
+    end
+
+    if changed then
+        manager.storage:save( saved )
+        manager.network:setClientData( saved )
+        print( "BosstrainQuest: cleared stale completion flag for an unfinished save" )
+    end
+    return changed
+end
+
+function BosstrainQuest.sv_reprimeTrainStationNpcSpawn( self )
+    local world = self.sv.saved.trainStationWorld or self:sv_getTrainStationWorldFromActorTrack()
+    self.sv.saved.trainStationWorld = world
+    self:sv_cancelTrainIntroDialogs()
+
+    if not world then
+        print( "BosstrainQuest: cannot reactivate train station spawn, world is unknown" )
+        return
+    end
+
+    -- Drop stale live units but keep the saved actor data (home + track + command list). A full
+    -- unregister deletes that state, which is what permanently removed Lorenzo and Hubert from saves.
+    for _, npc in ipairs( TrainNpcs ) do
+        local unit = QuestActorManager.Sv_GetActorUnit( npc.actorName )
+        if unit and sm.exists( unit ) then
+            sm.unit.forceDestroy( unit )
+        end
+    end
+    if g_questActorManager and g_questActorManager.sv and g_questActorManager.sv.saved then
+        for _, npc in ipairs( TrainNpcs ) do
+            local actorUnitData = g_questActorManager.sv.saved.actorUnits[npc.actorName]
+            if actorUnitData then
+                actorUnitData.unit = nil
+            end
+        end
+        sm.storage.save( STORAGE_CHANNEL_QUEST_ACTOR_MANAGER, g_questActorManager.sv.saved.actorUnits )
+    end
+
+    -- Deactivating clears this trigger's "expended" node markers, so the spawn nodes become live again.
+    NodeSpawnManager.Sv_DeactivateSpawnTrigger( SpawnTrainStationEvent )
+    NodeSpawnManager.Sv_ActivateSpawnTrigger( SpawnTrainStationEvent, world )
+    self:sv_rescanTrainStationCells( world )
+end
+
+-- Defer the NPC check: units are recreated later in the load sequence than server_onCreate, so
+-- checking immediately would always report them missing. Retry a few times, then stop.
+local TrainNpcReconcileAttempts = 30
+local TrainNpcReconcileInterval = 40 -- 1 second
+
+function BosstrainQuest.sv_scheduleTrainNpcReconcile( self )
+    self.sv.npcReconcile = {
+        attempts = 0,
+        nextTick = sm.game.getCurrentTick() + TrainNpcReconcileInterval
+    }
+end
+
+function BosstrainQuest.sv_trainNpcMissing( self )
+    for _, npc in ipairs( TrainNpcs ) do
+        local unit = QuestActorManager.Sv_GetActorUnit( npc.actorName )
+        local questUnit = QuestManager.Sv_GetQuestUnit( npc.questUnit )
+        local unitAlive = unit and sm.exists( unit )
+        local questUnitAlive = questUnit and sm.exists( questUnit )
+        if not unitAlive and not questUnitAlive then
+            return npc.actorName
+        end
+    end
+    return nil
+end
+
+function BosstrainQuest.sv_reconcileTrainNpcs( self )
+    local stage = self.sv.saved.stage
+    if not stage or stage < Stages.board or stage > Stages.ride then
+        return true -- outside the station window; the NPCs are legitimately absent
+    end
+
+    local missing = self:sv_trainNpcMissing()
+
+    if not missing then
+        return true
+    end
+
+    print( "BosstrainQuest: '" .. tostring( missing ) .. "' is missing at stage " .. tostring( stage ) .. "; respawning station NPCs" )
+    self:sv_reprimeTrainStationNpcSpawn()
+    self:sv_saveAndSync()
+    return false
+end
+
+function BosstrainQuest.sv_processTrainNpcReconcile( self )
+    local reconcile = self.sv.npcReconcile
+    if not reconcile then
+        return
+    end
+    if sm.game.getCurrentTick() < reconcile.nextTick then
+        return
+    end
+
+    reconcile.attempts = reconcile.attempts + 1
+    if self:sv_reconcileTrainNpcs() or reconcile.attempts >= TrainNpcReconcileAttempts then
+        self.sv.npcReconcile = nil
+    else
+        reconcile.nextTick = sm.game.getCurrentTick() + TrainNpcReconcileInterval
     end
 end
 
@@ -308,6 +573,13 @@ function BosstrainQuest.sv_saveAndSync( self )
 end
 
 function BosstrainQuest.server_onFixedUpdate( self, dt )
+    self:sv_processTrainNpcReconcile()
+
+    -- EffectManager may be created after this quest: keep retrying the ride resume until it answers.
+    if self.sv.saved.stage == Stages.ride then
+        self:sv_resumeRideCinematic()
+    end
+
     if ( self.sv.saved.stage == Stages.insert_core or self.sv.saved.stage == Stages.get_core ) and self.sv.saved.corePickupTick then
         local currentTick = sm.game.getCurrentTick()
         local elapsedTicks = currentTick - self.sv.saved.corePickupTick
@@ -515,20 +787,8 @@ function BosstrainQuest.sv_e_onQuestEvent( self, data )
         end
     elseif self.sv.saved.stage == Stages.activate then
         if data.event == "event.bosstrain_depart" then
-            
-            -- Check all non-host players present.  The dedicated server host is
-            -- not a character in the world, so counting it made the train wait
-            -- for a player who could never stand in the trigger.
+            -- Check all players present
             local present = false
-            local hostPlayer = sm.player.getHostPlayer()
-            local presentNonHost = 0
-            local requiredNonHost = 0
-            for _, player in ipairs( sm.player.getAllPlayers() ) do
-                if player ~= hostPlayer then
-                    requiredNonHost = requiredNonHost + 1
-                end
-            end
-
             local playersPresentArea = QuestEntityManager.Sv_GetNamedAreaTrigger( BoardingTrigger )
             local presentPlayers = {}
             if playersPresentArea and sm.exists( playersPresentArea.areaTrigger ) then
@@ -537,31 +797,35 @@ function BosstrainQuest.sv_e_onQuestEvent( self, data )
                 for _, content in ipairs( contents ) do
                     if type( content ) == "Character" then
                         if content:isPlayer() then
-                            local player = content:getPlayer()
-                            table.insert( presentPlayers, player )
-                            if player ~= hostPlayer then
-                                presentNonHost = presentNonHost + 1
-                            end
+                            table.insert( presentPlayers, content:getPlayer() )
                         end
                     end
                 end
-                if presentNonHost == requiredNonHost then
+                if #presentPlayers == #sm.player.getAllPlayers() then
                     present = true
                 end
             end
 
-            if not present and not data.next and data.params.player then
+            -- Anyone standing on the train is enough to depart, so a dedicated server cannot stall
+            -- waiting for players that are offline or elsewhere in the world.
+            local canDepart = present or data.next or #presentPlayers > 0
+            if not canDepart and data.params.player then
                 self.network:sendToClient( data.params.player, "cl_n_alertPlayersPresent" )
-            elseif present or data.next then
+            elseif canDepart then
                 local unit = QuestManager.Sv_GetQuestUnit( QuestUnits.Lorenzo )
                 local tsk
                 if unit and unit.character then
                     tsk = TileStorageManager.Sv_GetTileStorageKeyFromObject( unit.character )
                 end
-                --train kinematic triggered by cinematic effect
-                sm.game.pauseSaving( "DB Train", 40 * 60 * 2 );
+                -- The train kinematic and the ride progression are started by the cinematic. On a
+                -- dedicated server EffectManager replays the cinematic's server callbacks itself.
+                sm.game.pauseSaving( "DB Train", 40 * 60 * 2 )
                 self.sv.saved.trainStationWorld = self.sv.saved.trainStationWorld or self:sv_getTrainStationWorldFromActorTrack()
-                EffectManager.Sv_PlayNamedCinematic( { name = CinematicName, callbackData = { world = self.sv.saved.trainStationWorld, tileStorageKey = tsk, players = presentPlayers }, interruptible = false } )
+                EffectManager.Sv_PlayNamedCinematic( {
+                    name = CinematicName,
+                    callbackData = { world = self.sv.saved.trainStationWorld, tileStorageKey = tsk, players = presentPlayers },
+                    interruptible = false
+                } )
                 QuestActorManager.Sv_CompleteActorInteraction( "Lorenzo" )
                 QuestActorManager.Sv_NotifyActor( "Hubert", "quest_bosstrain.introcinematic" )
 
@@ -577,7 +841,7 @@ function BosstrainQuest.sv_e_onQuestEvent( self, data )
                         sm.event.sendToWorld( self.sv.saved.drillbotWorld, "sv_e_resetWorld" )
                     end
                 else
-                    self.sv.saved.drillbotWorld = sm.world.createWorld( "$SURVIVAL_DATA/Scripts/game/worlds/DrillbotWorld.lua", "DrillbotWorld", {}, math.random( 1073741823 ) )
+                    self.sv.saved.drillbotWorld = sm.world.createWorld( "$CONTENT_DATA/Scripts/game/worlds/DrillbotWorld.lua", "DrillbotWorld", {}, math.random( 1073741823 ) )
                 end
 
                 self.sv.saved.stage = Stages.ride
@@ -626,9 +890,9 @@ function BosstrainQuest.sv_e_onQuestEvent( self, data )
             -- boss fight failed, restart from the boarding stage
             self.sv.saved.stage = Stages.board
             self.sv.saved.departPending = nil
-            -- ensure Lorenzo and Hubert are back at the station
-            NodeSpawnManager.Sv_DeactivateSpawnTrigger( SpawnTrainStationEvent )
-            NodeSpawnManager.Sv_ActivateSpawnTrigger( SpawnTrainStationEvent, self.sv.saved.trainStationWorld )
+            -- ensure Lorenzo and Hubert are back at the station and not stuck in stale actor registration.
+            self:sv_reprimeTrainStationNpcSpawn()
+            self:sv_scheduleTrainNpcReconcile()
         end
         if data.event == "event.quest_bosstrain.end_bossfight" then
             -- boss fight complete, move all player back to overworld

@@ -1,9 +1,9 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_collections.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_constants.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/QuestManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/QuestEntityManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/DialogManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_collections.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_constants.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/QuestManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/QuestEntityManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/DialogManager.lua" )
 
 DrillbotManager = class()
 DrillbotManager.executionOrder = 49
@@ -973,7 +973,6 @@ function DrillbotManager.sv_sideCartDestroyed( self, rootStorageTag )
 		end
 		TileStorageManager.Sv_SetValue( self.sv.tileStorageKey, KINEMATIC_STORAGE_TABLE, tsKinematicsStorage )
 		TileStorageManager.Sv_SetValue( self.sv.tileStorageKey, DRILLBOT_KINEMATICS_TABLE, tsKinematics )
-		TileStorageManager.Sv_Save()
 	end
 end
 
@@ -1213,7 +1212,7 @@ function DrillbotManager.server_onFixedUpdate( self, dt )
 	if not self.sv.saved.activated then
 		local players = GetPlayersInWorld( self.scriptableObject:getWorld() )
 		for _, player in ipairs( players ) do
-			sm.event.sendToPlayer( player, "sv_e_drillbotEject" )
+			sm.event.sendToPlayer( player, "sv_e_drillbotEject", nil, sm.event.types.instant )
 		end
 		return
 	end
@@ -1486,7 +1485,6 @@ function DrillbotManager.server_onFixedUpdate( self, dt )
 				if tsKinematics and tsKinematics.carts then
 					tsKinematics.carts[self.sv.saved.currentCartIdx-1] = nil -- removed from tilestorage, will not be reloaded.
 					TileStorageManager.Sv_SetValue( self.sv.tileStorageKey, DRILLBOT_KINEMATICS_TABLE, tsKinematics )
-					TileStorageManager.Sv_Save()
 				end
 
 				for actorName, tracks in pairs( DrillbotFightActorTracks ) do
@@ -1657,7 +1655,7 @@ function DrillbotManager.sv_resetAndExit( self )
 		sm.harvestable.destroy( value )
 	end
 	TileStorageManager.Sv_ClearTileStorage( self.sv.tileStorageKey )
-	TileStorageManager.Sv_Save()
+
 
 	local allUnits = sm.unit.getAllUnits( world )
 	for _, unit in ipairs( allUnits ) do
@@ -1836,7 +1834,6 @@ function DrillbotManager.sv_spawnCart( self, cartIndex )
 	end
 
 	TileStorageManager.Sv_SetValue( self.sv.tileStorageKey, DRILLBOT_KINEMATICS_TABLE, tsKinematics )
-	TileStorageManager.Sv_Save()
 end
 
 function DrillbotManager.sv_requestSequenceFromPool( self, pool )
@@ -2163,7 +2160,6 @@ function DrillbotManager.sv_lockDestroyed( self, params )
 	tsKinematics.carts[params.cartIndex][params.storageTag] = nil
 
 	TileStorageManager.Sv_SetValue( self.sv.tileStorageKey, DRILLBOT_KINEMATICS_TABLE, tsKinematics )
-	TileStorageManager.Sv_Save()
 
 	if self.sv.saved.cartArray[params.cartIndex] and self.sv.saved.cartArray[params.cartIndex].breakLockCounter then
 		if self.sv.saved.cartArray[params.cartIndex].breakLockCounter > 0 then
@@ -2249,7 +2245,6 @@ function DrillbotManager.sv_spawnSideCart( self, side, index )
 		end
 
 		TileStorageManager.Sv_SetValue( self.sv.tileStorageKey, DRILLBOT_KINEMATICS_TABLE, tsKinematics )
-		TileStorageManager.Sv_Save()
 	end
 end
 

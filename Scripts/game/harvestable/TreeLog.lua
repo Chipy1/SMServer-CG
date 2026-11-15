@@ -1,6 +1,6 @@
 -- TreeLog.lua --
-dofile("$SURVIVAL_DATA/Scripts/game/survival_shapes.lua")
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/AttachedFireManager.lua" )
+dofile("$CONTENT_DATA/Scripts/game/survival_shapes.lua")
+dofile( "$CONTENT_DATA/Scripts/game/managers/AttachedFireManager.lua" )
 
 TreeLog = class( nil )
 

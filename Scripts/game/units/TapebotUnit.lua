@@ -1,16 +1,16 @@
-dofile "$SURVIVAL_DATA/Scripts/game/units/unit_util.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/util/Ticker.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/util/Timer.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_shapes.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/PathingState.lua"
-dofile "$SURVIVAL_DATA/Scripts/util.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_constants.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_projectiles.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/BaseUnit.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/managers/PatrolManager.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/PatrolState.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/TapebotRangedState.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/RangedRaidPathingState.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/unit_util.lua"
+dofile "$CONTENT_DATA/Scripts/game/util/Ticker.lua"
+dofile "$CONTENT_DATA/Scripts/game/util/Timer.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_shapes.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/PathingState.lua"
+dofile "$CONTENT_DATA/Scripts/util.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_constants.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_projectiles.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/BaseUnit.lua"
+dofile "$CONTENT_DATA/Scripts/game/managers/PatrolManager.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/PatrolState.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/TapebotRangedState.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/RangedRaidPathingState.lua"
 
 TapebotUnit = class( BaseUnit )
 
@@ -52,6 +52,7 @@ function TapebotUnit.server_onCreate( self )
 
 	sm.message.subscribe( MESSAGE_TYPES.GENERAL.ProjectileHit, "sv_m_projectileHit" )
 	sm.message.subscribe( MESSAGE_TYPES.GENERAL.ProjectileFire, "sv_m_projectileFire" )
+	sm.message.subscribe( MESSAGE_TYPES.GENERAL.ProjectileBounce, "sv_m_projectileBounce" )
 	sm.message.subscribe( MESSAGE_TYPES.GENERAL.Collision, "sv_m_collision" )
 
 	self.robotModel = "standard"
@@ -121,7 +122,7 @@ function TapebotUnit.server_onCreate( self )
 	self.raidPathingState:sv_onCreate( self.unit )
 	self.raidPathingState:sv_setMovementType( "walk" )
 	self.raidPathingState:sv_setTargetDistance( self.attackRange * 0.7 )
-	self.raidPathingState:sv_setRaidPoint( self.saved.raidCenter )
+	self.raidPathingState:sv_setRaidPoint( GetRaidCenter( self ) ) -- nil when the raid ended while the unit was unloaded
 	self.raidPathingState.debugName = "raidPathingState"
 	self.raidPathingState:sv_setWaterAvoidance( true )
 
@@ -165,13 +166,6 @@ function TapebotUnit.server_onCreate( self )
 	self.raidGuardRepositionTimer = Timer()
 	self.raidGuardRepositionTimer:start( RepositionTickDelay )
 
-	-- Flee
-	self.raidFlee = self.unit:createState( "flee" )
-	self.raidFlee.movementAngleThreshold = math.rad( 180 )
-	self.raidFlee.maxFleeTime = 0.0
-	self.raidFlee.maxDeviation = 45 * math.pi / 180
-	self.raidFlee.debugName = "raidFlee"
-
 	-- Patrol
 	self.patrolState = PatrolState()
 	self.patrolState:sv_onCreate( self.unit, self.saved.patrolKey )
@@ -190,10 +184,10 @@ function TapebotUnit.server_onCreate( self )
 		self.guardState.desiredDirection = self.saved.guardDirection
 	end
 
-	if not self.saved.raider then
-		self.currentState = self.idleState
-	else
+	if IsRaiding( self ) and self.raidPathingState.raidPoint then
 		self.currentState = self.raidPathingState
+	else
+		self.currentState = self.idleState
 	end
 	self.currentState:start()
 end
@@ -215,9 +209,10 @@ function TapebotUnit.server_onFixedUpdate( self, dt )
 	updateAirTumble( self, self.idleState )
 	
 	if self.currentState then
-		if self.saved.raider and self.currentState == self.guardState then
+		local raiding = IsRaiding( self )
+		if raiding and self.currentState == self.guardState then
 			self.raidGuardRepositionTimer:tick()
-		elseif self.saved.raider and self.currentState == self.raidRepositionState then
+		elseif raiding and self.currentState == self.raidRepositionState then
 			self.raidRepositionTimer:tick()
 		end
 
@@ -236,7 +231,7 @@ function TapebotUnit.server_onFixedUpdate( self, dt )
 			self.swimSelfdestructTimer:reset()
 		end
 	
-		local raidWalk = self.saved.raider and self.target == nil and ( self.currentState == self.pathingState or self.currentState == self.raidPathingState )
+		local raidWalk = raiding and self.target == nil and ( self.currentState == self.pathingState or self.currentState == self.raidPathingState )
 		if self.currentState == self.guardState then
 			self.unit:setMovementDirection( self.saved.guardDirection or self.currentState:getMovementDirection() )
 		else
@@ -257,7 +252,7 @@ function TapebotUnit.server_onFixedUpdate( self, dt )
 			self.suppressionFireTimer:tick()
 		end
 
-		if ( self.saved.raider or g_unitManager:sv_getHostSettings().aggroCreations ) and self.currentState ~= self.rangedAttack and self.target == nil and self.suppressionFireTimer:done() then
+		if ( raiding or g_unitManager:sv_getHostSettings().aggroCreations ) and self.currentState ~= self.rangedAttack and self.target == nil and self.suppressionFireTimer:done() then
 			self.randomRaidFireTimer:tick()
 			if self.randomRaidFireTimer:done() then
 				local attackableShape, attackPosition = FindAttackableShape( self.unit.character.worldPosition, self.attackRange, self.projectileBreachLevel )
@@ -353,6 +348,9 @@ function TapebotUnit.server_onUnitUpdate( self, dt )
 		return
 	end
 
+	local raiding = IsRaiding( self )
+	local raidCenter = raiding and GetRaidCenter( self )
+
 	RobotSelectTarget( self, AllyRange, dt )
 	if self.target == nil and sm.exists( self.wallHackTarget ) then
 		self.target = self.wallHackTarget
@@ -418,23 +416,23 @@ function TapebotUnit.server_onUnitUpdate( self, dt )
 	if done or abortState then
 		if self.unit.character:isSwimming() then
 			self.currentState = self.idleState
-		elseif self.saved.raider and self.currentState == self.raidRepositionState then
+		elseif raiding and self.currentState == self.raidRepositionState then
 			if self.raidRepositionTimer:done() then
 				self.raidRepositionTimer:reset()
-				self.guardState.desiredDirection = ( self.saved.raidCenter - self.unit.character.worldPosition ):safeNormalize( sm.vec3.new( 1, 0, 0 ) )
-				self.guardState.desiredPosition = self.saved.raidCenter
+				self.guardState.desiredDirection = ( raidCenter - self.unit.character.worldPosition ):safeNormalize( sm.vec3.new( 1, 0, 0 ) )
+				self.guardState.desiredPosition = raidCenter
 				self.currentState = self.guardState
 			else
 				self.currentState = self.raidRepositionState
 			end
-		elseif self.saved.raider and self.currentState == self.guardState and self.raidGuardRepositionTimer:done() then
+		elseif raiding and self.currentState == self.guardState and self.raidGuardRepositionTimer:done() then
 			self.raidGuardRepositionTimer:reset()
 			self.currentState = self.raidRepositionState
 			local degrees = math.random() > 0.5 and 80 or -80
-			self.raidRepositionState.desiredDirection = ( self.saved.raidCenter - self.unit.character.worldPosition ):safeNormalize( sm.vec3.new( 1, 0, 0 ) ):rotateZ( math.rad( degrees ) )
-		elseif self.saved.raider and self.currentState == self.guardState and ( self.unit.character.worldPosition - self.saved.raidCenter ):length2() > ( self.attackRange^2 ) then
+			self.raidRepositionState.desiredDirection = ( raidCenter - self.unit.character.worldPosition ):safeNormalize( sm.vec3.new( 1, 0, 0 ) ):rotateZ( math.rad( degrees ) )
+		elseif raiding and self.currentState == self.guardState and ( self.unit.character.worldPosition - raidCenter ):length2() > ( self.attackRange^2 ) then
 			self.currentState = self.raidPathingState
-		elseif self.saved.raider and self.currentState == self.idleState then
+		elseif raiding and self.currentState == self.idleState then
 			self.currentState = self.raidPathingState
 		elseif self.currentState == self.pathingState and result == "failed" then
 			self.lookAtState.desiredDirection = -self.unit.character.direction
@@ -444,8 +442,8 @@ function TapebotUnit.server_onUnitUpdate( self, dt )
 			self.roamTimer:start( math.random( self.roamStartTimeMin, self.roamStartTimeMax ) )
 		elseif self.currentState == self.raidPathingState then
 			if done then
-				self.guardState.desiredDirection = ( self.saved.raidCenter - self.unit.character.worldPosition ):safeNormalize( sm.vec3.new( 1, 0, 0 ) )
-				self.guardState.desiredPosition = self.saved.raidCenter
+				self.guardState.desiredDirection = ( raidCenter - self.unit.character.worldPosition ):safeNormalize( sm.vec3.new( 1, 0, 0 ) )
+				self.guardState.desiredPosition = raidCenter
 				self.currentState = self.guardState
 				self.isInCombat = false
 			end
@@ -465,7 +463,7 @@ function TapebotUnit.server_onUnitUpdate( self, dt )
 					if self.currentState ~= self.pathingState then
 						self.pathingState:sv_setDestination( self.target.worldPosition )
 					end
-					if self.saved.raider then
+					if raiding then
 						self.currentState = self.guardState
 					elseif not self.saved.stationary then
 						self.currentState = self.pathingState
@@ -479,10 +477,10 @@ function TapebotUnit.server_onUnitUpdate( self, dt )
 				if self.currentState ~= self.pathingState then
 					self.pathingState:sv_setDestination( self.lastTargetPosition )
 				end
-				if self.saved.raider then
+				if raiding then
 					self.currentState = self.guardState
 				elseif not self.saved.stationary then
-					if not self.saved.raider then
+					if not raiding then
 						self.currentState = self.pathingState
 					elseif self.target and sm.exists( self.target ) then
 						self.currentState = self.raidPathingState

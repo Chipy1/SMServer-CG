@@ -1,7 +1,7 @@
 -- MatureHarvestable.lua --
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_harvestable.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_projectiles.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_harvestable.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_projectiles.lua" )
 
 MatureHarvestable = class( nil )
 
@@ -35,8 +35,6 @@ function MatureHarvestable.server_onMelee( self, hitPos, attacker, damage, power
 			end
 		end
 		sm.harvestable.createHarvestable( hvs_soil, self.harvestable:getPosition(), self.harvestable:getRotation() )
-		RaidManager.Sv_CropDestroyed( self.harvestable )
-		
 		self.harvestable:destroy()
 		self.harvestable.publicData.harvested = true
 	end
@@ -47,7 +45,6 @@ function MatureHarvestable.server_onProjectile( self, hitPos, hitTime, hitVeloci
 		if sm.exists( self.harvestable ) and not self.harvestable.publicData.harvested then
 			sm.effect.playEffect( "Plants - Picked", self.harvestable:getPosition() )
 			sm.harvestable.createHarvestable( hvs_soil, self.harvestable:getPosition(), self.harvestable:getRotation() )
-			RaidManager.Sv_CropDestroyed( self.harvestable )
 			self.harvestable:destroy()
 			self.harvestable.publicData.harvested = true
 		end
@@ -76,7 +73,6 @@ function MatureHarvestable.sv_n_harvest( self, params, player )
 			if sm.container.endTransaction() then
 				sm.effect.playEffect( "Plants - Picked", self.harvestable:getPosition() )
 				sm.harvestable.createHarvestable( hvs_soil, self.harvestable:getPosition(), self.harvestable:getRotation() )
-				RaidManager.Sv_CropDestroyed( self.harvestable )
 				sm.achievement.addi( "943f3e53-cbe4-4a97-84a0-c5e742063799", 1, { player:getId() } ) -- Harvest mature plant
 
 				self.harvestable:destroy()
@@ -93,7 +89,6 @@ function MatureHarvestable.sv_n_harvest( self, params, player )
 		end
 	end
 end
-
 
 
 

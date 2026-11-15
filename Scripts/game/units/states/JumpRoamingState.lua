@@ -1,7 +1,7 @@
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/util/Timer.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/units/states/BaseState.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/units/states/JumpMoveState.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/util/Timer.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/units/states/BaseState.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/units/states/JumpMoveState.lua" )
 
 JumpRoamingState = class( BaseState )
 

@@ -1,5 +1,5 @@
 -- GasPotato.lua --
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
 
 GasPotato = class( nil )
 GasPotato.poseWeightCount = 1

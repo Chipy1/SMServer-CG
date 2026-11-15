@@ -1,7 +1,7 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_collections.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_items.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/interactables/ResourceContainer.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/util.lua")
+dofile( "$CONTENT_DATA/Scripts/game/survival_collections.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_items.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/interactables/ResourceContainer.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua")
 
 GravelCollector = class( ResourceContainer )
 GravelCollector.ContainerSize = 36
@@ -10,7 +10,7 @@ GravelCollector.connectionInput = sm.interactable.connectionType.logic
 GravelCollector.maxParentCount = 1
 GravelCollector.maxChildCount = 0
 GravelCollector.colorNormal = sm.color.new( 0xaf6114ff )
-GravelCollector.colorHighlight = sm.color.new( 0xaf6114ff )
+GravelCollector.colorHighlight = sm.color.new( 0xbe742eff )
 local HarvestScale = 0.13
 local CenterOffset = 0.63
 local ColumnOffset = 0.3

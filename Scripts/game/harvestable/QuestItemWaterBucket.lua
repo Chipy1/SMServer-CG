@@ -1,4 +1,4 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/TutorialManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/TutorialManager.lua" )
 
 QuestItemWaterBucket = class( nil )
 local TutorialActivationDistance = 8.5

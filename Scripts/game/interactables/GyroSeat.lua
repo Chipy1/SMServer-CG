@@ -1,14 +1,14 @@
 -- GyroSeat.lua --
-dofile("$SURVIVAL_DATA/Scripts/game/survival_constants.lua")
-dofile("$SURVIVAL_DATA/Scripts/game/survival_shapes.lua")
-dofile("$SURVIVAL_DATA/Scripts/game/interactables/Seat.lua")
-dofile("$SURVIVAL_DATA/Scripts/util.lua")
+dofile("$CONTENT_DATA/Scripts/game/survival_constants.lua")
+dofile("$CONTENT_DATA/Scripts/game/survival_shapes.lua")
+dofile("$CONTENT_DATA/Scripts/game/interactables/Seat.lua")
+dofile("$CONTENT_DATA/Scripts/util.lua")
 
 GyroSeat = class( Seat )
 GyroSeat.maxChildCount = 20
 GyroSeat.connectionOutput = sm.interactable.connectionType.seated + sm.interactable.connectionType.power + sm.interactable.connectionType.bearing
 GyroSeat.colorNormal = sm.color.new( 0x80ff00ff )
-GyroSeat.colorHighlight = sm.color.new( 0x80ff00ff )
+GyroSeat.colorHighlight = sm.color.new( 0xc8ff6aff )
 GyroSeat.upgradeCostItem = ITEMS.obj_consumable_multicomponent
 GyroSeat.connectIcon = "driverSeat"
 GyroSeat.connectIconScale = 0.75

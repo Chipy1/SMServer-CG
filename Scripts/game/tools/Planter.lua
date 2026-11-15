@@ -1,7 +1,7 @@
-dofile"$GAME_DATA/Scripts/game/AnimationUtil.lua"
-dofile"$SURVIVAL_DATA/Scripts/util.lua"
-dofile"$SURVIVAL_DATA/Scripts/game/survival_harvestable.lua"
-dofile"$SURVIVAL_DATA/Scripts/game/survival_items.lua"
+dofile"$CONTENT_DATA/Scriptspts/game/AnimationUtil.lua"
+dofile"$CONTENT_DATA/Scripts/util.lua"
+dofile"$CONTENT_DATA/Scripts/game/survival_harvestable.lua"
+dofile"$CONTENT_DATA/Scripts/game/survival_items.lua"
 Planter = class()
 
 local seedItems =
@@ -149,6 +149,13 @@ function Planter.client_onEquippedUpdate( self, primaryState, secondaryState )
 	local ownerCharacter = playerOwner:getCharacter()
 
 	self.isOverrideAnimationActive = ownerCharacter:hasActiveOverrideAnimation()
+	local anims = ownerCharacter:getActiveAnimations()
+	for _, anim in pairs(anims) do
+		if anim.name == "multiknife_use" then
+			self.isOverrideAnimationActive = true
+			break
+		end
+	end
 	if self.isOverrideAnimationActive then
 		if self.heldEffectFp and self.heldEffectFp:isPlaying() then
 			self.heldEffectFp:stopImmediate()

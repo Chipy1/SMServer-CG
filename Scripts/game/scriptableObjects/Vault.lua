@@ -1,5 +1,5 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/QuestManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/ProgressionManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/QuestManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/ProgressionManager.lua" )
 
 ITEM_VALUES = {
 	[tostring( ITEMS.obj_resource_wonkstonks )] = 50,

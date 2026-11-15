@@ -1,0 +1,104 @@
+[
+	{
+		// Mini Suspension - Short (Modpack c0d086eb-de4a-4ba9-922a-1c66f129d2ae)
+		// Base: stock Sport Suspension Level 5, the closest non-bearing level-5
+		// spring (length 2, firm bounce).
+		"itemId": "c0d086eb-de4a-4ba9-922a-1c66f129d2ae",
+		"quantity": 1,
+		"craftTime": 27,
+		"ingredientList": [
+			{ "itemId": "52855106-a95c-4427-9970-3f227109b66d", "quantity": 1 },
+			{ "itemId": "1016cafc-9f6b-40c9-8713-9019d399783f", "quantity": 4 },
+			{ "itemId": "5530e6a0-4748-4926-b134-50ca9ecb9dcf", "quantity": 5 },
+			{ "itemId": "1147e59d-6940-42b4-840b-07f05054f5e0", "quantity": 2 }
+		]
+	},
+	{
+		// Mini Suspension - Long (Modpack 8d6e5264-9f90-400a-a471-6c0cae101f4d)
+		// Base: stock Sport Suspension Level 5. Same housing cost as the Modpack
+		// recipe, plus the stock spring.
+		"itemId": "8d6e5264-9f90-400a-a471-6c0cae101f4d",
+		"quantity": 1,
+		"craftTime": 27,
+		"ingredientList": [
+			{ "itemId": "52855106-a95c-4427-9970-3f227109b66d", "quantity": 1 },
+			{ "itemId": "1016cafc-9f6b-40c9-8713-9019d399783f", "quantity": 5 },
+			{ "itemId": "5530e6a0-4748-4926-b134-50ca9ecb9dcf", "quantity": 5 },
+			{ "itemId": "1147e59d-6940-42b4-840b-07f05054f5e0", "quantity": 5 }
+		]
+	},
+	{
+		// Suspension - 4x (Modpack 9f016a8d-8cbe-4471-b210-f36f5f280758)
+		// Base: stock Off-Road Suspension Level 5, the closest non-bearing
+		// level-5 off-road spring. The longer Modpack body keeps its original
+		// metal/kit/oil cost.
+		"itemId": "9f016a8d-8cbe-4471-b210-f36f5f280758",
+		"quantity": 1,
+		"craftTime": 27,
+		"ingredientList": [
+			{ "itemId": "73f838db-783e-4a41-bc0f-9008967780f3", "quantity": 1 },
+			{ "itemId": "1016cafc-9f6b-40c9-8713-9019d399783f", "quantity": 7 },
+			{ "itemId": "5530e6a0-4748-4926-b134-50ca9ecb9dcf", "quantity": 7 },
+			{ "itemId": "1147e59d-6940-42b4-840b-07f05054f5e0", "quantity": 5 }
+		]
+	},
+	{
+		// Suspension - 5x (Modpack dd676b18-fd06-4aed-baa0-55d4599fdfa3)
+		// Base: stock Off-Road Suspension Level 5. Same rule as the 4x variant.
+		"itemId": "dd676b18-fd06-4aed-baa0-55d4599fdfa3",
+		"quantity": 1,
+		"craftTime": 27,
+		"ingredientList": [
+			{ "itemId": "73f838db-783e-4a41-bc0f-9008967780f3", "quantity": 1 },
+			{ "itemId": "1016cafc-9f6b-40c9-8713-9019d399783f", "quantity": 10 },
+			{ "itemId": "5530e6a0-4748-4926-b134-50ca9ecb9dcf", "quantity": 10 },
+			{ "itemId": "1147e59d-6940-42b4-840b-07f05054f5e0", "quantity": 5 }
+		]
+	},
+	{
+		// Engine Suspension (Modpack b69bf080-2467-4360-9677-72cfd48806c9)
+		// Deprecated but still craftable. It is an engine with suspension
+		// behaviour, so it requires the top stock Gas Engine plus its original
+		// housing cost.
+		"itemId": "b69bf080-2467-4360-9677-72cfd48806c9",
+		"quantity": 1,
+		"craftTime": 60,
+		"ingredientList": [
+			{ "itemId": "3091926a-9340-46d9-83d6-4fd7c68ad950", "quantity": 1 },
+			{ "itemId": "1016cafc-9f6b-40c9-8713-9019d399783f", "quantity": 15 },
+			{ "itemId": "5530e6a0-4748-4926-b134-50ca9ecb9dcf", "quantity": 15 },
+			{ "itemId": "1147e59d-6940-42b4-840b-07f05054f5e0", "quantity": 5 }
+		]
+	},
+	{
+		// Mod Piston (256) (Modpack a6d186ad-c9ba-4b6d-922c-6c13dfcea230)
+		// A level-3 stock piston extends 11 blocks; 24 of them cover 256
+		// blocks. The mod piston must not be cheaper than those 24 pistons.
+		// Crude oil is dropped from the old recipe to keep four ingredient
+		// slots, which is the stock/Modpack UI limit.
+		"itemId": "a6d186ad-c9ba-4b6d-922c-6c13dfcea230",
+		"quantity": 1,
+		"craftTime": 180,
+		"ingredientList": [
+			{ "itemId": "46396518-8c29-4da9-81bb-a020f4baf5b2", "quantity": 24 },
+			{ "itemId": "1016cafc-9f6b-40c9-8713-9019d399783f", "quantity": 10 },
+			{ "itemId": "f152e4df-bc40-44fb-8d20-3b3ff70cdfe3", "quantity": 15 },
+			{ "itemId": "5530e6a0-4748-4926-b134-50ca9ecb9dcf", "quantity": 15 }
+		]
+	},
+	{
+		// Gas Engine 3-Wide (Modpack 70cbacf2-ec5a-471f-9896-0ee944c581d1)
+		// Its top gear is 1024 power, which matches stock Gas Engine Level 3
+		// (1020); the better fuel economy is the part's own advantage. Require
+		// that stock engine plus the original housing cost.
+		"itemId": "70cbacf2-ec5a-471f-9896-0ee944c581d1",
+		"quantity": 1,
+		"craftTime": 60,
+		"ingredientList": [
+			{ "itemId": "470b9a92-ed94-4ef2-b1ea-b45f47ef0982", "quantity": 1 },
+			{ "itemId": "c0dfdea5-a39d-433a-b94a-299345a5df46", "quantity": 20 },
+			{ "itemId": "f152e4df-bc40-44fb-8d20-3b3ff70cdfe3", "quantity": 5 },
+			{ "itemId": "5530e6a0-4748-4926-b134-50ca9ecb9dcf", "quantity": 5 }
+		]
+	}
+]

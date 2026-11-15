@@ -1,7 +1,7 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_constants.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/units/states/BaseState.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/units/states/PathingState.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/PatrolManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_constants.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/units/states/BaseState.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/units/states/PathingState.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/PatrolManager.lua" )
 
 PatrolState = class( BaseState )
 

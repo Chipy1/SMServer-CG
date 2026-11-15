@@ -5,7 +5,7 @@ Horn.maxChildCount = 0
 Horn.connectionInput = sm.interactable.connectionType.logic
 Horn.connectionOutput = sm.interactable.connectionType.none
 Horn.colorNormal = sm.color.new( 0x6238f7ff )
-Horn.colorHighlight = sm.color.new( 0x6238f7ff )
+Horn.colorHighlight = sm.color.new( 0x864ff2ff )
 
 Horn.poseWeightCount = 1
 function Horn.server_onCreate( self )

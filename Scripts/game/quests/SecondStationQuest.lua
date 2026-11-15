@@ -3,11 +3,11 @@
 -- Guides the player to station2 (depth 7) and culminates in Phae's lore dump in the control room.
 -- NOTE: Phae is NOT physically present in this quest. Every dialog here is a phone call (type "call").
 
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/QuestManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/DialogManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_dialogs.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/quest_util.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/QuestManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/DialogManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_dialogs.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/quest_util.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
 
 SecondStationQuest = class()
 SecondStationQuest.isSaveObject = true

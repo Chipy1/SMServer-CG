@@ -1,9 +1,9 @@
-dofile "$SURVIVAL_DATA/Scripts/game/units/unit_util.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_spawns.lua"
-dofile "$SURVIVAL_DATA/Scripts/util.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/util/Timer.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/PathingState.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/BaseUnit.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/unit_util.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_spawns.lua"
+dofile "$CONTENT_DATA/Scripts/util.lua"
+dofile "$CONTENT_DATA/Scripts/game/util/Timer.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/PathingState.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/BaseUnit.lua"
 
 GlobUnit = class( BaseUnit )
 

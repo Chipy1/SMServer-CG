@@ -1,4 +1,4 @@
-dofile "$SURVIVAL_DATA/Scripts/game/harvestable/LogbookEntryHarvestable.lua"
+dofile "$CONTENT_DATA/Scripts/game/harvestable/LogbookEntryHarvestable.lua"
 
 QuestEventHarvestable = class( LogbookEntryHarvestable )
 

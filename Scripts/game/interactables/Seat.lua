@@ -1,13 +1,13 @@
 -- Seat.lua --
-dofile("$SURVIVAL_DATA/Scripts/game/survival_constants.lua")
-dofile("$SURVIVAL_DATA/Scripts/game/survival_shapes.lua")
-dofile("$SURVIVAL_DATA/Scripts/game/survival_units.lua")
+dofile("$CONTENT_DATA/Scripts/game/survival_constants.lua")
+dofile("$CONTENT_DATA/Scripts/game/survival_shapes.lua")
+dofile("$CONTENT_DATA/Scripts/game/survival_units.lua")
 
 Seat = class()
 Seat.maxChildCount = 10
 Seat.connectionOutput = sm.interactable.connectionType.seated
 Seat.colorNormal = sm.color.new( 0x0da02aff )
-Seat.colorHighlight = sm.color.new( 0x0da02aff )
+Seat.colorHighlight = sm.color.new( 0x20b53dff )
 Seat.upgradeCostItem = ITEMS.obj_consumable_component
 Seat.upgradeTextDefaultColor = "#9f9e9e"
 Seat.upgradeTextNumberColor = "#c4f42b"
@@ -81,6 +81,15 @@ Seat.tinkerGuiJson = Seat.initTinkerGui( sm.json.open( "$SURVIVAL_DATA/Gui/JsonG
 Seat.tinkerGuiJson.title.Caption = "#{SEAT_UPGRADE_TITLE}"
 
 local SpeedPerStep = 1 / math.rad( 27 ) / 3
+
+function Seat.server_onCreate( self )
+	-- Seats with containers is a bug.
+	for i = 0, 15 do
+		if self.shape.interactable:getContainer( i ) then
+			self.shape.interactable:removeContainer( i )
+		end
+	end
+end
 
 function Seat.server_onFixedUpdate( self )
 	self.interactable:setActive( self.interactable:getSeatCharacter() ~= nil )

@@ -1,11 +1,11 @@
-dofile "$SURVIVAL_DATA/Scripts/game/units/unit_util.lua"
-dofile "$SURVIVAL_DATA/Scripts/util.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/util/Timer.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/PathingState.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/BaseUnit.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_items.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/BabyWocFollowerState.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/managers/BabyWocManager.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/unit_util.lua"
+dofile "$CONTENT_DATA/Scripts/util.lua"
+dofile "$CONTENT_DATA/Scripts/game/util/Timer.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/PathingState.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/BaseUnit.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_items.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/BabyWocFollowerState.lua"
+dofile "$CONTENT_DATA/Scripts/game/managers/BabyWocManager.lua"
 
 BabyWocUnit = class( BaseUnit )
 
@@ -125,9 +125,8 @@ function BabyWocUnit.server_onUnitUpdate(self, dt)
     if sm.exists( playerToFollow ) then
         local characterToFollow = sm.exists( playerToFollow.character ) and playerToFollow.character or nil
         if characterToFollow  and characterToFollow:isDowned() then
-            local params = { foodUuid = ITEMS.obj_consumable_longsandwich, playerInventory = self.baguetteContainer }
+            local params = { foodUuid = ITEMS.obj_consumable_longsandwich, playerInventory = self.baguetteContainer, fromBabywoc = true }
             sm.event.sendToPlayer( playerToFollow, "sv_e_feed", params )
-            sm.achievement.seti("63192fc7-41ae-4a7c-8d1e-294012bcdf32",1,{playerToFollow:getId()})
         end
     end
 

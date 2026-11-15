@@ -1,5 +1,5 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_units.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/util/Timer.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_units.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/util/Timer.lua" )
 
 CablebotPocket = class( nil )
 

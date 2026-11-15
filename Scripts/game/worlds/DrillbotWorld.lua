@@ -1,17 +1,17 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/SurvivalGame.lua")
-dofile( "$SURVIVAL_DATA/Scripts/game/worlds/BaseWorld.lua")
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_units.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_shapes.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_constants.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_loot.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/DrillbotManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/SurvivalGame.lua")
+dofile( "$CONTENT_DATA/Scripts/game/worlds/BaseWorld.lua")
+dofile( "$CONTENT_DATA/Scripts/game/survival_units.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_shapes.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_constants.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_loot.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/DrillbotManager.lua" )
 
 DrillbotWorld = class( BaseWorld )
 
 DrillbotWorld.executionOrder = 50
 
-DrillbotWorld.terrainScript = "$SURVIVAL_DATA/Scripts/terrain/terrain_drillbot.lua"
+DrillbotWorld.terrainScript = "$CONTENT_DATA/Scripts/terrain/terrain_drillbot.lua"
 DrillbotWorld.enableSurface = false
 DrillbotWorld.enableAssets = true
 DrillbotWorld.enableClutter = false
@@ -335,10 +335,9 @@ end
 
 function DrillbotWorld.sv_worldReady( self )
 	BaseWorld.server_onTerrainCreated( self )
-	DrillbotManager.Sv_WorldReady( self.world )
-	
-	-- event to quest
-	QuestManager.Sv_SendEvent( "event.quest_bosstrain.world_ready", { world = self.world } )
+	if sm.pcall( "DrillbotManager.Sv_WorldReady", DrillbotManager.Sv_WorldReady, self.world ) then
+		QuestManager.Sv_SendEvent( "event.quest_bosstrain.world_ready", { world = self.world } )
+	end
 end
 
 function DrillbotWorld.server_onTerrainCreated( self )
@@ -654,12 +653,10 @@ end
 
 function DrillbotWorld.server_onCellCreated( self, x, y )
 	BaseWorld.server_onCellCreated( self, x, y )
-
 end
 
 function DrillbotWorld.server_onCellLoaded( self, x, y )
 	BaseWorld.server_onCellLoaded( self, x, y )
-
 end
 
 function DrillbotWorld.sv_getPieceData( self, pieceInfo )
@@ -832,8 +829,6 @@ function DrillbotWorld.appendMainTrack( self, track, mainTrack )
 end
 
 function DrillbotWorld.client_onUpdate( self, deltaTime )
-	BaseWorld.client_onUpdate( self, deltaTime )
-
 	if (not g_drillbotManagerClientWorld) or (not g_drillbotManagerClientWorld[self.world.id]) then
 		return
 	end

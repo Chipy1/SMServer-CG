@@ -1,11 +1,11 @@
 
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
-dofile( "$GAME_DATA/Scripts/game/managers/TileStorageManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/ProgressionManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/QuestManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/DialogManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_logs.lua" )
-dofile("$SURVIVAL_DATA/Scripts/game/characters/shared_animation.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/TileStorageManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/ProgressionManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/QuestManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/DialogManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_logs.lua" )
+dofile("$CONTENT_DATA/Scripts/game/characters/shared_animation.lua" )
 
 local TradeData = dofile( "$SURVIVAL_DATA/CraftingRecipes/mininghubTrader.json" )
 

@@ -1,4 +1,4 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/units/unit_util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/units/unit_util.lua" )
 
 TapebotRangedState = class( nil )
 

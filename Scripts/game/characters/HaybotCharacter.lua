@@ -1,5 +1,5 @@
-dofile "$SURVIVAL_DATA/Scripts/util.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/characters/BaseEnemyCharacter.lua"
+dofile "$CONTENT_DATA/Scripts/util.lua"
+dofile "$CONTENT_DATA/Scripts/game/characters/BaseEnemyCharacter.lua"
 HaybotCharacter = class( BaseEnemyCharacter )
 
 local alertRenderableTp = "$SURVIVAL_DATA/Character/Char_Haybot/char_haybot_alert.rend"
@@ -127,6 +127,7 @@ function HaybotCharacter.cl_initAnimationSwitch( self )
 end
 
 function HaybotCharacter.client_onUpdate( self, deltaTime )
+	BaseEnemyCharacter.client_onUpdate( self, deltaTime )
 	if not self.graphicsLoaded then
 		return
 	end

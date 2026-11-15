@@ -21,6 +21,12 @@ function GetRaidCellRange()
     return RaidCellRange
 end
 
+RaiderPhases = {
+    Raiding = 1,
+    Fleeing = 2,
+    Leftover = 3
+}
+
 local function filterSpawnPoints( spawnPoints, origin )
     local spawnPointData = {}
     local pointsInAvoidedAttackRange = 0
@@ -137,6 +143,48 @@ end
 function FilterAndSelectPoints( spawnPoints, world, attackPosition )
     spawnPoints = filterSpawnPoints( spawnPoints, attackPosition )
     return selectPointsFromCollection( spawnPoints, world )
+end
+
+local RaiderSpawnSpacing = 1.0 -- approximate distance between neighboring spawn points
+local RaiderSpawnGoldenRatio = ( math.sqrt( 5 ) + 1 ) / 2
+local RaiderSpawnMaxRadius = 4.0 -- spiral stops here; remaining raiders reuse valid points
+local RaiderSpawnAbilities = { canWalk = true, canSwim = false }
+
+-- Sunflower pattern with a fixed spacing so density stays consistent regardless of raider count.
+-- Must be called while the navmesh around basePos is loaded (e.g. while raid navmesh handles are still held).
+function GenerateRaiderSpawnPositions( world, basePos, count )
+    local validPositions = {}
+    local sampleIndex = 1
+    while #validPositions < count do
+        local radius = RaiderSpawnSpacing * math.sqrt( sampleIndex - 0.5 )
+        if radius > RaiderSpawnMaxRadius then
+            break
+        end
+        local theta = 2 * math.pi * sampleIndex / ( RaiderSpawnGoldenRatio * RaiderSpawnGoldenRatio )
+        local rawPoint = basePos + sm.vec3.new( radius * math.cos( theta ), radius * math.sin( theta ), 0 )
+        local point, constrained = sm.pathfinder.constrainPointToNavMesh( world, rawPoint, RaiderSpawnAbilities )
+        -- A failed constrain returns the input unchanged, so the height is unreliable; re-sample the ground
+        if not constrained then
+            local success, hit = sm.physics.raycast( rawPoint + RaycastHeightOffset, rawPoint - RaycastHeightOffset, nil, sm.physics.filter.default - sm.physics.filter.harvestable, world )
+            if success then
+                point = hit.pointWorld
+            end
+        end
+        if ( point - basePos ):length2() <= RaiderSpawnMaxRadius * RaiderSpawnMaxRadius and not sm.physics.isPointInLiquid( point, world ) then
+            validPositions[#validPositions+1] = point
+        end
+        sampleIndex = sampleIndex + 1
+    end
+
+    if #validPositions == 0 then
+        validPositions[1] = sm.pathfinder.constrainPointToNavMesh( world, basePos, RaiderSpawnAbilities )
+    end
+
+    local positions = {}
+    for i = 1, count do
+        positions[i] = validPositions[( i - 1 ) % #validPositions + 1]
+    end
+    return positions
 end
 
 function CreateRaidPath( attackPosition, world, rotationValue, index )

@@ -1,4 +1,4 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/kinematics/KinematicBase.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/kinematics/KinematicBase.lua" )
 
 KinematicButton = class( KinematicBase )
 

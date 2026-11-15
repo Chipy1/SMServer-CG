@@ -1,4 +1,4 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/kinematics/Kinematic.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/kinematics/Kinematic.lua" )
 
 ParentedKinematicRoot = class( Kinematic )
 

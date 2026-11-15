@@ -1,5 +1,5 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_shapes.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_constants.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_shapes.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_constants.lua" )
 
 TileElevator = class()
 TileElevator.maxParentCount = 255
@@ -28,7 +28,6 @@ end
 
 function TileElevator.sv_saveSharedData( self, data )
 	TileStorageManager.Sv_SetValueInSubTable( self.sv.tileStorageKey, TILE_ELEVATOR_TABLE, self.sv.connectionName, data )
-	TileStorageManager.Sv_Save()
 end
 
 -- Server
@@ -317,6 +316,9 @@ function TileElevator.sv_updateClientEvents( self )
 	if self.sv.prevPower == 0 and self.interactable.power ~= 0 then
 		self.network:sendToClients( "cl_n_startMovingSounds" )
 	elseif self.sv.prevPower ~= 0 and self.interactable.power == 0 then
+		if self.sv.elevatorPanelButton then
+			sm.event.sendToInteractable( self.sv.elevatorPanelButton, "sv_e_shutOff" )
+		end
 		self.network:sendToClients( "cl_n_stopMovingSounds" )
 	end
 	self.sv.prevPower = self.interactable.power

@@ -1,5 +1,5 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/characters/BaseCharacter.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/SurvivalPlayer.lua")
+dofile( "$CONTENT_DATA/Scripts/game/characters/BaseCharacter.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/SurvivalPlayer.lua")
 
 MechanicCharacter = class( BaseCharacter )
 
@@ -315,19 +315,19 @@ end
 
 function MechanicCharacter.client_onGraphicsUnloaded( self )
 	BaseCharacter.client_onGraphicsUnloaded( self )
-	if self.cl.refineEffect then
+	if sm.exists(self.cl.refineEffect) then
 		self.cl.refineEffect:destroy()
 		self.cl.refineEffect = nil
 	end
-	if self.cl.chewEffect then
+	if sm.exists(self.cl.chewEffect) then
 		self.cl.chewEffect:destroy()
 		self.cl.chewEffect = nil
 	end
-	if self.cl.koEffect then
+	if sm.exists(self.cl.koEffect) then
 		self.cl.koEffect:destroy()
 		self.cl.koEffect = nil
 	end
-	if self.cl.diveEffect then
+	if sm.exists(self.cl.diveEffect) then
 		self.cl.diveEffect:destroy()
 		self.cl.diveEffect = nil
 	end
@@ -335,10 +335,14 @@ function MechanicCharacter.client_onGraphicsUnloaded( self )
 	-- Cleanup goop effects (player-only)
 	for _, goopEffects in ipairs( self.cl.goopEffects ) do
 		for _, goopBlob in ipairs( goopEffects.goopBlobs ) do
-			goopBlob.effect:destroy()
+			if sm.exists(goopBlob.effect) then
+				goopBlob.effect:destroy()
+			end
 		end
 		for _, goopLine in ipairs( goopEffects.goopLines ) do
-			goopLine.effect:destroy()
+			if sm.exists(goopLine.effect) then
+				goopLine.effect:destroy()
+			end
 		end
 	end
 	self.cl.goopEffects = {}

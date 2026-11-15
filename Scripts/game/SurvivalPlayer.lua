@@ -1,11 +1,11 @@
-dofile( "$GAME_DATA/Scripts/game/BasePlayer.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/BasePlayer.lua" )
 dofile( "$CONTENT_DATA/Scripts/smserver/core.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/QuestManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_constants.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/util/Timer.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/quest_util.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/TutorialManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/QuestManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_constants.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/util/Timer.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/quest_util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/TutorialManager.lua" )
 
 ---@class SurvivalPlayer : BasePlayer
 ---@field sv table
@@ -124,6 +124,13 @@ end
 
 
 function SurvivalPlayer.server_onCreate( self )
+	local player = self.player
+	--if player.id == get_host_player_chestno().id and g_excludeHostPlayer then
+	--	if player.character ~= nil then
+	--		player:setCharacter(nil)
+	--	end
+	--	self.SHUTDOWN = true
+	--end
 	self.sv = {}
 	self.sv.saved = self.storage:load()
 	self.sv.saved = self.sv.saved or {}
@@ -227,6 +234,7 @@ function SurvivalPlayer.cl_init( self )
 end
 
 function SurvivalPlayer.client_onClientDataUpdate( self, data )
+	if self.SHUTDOWN then return end
 	BasePlayer.client_onClientDataUpdate( self, data )
 	self.player.clientPublicData.perks = data.stats.perks
 	if sm.localPlayer.getPlayer() == self.player then
@@ -292,7 +300,7 @@ function SurvivalPlayer.sv_n_unstuck( self , ... )
 end
 
 function SurvivalPlayer.cl_e_unstuck( self )
-	self.cl.unstuckPopUp = sm.jsonGui.createGui( { isInteractive = true, needsCursor = true } )
+	self.cl.unstuckPopUp = sm.jsonGui.createGui( { isInteractive = true, needsCursor = true, name = "Unstuck" } )
 	self.cl.unstuckPopUp:render( UnstuckPopupGui.root )
 end
 
@@ -339,6 +347,7 @@ local ToolTutorialMap = {
 }
 
 function SurvivalPlayer.client_onFixedUpdate( self, dt )
+	if self.SHUTDOWN then return end
 	BasePlayer.client_onFixedUpdate( self, dt )
 	if self.player == sm.localPlayer.getPlayer() then
 		if self.cl.stats then
@@ -594,6 +603,7 @@ function SurvivalPlayer.cl_localPlayerUpdate( self, dt )
 end
 
 function SurvivalPlayer.client_onInteract( self, character, state )
+	if self.SHUTDOWN then return end
 	BasePlayer.client_onInteract( self, character, state )
 	if state == true then
 		if not self.cl.isConscious then
@@ -611,6 +621,11 @@ function SurvivalPlayer.client_onInteract( self, character, state )
 end
 
 function SurvivalPlayer.server_onFixedUpdate(self, dt)
+	print("self.SHUTDOWN", self.SHUTDOWN)
+	if self.SHUTDOWN then
+		print("self.player.character", self.player.character)
+		self.player:setCharacter(nil)
+	end
 	BasePlayer.server_onFixedUpdate(self, dt)
 
 
@@ -846,6 +861,7 @@ function SurvivalPlayer.cl_e_onPlacedInteractable( self, uuid, parentType )
 end
 
 function SurvivalPlayer.server_onInventoryChanges( self, container, changes )
+	if self.SHUTDOWN then return end
 	QuestManager.Sv_SendEvent( QuestEvent.InventoryChanges, { container = container, changes = changes } )
 
 	local obj_interactive_builderguide = sm.uuid.new( "e83a22c5-8783-413f-a199-46bc30ca8dac" )
@@ -1292,6 +1308,9 @@ function SurvivalPlayer.sv_e_feed( self, params , ... )
 				self.sv.saved.hasRevivalItem = true
 				self.player:sendCharacterEvent( "baguette" )
 				self.network:setClientData( self.sv.saved )
+				if params.fromBabywoc then
+					sm.achievement.seti( "63192fc7-41ae-4a7c-8d1e-294012bcdf32", 1, { self.player.id } )
+				end
 			end
 		end
 	end

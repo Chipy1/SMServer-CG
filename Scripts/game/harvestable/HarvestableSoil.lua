@@ -1,7 +1,7 @@
 -- HarvestableSoil.lua --
-dofile "$SURVIVAL_DATA/Scripts/game/survival_harvestable.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_shapes.lua"
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/RaidManager.lua" )
+dofile "$CONTENT_DATA/Scripts/game/survival_harvestable.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_shapes.lua"
+dofile( "$CONTENT_DATA/Scripts/game/managers/RaidManager.lua" )
 
 HarvestableSoil = class( nil )
 
@@ -90,15 +90,17 @@ function HarvestableSoil.sv_plant( self, plantedHarvestableUuid )
 				waterTick = self.sv.saved.waterTick
 			end
 		end
+		local world = self.harvestable:getWorld()
 		local plantedHarvestable = sm.harvestable.createHarvestable( plantedHarvestableUuid, self.harvestable:getPosition(), self.harvestable:getRotation() )
-		plantedHarvestable:setParams( { waterTick = waterTick, fertilizer = self.sv.saved.fertilizer, plantedByPlayer = true } )
+		-- Only a plant a raid adopts waits for that raid to end before it can mature
+		local raidKey = nil
+		if world.publicData and world.publicData.type == "Overworld" then
+			raidKey = RaidManager.Sv_DetectCrop( plantedHarvestable )
+		end
+		plantedHarvestable:setParams( { waterTick = waterTick, fertilizer = self.sv.saved.fertilizer, raidKey = raidKey } )
 		sm.effect.playEffect( "Plants - Planted", self.harvestable:getPosition() )
 		self.harvestable:destroy()
 		self.sv.planted = true
-		local world = self.harvestable:getWorld()
-		if world.publicData and world.publicData.type == "Overworld" then
-			RaidManager.Sv_DetectCrop( plantedHarvestable )
-		end
 	end
 end
 

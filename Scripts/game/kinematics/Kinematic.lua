@@ -1,10 +1,10 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/kinematics/KinematicBase.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/kinematics/KinematicBase.lua" )
 
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
 
-dofile( "$SURVIVAL_DATA/Scripts/kinematic_util.lua" )
+dofile( "$CONTENT_DATA/Scripts/kinematic_util.lua" )
 
-dofile( "$GAME_DATA/Scripts/game/managers/TileStorageManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/TileStorageManager.lua" )
 
 Kinematic = class( KinematicBase )
 
@@ -47,7 +47,6 @@ function Kinematic.server_onCreate( self )
 			instance.progressData = { segmentIndex = 1, segmentProgress = 0.0 }
 		end
 	end
-	
 
 	if g_tileStorageManager then
 		self.sv.tileStorageKey = TileStorageManager.Sv_GetTileStorageKeyFromObject( self.harvestable )
@@ -77,37 +76,32 @@ function Kinematic.server_onCreate( self )
 		local storage = TileStorageManager.Sv_GetValueInSubTable( self.sv.tileStorageKey, KINEMATIC_STORAGE_TABLE, self.sv.storageKey )
 		if storage and storage.tracks then
 			self.sv.readFromStorage = true
-			for trackName, storageUpdateData in pairs( storage.tracks ) do
-				local trackInstance = self.sv.trackInstances[trackName]
-				if trackInstance then
-					if storageUpdateData.moving ~= nil then trackInstance.updateData.moving = storageUpdateData.moving end
-					if storageUpdateData.playForward ~= nil then trackInstance.updateData.playForward = storageUpdateData.playForward end
-					if storageUpdateData.trackIndex ~= nil then trackInstance.updateData.trackIndex = storageUpdateData.trackIndex end
-					if storageUpdateData.weight ~= nil then trackInstance.updateData.weight = storageUpdateData.weight end
-					if storageUpdateData.tick ~= nil then
-						local tickDiff = sm.game.getCurrentTick() - ( storage.unloadTick or sm.game.getCurrentTick() )
-						trackInstance.updateData.tick = storageUpdateData.tick + tickDiff
-					end
-					if storageUpdateData.lastTransform ~= nil then trackInstance.updateData.lastTransform = storageUpdateData.lastTransform end
-					if storageUpdateData.lastSegmentData then
-						trackInstance.progressData = storageUpdateData.lastSegmentData
-					end
-					trackInstance.startupDone = false
-
-				else
+			for trackName, _ in pairs( storage.tracks ) do
+				if not self.sv.trackInstances[trackName] then
 					sm.log.error( "Kinematic loaded from storage with unknown track" )
 				end
 			end
 		end
 
-		if pendingActivation then
-			local lastSaveTick = storage and storage.unloadTick
-			if lastSaveTick == nil or pendingActivation.tick > lastSaveTick then
-				local trackName = pendingActivation.trackName or "track"
-				local trackInstance = self.sv.trackInstances[trackName]
-				if trackInstance then
-					trackInstance.updateData.moving = true
-					trackInstance.updateData.tick = pendingActivation.tick or sm.game.getServerTick()
+		local currentTick = sm.game.getCurrentTick()
+		-- sv_activate ignores activations while locked, so a pending one is dropped too. The store at the end of onCreate marks it consumed.
+		if not self.sv.unlocked then
+			pendingActivation = nil
+		end
+		for trackName, trackInstance in pairs( self.sv.trackInstances ) do
+			local state = ResolveStoredTrackState( storage, trackName, pendingActivation, currentTick, sm.game.getLastSessionTick() )
+			if state then
+				if state.moving ~= nil then trackInstance.updateData.moving = state.moving end
+				if state.playForward ~= nil then trackInstance.updateData.playForward = state.playForward end
+				if state.trackIndex ~= nil then trackInstance.updateData.trackIndex = state.trackIndex end
+				if state.weight ~= nil then trackInstance.updateData.weight = state.weight end
+				if state.tick ~= nil then trackInstance.updateData.tick = state.tick end
+				if state.lastTransform ~= nil then trackInstance.updateData.lastTransform = state.lastTransform end
+				if state.lastSegmentData then
+					trackInstance.progressData = state.lastSegmentData
+				end
+				if storage and storage.tracks and storage.tracks[trackName] then
+					trackInstance.startupDone = false
 				end
 			end
 		end
@@ -116,6 +110,7 @@ function Kinematic.server_onCreate( self )
 
 	self.harvestable.publicData = self.harvestable.publicData or {}
 	self.harvestable.publicData.moving = self:sv_isMoving()
+	self.harvestable.publicData.getTrackProgress = function( trackName ) return self:sv_getTrackProgress( trackName ) end
 	self.network:setClientData( { tracks = self.params.track }, 1 )
 	self.network:setClientData( self:sv_getUpdateData(), 2 )
 
@@ -129,6 +124,15 @@ function Kinematic.sv_getUpdateData( self )
 	end
 
 	return updateData
+end
+
+function Kinematic.sv_getTrackProgress( self, trackName )
+	local instance = self.sv.trackInstances[trackName or "track"]
+	return instance and {
+		trackIndex = instance.updateData.trackIndex,
+		segmentIndex = instance.progressData.segmentIndex,
+		segmentProgress = instance.progressData.segmentProgress
+	} or nil
 end
 
 function Kinematic.sv_isMoving( self )
@@ -156,10 +160,10 @@ function Kinematic.sv_e_destroy( self )
 end
 
 function Kinematic.server_onUnload( self )
-	self:sv_store()
+	self:sv_store( true )
 end
 
-function Kinematic.sv_store( self )
+function Kinematic.sv_store( self, unloading )
 	if g_tileStorageManager and self.params and ( ( self.params.storageTag and self.params.storageTag ~= "" ) or ( self.params.saved == nil or self.params.saved ) ) then
 		local storage = { tracks = {} }
 		for trackName, instance in pairs( self.sv.trackInstances ) do
@@ -167,7 +171,10 @@ function Kinematic.sv_store( self )
 		end
 		storage.position = self.sv.transform.worldPosition
 		storage.rotation = self.sv.transform.worldRotation
+		-- Despite the name, unloadTick is the tick of every store, not only an unload. The name stays for save compatibility.
 		storage.unloadTick = sm.game.getCurrentTick()
+		-- An unload store pauses the track from the unload. Without one the track keeps absolute ticks until the session ends, so after a crash it resumes from the last saved tick.
+		storage.unloaded = unloading == true or nil
 		TileStorageManager.Sv_SetValueInSubTable( self.sv.tileStorageKey, KINEMATIC_STORAGE_TABLE, self.sv.storageKey, storage )
 	end
 end
@@ -221,7 +228,7 @@ function Kinematic.sv_triggerTrackEvent( self, trackNode, previousPlayForward, n
 
 		if trackNode.kinematicActivations then
 			for _,kinematicData in ipairs( trackNode.kinematicActivations ) do
-				KinematicManager.Sv_Activate( self.sv.tileStorageKey, kinematicData.kinematicEventTrigger, { track = kinematicData.trackName } ) --triggering kinematics with activation tag matching event
+				KinematicManager.Sv_Activate( self.sv.tileStorageKey, kinematicData.kinematicEventTrigger, { trackName = kinematicData.trackName } ) --triggering kinematics with activation tag matching event
 			end
 		end
 	end
@@ -246,6 +253,7 @@ function Kinematic.server_onFixedUpdate( self, timeStep )
 
 	local finalTransform = nil
 	local wasMoving = self:sv_isMoving()
+	self.sv.trackNames = self.sv.trackNames or SortedTrackNames( self.sv.trackInstances )
 
 	-- when only 1 track is active we can rely on our last position and avoid updating if we are not moving. 
 	-- but when multiple tracks are active one can be stationary in some position and one can be moving, both must be evaluated
@@ -256,7 +264,8 @@ function Kinematic.server_onFixedUpdate( self, timeStep )
 		end
 	end
 
-	for trackName, instance in pairs( self.sv.trackInstances ) do
+	for _, trackName in ipairs( self.sv.trackNames ) do
+		local instance = self.sv.trackInstances[trackName]
 		if instance.startupDone == false then
 			if instance.progressData then
 				local lastNode = instance.progressData.segmentIndex
@@ -672,6 +681,7 @@ function Kinematic.client_onClientDataUpdate( self, clientData, channel )
 	if channel == 1 then
 		if clientData.tracks then
 			self.cl.trackdata = clientData.tracks
+			self.cl.trackNames = SortedTrackNames( clientData.tracks )
 			for trackName, trackParamData in pairs( clientData.tracks ) do
 				self.cl.trackInstances[trackName] = self.cl.trackInstances[trackName] or {}
 				local instance = self.cl.trackInstances[trackName]
@@ -690,8 +700,10 @@ function Kinematic.client_onClientDataUpdate( self, clientData, channel )
 		
 		if not sm.isHost then
 			local finalTransform = nil
-			
-			for trackName, updateData in pairs( clientData ) do
+			self.cl.trackNames = self.cl.trackNames or SortedTrackNames( self.cl.trackInstances )
+
+			for _, trackName in ipairs( self.cl.trackNames ) do
+				local updateData = clientData[trackName]
 				self.cl.trackInstances[trackName].updateData = updateData
 				local instance = self.cl.trackInstances[trackName]
 				self:getTrackData( instance, trackName, self.cl.trackdata )
@@ -733,6 +745,7 @@ function Kinematic.client_onFixedUpdate( self )
 	end
 	
 	local finalTransform = nil
+	self.cl.trackNames = self.cl.trackNames or SortedTrackNames( self.cl.trackInstances )
 
 	local activeTracks = 0
 	for trackName, instance in pairs( self.cl.trackInstances ) do
@@ -741,7 +754,8 @@ function Kinematic.client_onFixedUpdate( self )
 		end
 	end
 
-	for trackName, trackInstance in pairs( self.cl.trackInstances ) do
+	for _, trackName in ipairs( self.cl.trackNames ) do
+		local trackInstance = self.cl.trackInstances[trackName]
 		if trackInstance.updateData.moving then
 			local transform
 

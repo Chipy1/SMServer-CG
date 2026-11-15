@@ -1,9 +1,11 @@
 {
-	"scriptableObjectSetList": [ 
-	{
-		"scriptableObjectSet": "$CONTENT_DATA/ScriptableObjects/ScriptableObjectSets/example.sobset"
-	},
-	{
-		"scriptableObjectSet": "$CONTENT_DATA/ScriptableObjects/ScriptableObjectSets/smserver.sobset"
-	}
-]}
+	"scriptableObjectSetList": [
+		{ "scriptableObjectSet": "$CONTENT_DATA/ScriptableObjects/ScriptableObjectSets/sob_quests.sobset" },
+		{ "scriptableObjectSet": "$CONTENT_DATA/ScriptableObjects/ScriptableObjectSets/sob_managers.sobset" },
+		{ "scriptableObjectSet": "$CONTENT_DATA/ScriptableObjects/ScriptableObjectSets/sob_gameobjects.sobset" },
+		{ "scriptableObjectSet": "$CONTENT_DATA/ScriptableObjects/ScriptableObjectSets/sob_trashbot_attacks.sobset" },
+		{ "scriptableObjectSet": "$CONTENT_DATA/ScriptableObjects/ScriptableObjectSets/sob_events.sobset" },
+		{ "scriptableObjectSet": "$CONTENT_DATA/ScriptableObjects/ScriptableObjectSets/sob_nodescriptables.sobset" },
+		{ "scriptableObjectSet": "$CONTENT_DATA/ScriptableObjects/ScriptableObjectSets/smserver.sobset" }
+	]
+}

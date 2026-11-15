@@ -1,0 +1,9 @@
+{
+	"toolSetList" : [
+		"$CONTENT_DATA/Tools/ToolSets/core.toolset",
+		"$CONTENT_DATA/Tools/ToolSets/tools.toolset",
+		"$CONTENT_DATA/Tools/ToolSets/tools_shared.toolset",
+		"$CONTENT_DATA/Tools/ToolSets/spudguns.toolset",
+		"$CONTENT_DATA/Tools/ToolSets/carry.toolset"
+	]
+}

@@ -1,6 +1,6 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_shapes.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_constants.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_shapes.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_constants.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
 
 MinidungeonElevator = class()
 MinidungeonElevator.maxParentCount = 255
@@ -107,6 +107,7 @@ function MinidungeonElevator.server_onFixedUpdate( self )
 	if self.sv.prevPower == 0 and self.sv.saved.portal and self.interactable.power ~= 0 then
 		self.network:sendToClients( "cl_n_startMovingSounds", { contentsA = self.sv.saved.portal:getContentsA(), contentsB = self.sv.saved.portal:getContentsB() } )
 	elseif self.sv.prevPower ~= 0 and self.interactable.power == 0 then
+		sm.event.sendToInteractable( elevatorPanelButton, "sv_e_shutOff" )
 		self.network:sendToClients( "cl_n_stopMovingSounds", { contentsA = self.sv.saved.portal:getContentsA(), contentsB = self.sv.saved.portal:getContentsB() } ) 
 	end
 

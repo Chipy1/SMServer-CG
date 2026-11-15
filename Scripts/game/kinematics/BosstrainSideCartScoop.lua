@@ -1,4 +1,4 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/kinematics/ParentedKinematic.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/kinematics/ParentedKinematic.lua" )
 
 BosstrainSideCartScoop = class( ParentedKinematic )
 

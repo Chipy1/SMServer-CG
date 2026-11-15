@@ -1,12 +1,12 @@
-dofile "$SURVIVAL_DATA/Scripts/game/survival_constants.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_units.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/util/Timer.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_constants.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_units.lua"
+dofile "$CONTENT_DATA/Scripts/game/util/Timer.lua"
 dofile "$CHALLENGE_DATA/Scripts/challenge/world_util.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/managers/HudManager.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_raids.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/raid_util.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/managers/DialogManager.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/managers/QuestManager.lua"
+dofile "$CONTENT_DATA/Scripts/game/managers/HudManager.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_raids.lua"
+dofile "$CONTENT_DATA/Scripts/game/raid_util.lua"
+dofile "$CONTENT_DATA/Scripts/game/managers/DialogManager.lua"
+dofile "$CONTENT_DATA/Scripts/game/managers/QuestManager.lua"
 
 -- Server side
 RaidManager = class( nil )
@@ -47,22 +47,21 @@ local PreviewBarColor2 = sm.color.new(  0.7, 0.7, 0.7 )
 local OscillationFrequency = 0.55
 
 -- Constants
-local VERSION = 1
-
-local RaidPlantingRadius = 10.0
+-- 1: master. 2: the attack timeline is attackStartTick instead of tickCounter, fleeingRaids were added, plantingLocations dropped and raids that have started their attack carry cropArea.
+local VERSION = 2
 
 local MultiDropRandomOffset = 2.0
 
 local RaidIncomingTickTime = 40 * 60.0 -- The countdown time it takes for a triggered raid to start spawning waves
 local RaidResetOnPlantTickTime = 40 * 10.0
-local RaidTimeoutTickTime = RAIDER_TICK_LIFETIME -- Time before a raid will automatically end
-local TicksBetweenLockOnEffects = math.floor( 40 * 0.03 ) -- Time between lock on effects
+local RaidTimeoutTickTime = RAIDER_TICK_LIFETIME -- How long the attack lasts after its last group has spawned
 
 local InEffectDelayTicks = 40 * 12.0
 local DelayBeforeBarMovement = 0.2
 local BarMoveDuration = 0.4
 
 local DropEffectTravelDistance = 500
+local DropEffectRadius = 512 -- Clients farther than this from the raid don't play its drop effects
 local DropEffectDuration = 5.2
 local MarkerTickLifetime = 40 * 12.0
 local RaidMarkerOffset = sm.vec3.new( 0, 0, 0.9 )
@@ -76,6 +75,9 @@ local RaidCountdownEffectValues = {
 	[2] = true,
 	[1] = true
 }
+
+local RaiderMissingRespawnTicks = 40 * 10 -- how long a missing raider will wait before respawning
+local RaidCropAreaMargin = 5.0 -- added to the radius around the raid's crops so crops next to them count as part of the area
 
 local DoorDissolveDuration = 0.5
 local DoorDissolveDelay = 16.0
@@ -141,12 +143,23 @@ local function GetRaidEnemies( raid )
 	raid.timeoutTick = raid.lastSpawnTick + RaidTimeoutTickTime
 end
 
-local function HasNearbyPlayer( raidCenter )
+local RaidRadiusMargin = 1.0 -- Entering needs this much inside the radius and leaving this much outside, so the border doesn't flicker
+
+function RaidManager.IsWithinRaidRadius( distance2, wasInside )
+	local radius = wasInside and ( RAID_RADIUS + RaidRadiusMargin ) or ( RAID_RADIUS - RaidRadiusMargin )
+	return distance2 <= radius * radius
+end
+
+local function IsPositionCellLoaded( world, position )
+	return world:isCellLoadedServer( math.floor( position.x / 64 ), math.floor( position.y / 64 ) )
+end
+
+local function HasNearbyPlayer( raidCenter, wasNearby )
 	local players = sm.player.getAllPlayers()
 	for _, player in ipairs( players ) do
 		if sm.exists( player.character ) then
 			local distance2 = ( raidCenter - player.character.worldPosition ):length2()
-			if distance2 <= RAID_RADIUS * RAID_RADIUS then
+			if RaidManager.IsWithinRaidRadius( distance2, wasNearby ) then
 				return true
 			end
 		end
@@ -154,111 +167,135 @@ local function HasNearbyPlayer( raidCenter )
 	return false
 end
 
-local function HasLocalPlayerInRange( raidCenter )
-	local player = sm.localPlayer.getPlayer()
-	if sm.exists( player.character ) then
-		local distance2 = ( raidCenter - player.character.worldPosition ):length2()
-		if distance2 <= RAID_RADIUS * RAID_RADIUS then
-			return true
-		end
-	end
-	return false
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- The horizontal circle around the raid's crops, fixed when the attack starts. Crops of any kind inside it count as part of the raid area.
+local function ComputeCropArea( raid )
+	local center, radius = sm.util.boundingCircle( raid.cropPositions )
+
+
+
+	return { center = center, radius = radius + RaidCropAreaMargin }
 end
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+local function MigrateSavedRaids( saved )
+	local currentTick = sm.game.getCurrentTick()
+	for _, raids in pairs( saved.worldRaids ) do
+		for _, raid in pairs( raids ) do
+			-- A raid before its attack has a tickCounter of 0 and no groupSpawns; its attackStartTick is set when the attack starts
+			if raid.tickCounter and raid.attackData.groupSpawns then
+				raid.attackStartTick = currentTick - raid.tickCounter
+				raid.timeoutProgress = math.max( raid.tickCounter - raid.lastSpawnTick, 0 )
+			end
+			raid.tickCounter = nil
+			raid.plantingLocations = nil
+			-- The crops it started with are gone, so the area is built from the ones that remain
+			if raid.timeoutTick and raid.cropArea == nil then
+				raid.cropArea = ComputeCropArea( raid )
+			end
+		end
+	end
+	saved.fleeingRaids = saved.fleeingRaids or {}
+	saved.version = VERSION
+end
 
 --[[ Server ]]
 function RaidManager.server_onCreate( self )
 	g_raidManager = self
 	self.sv = {}
 	self.sv.navmeshHandles = {}
+	self.sv.spawnPointCellHandles = {}
 	self.sv.finishedNavMeshLoads = {}
 	self.sv.activeRaidLoadHandles = {}
 	self.sv.raidPaths = {}
 	self.sv.raidsPathGenerationData = {}
-
+	self.sv.raiderMissingTicks = {}
 	self.sv.saved = sm.storage.load( STORAGE_CHANNEL_RAIDMANAGER )
 	if self.sv.saved == nil then
 		self.sv.saved = {}
 		self.sv.saved.worldRaids = {}
+		self.sv.saved.fleeingRaids = {}
 		self.sv.saved.version = VERSION
+		sm.storage.save( STORAGE_CHANNEL_RAIDMANAGER, self.sv.saved )
+	elseif ( self.sv.saved.version or 1 ) < VERSION then
+		MigrateSavedRaids( self.sv.saved )
 		sm.storage.save( STORAGE_CHANNEL_RAIDMANAGER, self.sv.saved )
 	end
 	self.sv.isDirty = false
@@ -287,14 +324,14 @@ function RaidManager.sv_syncClientData( self )
 	for worldId,raids in pairs( self.sv.saved.worldRaids ) do
 		worldRaidSync[worldId] = {}
 		for raidKey,raid in pairs( raids ) do
-			local crops = {}
-			for _,harvestable in pairs( raid.existingCrops ) do
-				crops[#crops+1] = harvestable
-			end
 			local groupSpawns = {}
 			if raid.attackData.groupSpawns then
 				for _,groupSpawn in ipairs( raid.attackData.groupSpawns ) do
-					groupSpawns[#groupSpawns+1] = { tickDelay = groupSpawn.tickDelay, spawnIndex = groupSpawn.spawnIndex }
+					groupSpawns[#groupSpawns+1] = {
+						tickDelay = groupSpawn.tickDelay,
+						spawnIndex = groupSpawn.spawnIndex,
+						dropStartTick = raid.attackStartTick + groupSpawn.tickDelay - InEffectDelayTicks
+					}
 				end
 			end
 			local attackData = {
@@ -305,19 +342,15 @@ function RaidManager.sv_syncClientData( self )
 			}
 			worldRaidSync[worldId][raidKey] = {
 				key = raidKey,
-				crops = crops,
 				level = raid.level,
 				value = raid.value,
 				center = raid.center,
 				attackData = attackData,
-				tickCounter = raid.tickCounter,
 				timeoutTick = raid.timeoutTick,
-				lastSavedTick = raid.savedTick,
-				attackPosition = raid.attackPosition,
 			}
 		end
 	end
-	self.network:setClientData( { worldRaidSync = worldRaidSync } )
+	self.network:setClientData( worldRaidSync )
 end
 
 function RaidManager.sv_getRaidKey( self, worldId, worldPosition )
@@ -356,51 +389,40 @@ end
 
 function RaidManager.sv_areaHasActiveRaid( self, position, worldId )
 	local raid = self:sv_getRaidAtPosition( worldId, position )
-	local raidIsLocked = raid and ( raid.timeoutTick )
-	return raidIsLocked
+	return raid ~= nil and raid.timeoutTick ~= nil
 end
 
+-- Callers must have passed Sv_AreaHasActiveRaid: a raid whose attack has started takes no new crops.
+-- Returns the key of the raid that adopted the crop, or nil when none did.
 function RaidManager.Sv_DetectCrop( cropHarvestable )
 	if g_raidManager then
-		sm.event.sendToScriptableObject( g_raidManager.scriptableObject, "sv_detectCrop", cropHarvestable )
+		return g_raidManager:sv_detectCrop( cropHarvestable )
 	end
+	return nil
 end
 
 function RaidManager.sv_detectCrop( self, cropHarvestable )
-	if g_disableRaids or GetPlantValue( tostring( cropHarvestable.uuid ) ) == 0 then return end
+	if g_disableRaids or GetPlantValue( tostring( cropHarvestable.uuid ) ) == 0 then return nil end
 	local worldId = cropHarvestable:getWorld().id
 	local raid = self:sv_getRaidAtPosition( worldId, cropHarvestable.worldPosition )
-	local raidIsLocked = raid and ( raid.timeoutTick )
-	if raidIsLocked then return end -- Ignore new crops while the raid is on cooldown or spawning raid waves
 	local currentTick = sm.game.getCurrentTick()
 
 	if raid == nil then
 		-- Create a new raid
 		raid = {}
 		raid.center = cropHarvestable.worldPosition
-		raid.plantingLocations = { cropHarvestable.worldPosition }
-		raid.key = worldId.."|"..math.floor( raid.center.x ).."|"..math.floor( raid.center.y ).."|"..math.floor( raid.center.z )
+		-- The tick keeps keys unique, so raiders of an earlier raid at this spot never mistake this raid for theirs
+		raid.key = worldId.."|"..math.floor( raid.center.x ).."|"..math.floor( raid.center.y ).."|"..math.floor( raid.center.z ).."|"..currentTick
 		raid.cropPositions = {}
 		raid.existingCrops = {}
 		raid.value = 0
 		raid.maxValue = 0
 		raid.level = 0
-		raid.tickCounter = 0
 		raid.plantingOrder = {}
 		self.sv.saved.worldRaids[worldId] = self.sv.saved.worldRaids[worldId] or {}
 		self.sv.saved.worldRaids[worldId][raid.key] = raid
 	end
 	-- Add crop
-	local closeToOtherPlants = false
-	for _,pos in ipairs( raid.plantingLocations ) do
-		if ( pos - cropHarvestable.worldPosition ):length2() < ( RaidPlantingRadius * RaidPlantingRadius ) then
-			closeToOtherPlants = true
-			break
-		end
-	end
-	if not closeToOtherPlants then
-		raid.plantingLocations[#raid.plantingLocations+1] = cropHarvestable.worldPosition
-	end
 	raid.value = raid.value + GetPlantValue( tostring( cropHarvestable.uuid ) )
 	raid.maxValue = raid.value
 	raid.cropPositions[#raid.cropPositions+1] = cropHarvestable.worldPosition
@@ -439,20 +461,58 @@ function RaidManager.sv_detectCrop( self, cropHarvestable )
 		raid.attackData.attackPosition = result.pointWorld
 	end
 
-	raid.savedTick = currentTick
 	sm.storage.save( STORAGE_CHANNEL_RAIDMANAGER, self.sv.saved )
 	self.sv.synchToClients = true
+	return raid.key
 end
 
-function RaidManager.Sv_CropDestroyed( cropHarvestable )
+function RaidManager.Sv_GetCropArea( worldId, raidKey )
 	if g_raidManager then
-		g_raidManager:sv_cropDestroyed( cropHarvestable )
+		return g_raidManager:sv_getCropArea( worldId, raidKey )
+	end
+	return nil
+end
+
+function RaidManager.sv_getCropArea( self, worldId, raidKey )
+	local raids = self.sv.saved.worldRaids[worldId]
+	local raid = raids and raids[raidKey]
+	local area = raid and raid.cropArea
+	if area == nil then
+		return nil
+	end
+	return area.center, area.radius
+end
+
+function RaidManager.Sv_GetCropRaidKey( cropHarvestable )
+	if g_raidManager then
+		return g_raidManager:sv_getCropRaidKey( cropHarvestable )
+	end
+	return nil
+end
+
+function RaidManager.sv_getCropRaidKey( self, cropHarvestable )
+	local worldId = cropHarvestable:getWorld().id
+	for raidKey, raid in pairs( self.sv.saved.worldRaids[worldId] or {} ) do
+		for id, _ in pairs( raid.existingCrops ) do
+			if id == cropHarvestable.id then
+				return raidKey
+			end
+		end
+	end
+	return nil
+end
+
+-- raidKey: the key the plant was given when the raid adopted it
+function RaidManager.Sv_CropDestroyed( cropHarvestable, raidKey )
+	if g_raidManager then
+		g_raidManager:sv_cropDestroyed( cropHarvestable, raidKey )
 	end
 end
 
-function RaidManager.sv_cropDestroyed( self, cropHarvestable )
+function RaidManager.sv_cropDestroyed( self, cropHarvestable, raidKey )
 	local worldId = cropHarvestable:getWorld().id
-	local raid = self:sv_getRaidAtPosition( worldId, cropHarvestable.worldPosition )
+	local raids = self.sv.saved.worldRaids[worldId]
+	local raid = raids and raids[raidKey]
 	if not raid then
 		return
 	end
@@ -463,7 +523,7 @@ function RaidManager.sv_cropDestroyed( self, cropHarvestable )
 			break
 		end
 	end
-	if raid.attackData and not IsEmptyTable( raid.cropPositions ) and not raid.timeoutTick then
+	if not IsEmptyTable( raid.cropPositions ) and not raid.timeoutTick then
 		raid.attackData.attackPosition = sm.util.geometricMedian( raid.cropPositions, nil, 12 )
 		local success, result = sm.physics.raycast( raid.attackData.attackPosition + sm.vec3.new( 0, 0, 126 ), raid.attackData.attackPosition - sm.vec3.new( 0, 0, 126 ), nil, sm.physics.filter.terrainSurface, cropHarvestable:getWorld() )
 		if success then
@@ -471,8 +531,7 @@ function RaidManager.sv_cropDestroyed( self, cropHarvestable )
 		end
 	end
 	if IsEmptyTable( raid.existingCrops ) then
-		local raidKey = self:sv_getRaidKey( worldId, cropHarvestable.worldPosition )
-		sm.event.sendToScriptableObject( self.scriptableObject, "sv_e_failRaid", { raid = raid, worldId = worldId, raidKey = raidKey } )
+		sm.event.sendToScriptableObject( self.scriptableObject, "sv_e_noCropsLeft", { worldId = worldId, raidKey = raidKey }, sm.event.types.instant )
 	end
 	if not raid.attackData.groupSpawns then
 		for i,orderData in ipairs( raid.plantingOrder ) do
@@ -494,47 +553,60 @@ function RaidManager.sv_cropDestroyed( self, cropHarvestable )
 
 
 	end
-	for index,position in reverse_ipairs( raid.plantingLocations ) do
-		local needsRemoval = true
-		for _,plantLocation in pairs( raid.cropPositions ) do
-			if ( position - plantLocation ):length2() < ( RaidPlantingRadius * RaidPlantingRadius ) then
-				needsRemoval = false
-				break
-			end
-		end
-		if needsRemoval then
-			table.remove( raid.plantingLocations, index )
-		end
-	end
-	raid.savedTick = sm.game.getCurrentTick()
 	sm.storage.save( STORAGE_CHANNEL_RAIDMANAGER, self.sv.saved )
 	self.sv.synchToClients = true
 end
 
 function RaidManager.sv_navMeshCreated( self, world, x, y, params )
-	self.sv.finishedNavMeshLoads[params.key] = self.sv.finishedNavMeshLoads[params.key] + 1
-end
-
-function RaidManager.Sv_AddRaider( raidKey, unit )
-	if g_raidManager then
-		g_raidManager:sv_addRaider( raidKey, unit )
+	local finished = self.sv.finishedNavMeshLoads[params.key]
+	if finished then -- nil once the raid has released its handles
+		self.sv.finishedNavMeshLoads[params.key] = finished + 1
 	end
 end
 
-function RaidManager.sv_addRaider( self, raidKey, unit )
-	local worldId = unit.character:getWorld().id
+function RaidManager.sv_releaseActiveLoadHandles( self, raidKey )
+	local handles = self.sv.activeRaidLoadHandles[raidKey]
+	if handles then
+		for _,handle in ipairs( handles ) do
+			handle:release()
+		end
+		self.sv.activeRaidLoadHandles[raidKey] = nil
+	end
+end
+
+function RaidManager.sv_releaseSpawnPointHandles( self, raidKey )
+	local handles = self.sv.navmeshHandles[raidKey]
+	if handles then
+		for _,handle in ipairs( handles ) do
+			handle:release()
+		end
+	end
+	self.sv.navmeshHandles[raidKey] = nil
+	local cellHandles = self.sv.spawnPointCellHandles[raidKey]
+	if cellHandles then
+		for _,handle in ipairs( cellHandles ) do
+			handle:release()
+		end
+		self.sv.spawnPointCellHandles[raidKey] = nil
+	end
+	self.sv.finishedNavMeshLoads[raidKey] = nil
+	self.sv.raidPaths[raidKey] = nil
+	self.sv.raidsPathGenerationData[raidKey] = nil
+end
+
+-- Called by the world right after createUnit, which only queues the unit, so worldId and uuid come from the caller.
+function RaidManager.Sv_AddRaider( raidKey, worldId, unit, uuid, spawnPos )
+	if g_raidManager then
+		g_raidManager:sv_addRaider( raidKey, worldId, unit, uuid, spawnPos )
+	end
+end
+
+function RaidManager.sv_addRaider( self, raidKey, worldId, unit, uuid, spawnPos )
 	local raids = self.sv.saved.worldRaids[worldId] or {}
 	local raid = raids[raidKey]
 	if raid then
-		if raid.raiders then
-			if raid.raiders[unit.id] then
-				return
-			end
-			raid.raiders[unit.id] = { unit = unit, uuid = unit.character:getCharacterType() }
-		else
-			raid.raiders = { [unit.id] = { unit = unit, uuid = unit.character:getCharacterType() } }
-		end
-		raid.savedTick = sm.game.getCurrentTick()
+		raid.raiders = raid.raiders or {}
+		raid.raiders[unit.id] = { unit = unit, uuid = uuid, spawnPos = spawnPos }
 		sm.storage.save( STORAGE_CHANNEL_RAIDMANAGER, self.sv.saved )
 	end
 end
@@ -551,9 +623,6 @@ function RaidManager.sv_removeRaider( self, raidKey, unit )
 	local raid = raids[raidKey]
 	if raid then
 		if raid.raiders then
-			if raid.attackData == nil then
-				return
-			end
 			if raid.raiders[unit.id] then
 				raid.value = raid.value - ( raid.maxValue / raid.totalEnemyCount )
 			end
@@ -568,25 +637,24 @@ function RaidManager.sv_removeRaider( self, raidKey, unit )
 
 
 
-			if raid.enemiesLeft <= 0 and ( raid.lastSpawnTick <= raid.tickCounter ) then
-				self:sv_raidCompleted( raid, worldId )
-				if raidKey then
-					self.sv.saved.worldRaids[worldId][raidKey] = nil
-				end
+			if raid.enemiesLeft <= 0 and raid.lastSpawnTick <= sm.game.getCurrentTick() - raid.attackStartTick then -- every group has spawned and every raider is defeated
+				sm.event.sendToScriptableObject( self.scriptableObject, "sv_e_raidSurvived", { worldId = worldId, raidKey = raidKey }, sm.event.types.instant )
 			end
-			raid.savedTick = sm.game.getCurrentTick()
 			sm.storage.save( STORAGE_CHANNEL_RAIDMANAGER, self.sv.saved )
 			self.sv.synchToClients = true
 		end
+	else
+		self:sv_releaseFleeingRaider( worldId, raidKey, unit.id )
 	end
 end
 
-function RaidManager.sv_raidCompleted( self, raid, worldId )
+-- The crops outlasted the attack, either because every raider was defeated or because the attack time ran out.
+-- Gives the rewards and notifies the players, then closes the raid. Its plants notice the raid is gone and may mature.
+function RaidManager.sv_raidSurvived( self, raid, worldId, raidKey )
 	local hasCarrots = false
 	local hasBananas = false
 	for _,harvestable in pairs( raid.existingCrops ) do
 		if sm.exists( harvestable ) then
-			sm.event.sendToHarvestable( harvestable, "sv_e_raidSurvived" )
 			if harvestable.uuid == hvs_growing_carrot then
 				hasCarrots = true
 			elseif harvestable.uuid == hvs_growing_banana then
@@ -615,6 +683,8 @@ function RaidManager.sv_raidCompleted( self, raid, worldId )
 		sm.achievement.addi("005aaeb2-4562-40a4-ae14-2b7881b42e7e", 1, nil)
 	end
 	sm.achievement.addi("0524f0c7-040d-40d8-be90-b405fd63bd64", 1, nil)
+
+	self:sv_closeRaid( raid, worldId, raidKey )
 end
 
 -- Chat command
@@ -626,73 +696,125 @@ end
 
 function RaidManager.sv_cancelRaids( self, world )
 	local worldId = world.id
-	for _, raid in pairs( self.sv.saved.worldRaids[worldId] or {} ) do
+	local raids = self.sv.saved.worldRaids[worldId] or {}
+	local raidKeys = {}
+	for raidKey in pairs( raids ) do
+		raidKeys[#raidKeys+1] = raidKey
+	end
+	for _, raidKey in ipairs( raidKeys ) do
+		local raid = raids[raidKey]
 		for _,harvestable in pairs( raid.existingCrops ) do
 			if sm.exists( harvestable ) then
 				sm.event.sendToHarvestable( harvestable, "sv_e_raidNuke" )
 			end
 		end
-		if raid.raiders then
-			for _,raider in pairs( raid.raiders ) do
-				if sm.exists( raider.unit ) then
-					raider.unit:destroy()
-				end
+		for unitId,raider in pairs( raid.raiders or {} ) do
+			if sm.exists( raider.unit ) then
+				raider.unit:destroy()
+			else
+				sm.unit.forceDestroy( raider.unit )
 			end
+			self.sv.raiderMissingTicks[unitId] = nil
 		end
+		raid.raiders = nil -- already destroyed, so none of them should flee
+		self:sv_closeRaid( raid, worldId, raidKey )
 	end
 	self.sv.saved.worldRaids[worldId] = nil
+	self.sv.saved.fleeingRaids[worldId] = nil
 	sm.storage.save( STORAGE_CHANNEL_RAIDMANAGER, self.sv.saved )
 	self.sv.synchToClients = true
 end
 
-function RaidManager.sv_e_failRaid( self, data )
-	self:sv_failRaid( data.raid, data.worldId, data.raidKey )
-end
-
-function RaidManager.sv_failRaid( self, raid, worldId, raidKey )
-	if raid.timeoutTick then
-		for _,harvestable in pairs( raid.existingCrops ) do
-			if sm.exists( harvestable ) then
-				sm.event.sendToHarvestable( harvestable, "sv_e_raidSurvived" )
-			end
-		end
-	end
-	self:sv_cleanUpRaid( raid, worldId, raidKey )
-end
-
-function RaidManager.sv_cleanUpRaid( self, raid, worldId, raidKey )
-	if raid.raiders then
-		for _,raider in pairs( raid.raiders ) do
-			if sm.exists( raider.unit ) then
-				sm.event.sendToUnit( raider.unit, "sv_e_raidOver" )
-			end
-		end
-	end
-	if raidKey then
-		self.sv.saved.worldRaids[worldId][raidKey] = nil
-		self.sv.synchToClients = true
-		if self.sv.activeRaidLoadHandles[raidKey] then
-			for _,handle in ipairs( self.sv.activeRaidLoadHandles[raidKey] ) do
-				handle:release()
-			end
-			self.sv.activeRaidLoadHandles[raidKey] = nil
-		end
-	end
-end
-
-function RaidManager.Sv_GetPlantLocations( worldId, raidKey )
-	if g_raidManager then
-		return g_raidManager:sv_getPlantLocations( worldId, raidKey )
-	end
-	return {}
-end
-
-function RaidManager.sv_getPlantLocations( self, worldId, raidKey )
-	local raid = self.sv.saved.worldRaids[worldId] and self.sv.saved.worldRaids[worldId][raidKey]
+function RaidManager.sv_e_raidSurvived( self, data )
+	local raids = self.sv.saved.worldRaids[data.worldId]
+	local raid = raids and raids[data.raidKey]
 	if raid then
-		return raid.plantingLocations
+		self:sv_raidSurvived( raid, data.worldId, data.raidKey )
 	end
-	return {}
+end
+
+function RaidManager.sv_e_noCropsLeft( self, data )
+	local raids = self.sv.saved.worldRaids[data.worldId]
+	local raid = raids and raids[data.raidKey]
+	if raid then
+		self:sv_closeRaid( raid, data.worldId, data.raidKey )
+	end
+end
+
+function RaidManager.sv_getFleeingRaid( self, worldId, raidKey )
+	local fleeingRaids = self.sv.saved.fleeingRaids[worldId]
+	return fleeingRaids and fleeingRaids[raidKey]
+end
+
+-- The record is dropped once none of its raiders remain.
+function RaidManager.sv_releaseFleeingRaider( self, worldId, raidKey, unitId )
+	local fleeingRaid = self:sv_getFleeingRaid( worldId, raidKey )
+	if fleeingRaid then
+		fleeingRaid.raiders[unitId] = nil
+		if IsEmptyTable( fleeingRaid.raiders ) then
+			self.sv.saved.fleeingRaids[worldId][raidKey] = nil
+		end
+		self.sv.isDirty = true
+	end
+end
+
+-- Removes the raid. A raider that is left flees from it when it loads; the ones that never load are destroyed when the fleeing record expires.
+function RaidManager.sv_closeRaid( self, raid, worldId, raidKey )
+	if raid.raiders then
+		local raiders = {}
+		for unitId, raider in pairs( raid.raiders ) do
+			raiders[unitId] = { unit = raider.unit, spawnPos = raider.spawnPos }
+			self.sv.raiderMissingTicks[unitId] = nil
+		end
+		self.sv.saved.fleeingRaids[worldId] = self.sv.saved.fleeingRaids[worldId] or {}
+		self.sv.saved.fleeingRaids[worldId][raidKey] = {
+			center = raid.center,
+			raiders = raiders, -- unit id -> { unit, spawnPos }
+			expireTick = sm.game.getCurrentTick() + RAIDER_FLEE_TICK_DURATION
+		}
+	end
+	self.sv.saved.worldRaids[worldId][raidKey] = nil
+	self.sv.isDirty = true
+	self.sv.synchToClients = true
+	self:sv_releaseActiveLoadHandles( raidKey )
+	self:sv_releaseSpawnPointHandles( raidKey )
+end
+
+-- False while the manager is not up, so a raider is never mistaken for being in a finished raid.
+function RaidManager.Sv_IsRaidOver( worldId, raidKey )
+	if g_raidManager then
+		local raids = g_raidManager.sv.saved.worldRaids[worldId]
+		return raids == nil or raids[raidKey] == nil
+	end
+	return false
+end
+
+function RaidManager.Sv_GetRaidCenter( worldId, raidKey )
+	if g_raidManager then
+		local raids = g_raidManager.sv.saved.worldRaids[worldId]
+		local raid = raids and raids[raidKey]
+		if raid then
+			return raid.center
+		end
+		local fleeingRaid = g_raidManager:sv_getFleeingRaid( worldId, raidKey )
+		return fleeingRaid and fleeingRaid.center
+	end
+	return nil
+end
+
+function RaidManager.Sv_GetRaiderSpawnPosition( worldId, raidKey, unit )
+	if g_raidManager then
+		local raids = g_raidManager.sv.saved.worldRaids[worldId]
+		local raid = raids and raids[raidKey]
+		if raid then
+			local raider = raid.raiders and raid.raiders[unit.id]
+			return raider and raider.spawnPos
+		end
+		local fleeingRaid = g_raidManager:sv_getFleeingRaid( worldId, raidKey )
+		local raider = fleeingRaid and fleeingRaid.raiders[unit.id]
+		return raider and raider.spawnPos
+	end
+	return nil
 end
 
 function RaidManager.Sv_OnWorldFixedUpdate( world )
@@ -705,24 +827,44 @@ function RaidManager.sv_onWorldFixedUpdate( self, world )
 	local worldId = world.id
 	local currentTick = sm.game.getCurrentTick()
 	local raids = self.sv.saved.worldRaids[worldId] or {}
-	for raidKey, raid in pairs( raids ) do
-		if HasNearbyPlayer( raid.center ) then
-			if self.sv.activeRaidLoadHandles[raidKey] == nil then
-				self.sv.activeRaidLoadHandles[raidKey] = {}
-				local range = math.floor( GetRaidCellRange() )
-				local raidPosition = raid.center
-				local cellX = math.floor( raidPosition.x / 64 )
-				local cellY = math.floor( raidPosition.y / 64 )
-				for x = -range, range do
-					for y = -range, range do
-						self.sv.activeRaidLoadHandles[raidKey][#self.sv.activeRaidLoadHandles[raidKey]+1] = world:loadCellWithHandle( cellX + x, cellY + y )
+
+	local fleeingRaids = self.sv.saved.fleeingRaids[worldId]
+	if fleeingRaids then
+		for raidKey, fleeingRaid in pairs( fleeingRaids ) do
+			if currentTick >= fleeingRaid.expireTick then
+				-- This is the final removal of raiders that were unloaded at the time of the raid's expiration.
+				-- It must happen here because during game load 
+				for _, raider in pairs( fleeingRaid.raiders ) do
+					if not sm.exists( raider.unit ) then
+						sm.unit.forceDestroy( raider.unit )
 					end
 				end
+				fleeingRaids[raidKey] = nil
+				self.sv.isDirty = true
 			end
+		end
+	end
 
-			if raid.attackData.groupSpawns and raid.attackData.spawnPositions then
+	-- A raid with no crop positions left has nothing to attack
+	local cropless = {}
+	for raidKey, raid in pairs( raids ) do
+		if IsEmptyTable( raid.cropPositions ) then
+			cropless[#cropless+1] = raidKey
+		end
+	end
+	for _, raidKey in ipairs( cropless ) do
+		self:sv_closeRaid( raids[raidKey], worldId, raidKey )
+	end
+
+	for raidKey, raid in pairs( raids ) do
+		-- The timeline runs whether or not a player is near. Raiders spawned in unloaded cells are unloaded by the unit manager.
+		local elapsedTicks
+		if raid.attackData.groupSpawns then
+			elapsedTicks = currentTick - raid.attackStartTick
+
+			if raid.attackData.spawnPositions then
 				for _,group in ipairs( raid.attackData.groupSpawns ) do
-					if raid.tickCounter >= group.tickDelay and not group.isSpawned then
+					if elapsedTicks >= group.tickDelay and not group.isSpawned then
 						local spawnPos = raid.attackData.spawnPositions[( group.spawnIndex - 1 ) % #raid.attackData.spawnPositions + 1].path
 						local raiders = {}
 						for _,enemyData in ipairs( group.enemyList ) do
@@ -731,96 +873,140 @@ function RaidManager.sv_onWorldFixedUpdate( self, world )
 							end
 						end
 						group.isSpawned = true
-						local attackPos = raid.attackData.attackPosition
-						for _,pos in ipairs( raid.plantingLocations ) do
-							if ( pos - spawnPos ):length2() < ( spawnPos - attackPos ):length2() then
-								attackPos = pos
-							end
-						end
-						sm.event.sendToWorld( world, "sv_e_spawnRaiders", { raidKey = raidKey, attackPos = attackPos, raidCenter = raid.center, raiders = raiders, spawnPos = spawnPos } )
+						sm.event.sendToWorld( world, "sv_e_spawnRaiders", { raidKey = raidKey, attackPos = raid.center, raiders = raiders, spawnPos = spawnPos, raiderPositions = group.raiderPositions } )
+					end
+				end
+			end
+		end
+
+		if HasNearbyPlayer( raid.center, self.sv.activeRaidLoadHandles[raidKey] ~= nil ) then
+			if self.sv.activeRaidLoadHandles[raidKey] == nil then
+				self.sv.activeRaidLoadHandles[raidKey] = {}
+				local range = math.floor( GetRaidCellRange() )
+				local cellX = math.floor( raid.center.x / 64 )
+				local cellY = math.floor( raid.center.y / 64 )
+				for x = -range, range do
+					for y = -range, range do
+						self.sv.activeRaidLoadHandles[raidKey][#self.sv.activeRaidLoadHandles[raidKey]+1] = world:loadCellWithHandle( cellX + x, cellY + y )
 					end
 				end
 			end
 
-			if raid.timeoutTick then -- deactivate raid when timed out
-				if raid.tickCounter >= raid.timeoutTick then
-					self:sv_raidCompleted( raid, world.id )
-					self:sv_cleanUpRaid( raid, world.id, raidKey )
+			if raid.raiders and currentTick % 40 == 0 then
+				-- try respawning missing raiders. Missing time only accumulates here, while a player is near.
+				local missingTicks = self.sv.raiderMissingTicks
+				local toRespawn = {}
+				for unitId, raider in pairs( raid.raiders ) do
+					if sm.exists( raider.unit ) then
+						missingTicks[unitId] = nil
+					elseif raider.spawnPos then
+						missingTicks[unitId] = ( missingTicks[unitId] or 0 ) + 40
+						if missingTicks[unitId] >= RaiderMissingRespawnTicks
+						and IsPositionCellLoaded( world, raider.spawnPos ) and IsPositionCellLoaded( world, raid.center ) then
+							toRespawn[#toRespawn+1] = unitId
+						end
+					end
+				end
+
+				if #toRespawn > 0 then
+					local respawnUuids = {}
+					local respawnPositions = {}
+					for i, unitId in ipairs( toRespawn ) do
+						local raider = raid.raiders[unitId]
+						sm.unit.forceDestroy( raider.unit )
+						raid.raiders[unitId] = nil -- cleared but enemiesLeft unchanged
+						missingTicks[unitId] = nil
+						respawnUuids[i] = raider.uuid
+						respawnPositions[i] = raider.spawnPos
+					end
+					sm.event.sendToWorld( world, "sv_e_spawnRaiders", { raidKey = raidKey, attackPos = raid.center, raiders = respawnUuids, raiderPositions = respawnPositions } )
 					self.sv.isDirty = true
-					self.sv.synchToClients = true
 				end
 			end
 
-			if raid.attackData and raid.attackData.groupSpawns then
-				raid.tickCounter = raid.tickCounter + 1
-				raid.savedTick = currentTick
-			end
-
-			if raid.attackData then -- Manage active raid
-				-- generate attack points at start
-				if raid.attackData.attackTick and currentTick >= raid.attackData.attackTick then
-					-- Prepare raid groups
-					GetRaidEnemies( raid )
-
-
-
-					raid.savedTick = currentTick
-					self.sv.isDirty = true
-					self.sv.synchToClients = true
-
-					raid.attackData.attackTick = nil
-					raid.needsSpawnPoints = true
-				end
-
-				if raid.needsSpawnPoints and not self.sv.navmeshHandles[raidKey] then
-					self.sv.navmeshHandles[raidKey] = {}
-					self.sv.finishedNavMeshLoads[raidKey] = 0
-					local cellX = math.floor( raid.center.x / 64 )
-					local cellY = math.floor( raid.center.y / 64 )
-					local range = math.floor( GetRaidCellRange() )
-					for x = -range, range do
-						for y = -range, range do
-							self.sv.navmeshHandles[raidKey][#self.sv.navmeshHandles[raidKey]+1] = world:loadNavMeshWithHandle( x + cellX, y + cellY, "sv_navMeshCreated", { key = raidKey }, g_raidManager )
-						end
-					end
-				end
-
-				if self.sv.navmeshHandles[raidKey] and self.sv.finishedNavMeshLoads[raidKey] == #self.sv.navmeshHandles[raidKey] then
-					self.sv.raidPaths[raidKey] = {}
-					self.sv.raidsPathGenerationData[raidKey] = { rotation = math.rad( math.random() * 360 ), currentIndex = 1 }
-					self.sv.finishedNavMeshLoads[raidKey] = nil
-				end
-
-				-- Generate 1 path per tick until enough spawn points are gathered
-				if self.sv.raidPaths[raidKey] and self.sv.raidsPathGenerationData[raidKey] then
-					self.sv.raidPaths[raidKey][#self.sv.raidPaths[raidKey]+1] = CreateRaidPath( raid.center, world, self.sv.raidsPathGenerationData[raidKey].rotation, self.sv.raidsPathGenerationData[raidKey].currentIndex )
-					self.sv.raidsPathGenerationData[raidKey].currentIndex = self.sv.raidsPathGenerationData[raidKey].currentIndex + 1
-					if #self.sv.raidPaths[raidKey] == RAID_SAMPLE_POINT_COUNT then
-						raid.attackData.spawnPositions = FilterAndSelectPoints( self.sv.raidPaths[raidKey], world, raid.center )
-						shuffle( raid.attackData.spawnPositions )
-						raid.needsSpawnPoints = false
-						self.sv.isDirty = true
-						self.sv.synchToClients = true
-
-						for _,handle in ipairs( self.sv.navmeshHandles[raidKey] ) do
-							handle:release()
-						end
-						self.sv.navmeshHandles[raidKey] = nil
-						self.sv.raidPaths[raidKey] = nil
-						self.sv.raidsPathGenerationData[raidKey] = nil
-					end
+			-- Only time spent near the raid counts, so a player who stays away never has the crops outlast the attack
+			if raid.timeoutTick and elapsedTicks >= raid.lastSpawnTick then
+				raid.timeoutProgress = ( raid.timeoutProgress or 0 ) + 1
+				if raid.timeoutProgress >= RaidTimeoutTickTime then -- the crops outlasted the attack
+					self:sv_raidSurvived( raid, worldId, raidKey )
 				end
 			end
+
 		else
-			if self.sv.activeRaidLoadHandles[raidKey] then
-				for _,handle in ipairs( self.sv.activeRaidLoadHandles[raidKey] ) do
-					handle:release()
+			self:sv_releaseActiveLoadHandles( raidKey )
+		end
+
+		-- The attack starts and its spawn points are generated whether or not a player is near, so the drops are on time
+		if raid.attackData.attackTick and currentTick >= raid.attackData.attackTick then
+			-- Prepare raid groups
+			GetRaidEnemies( raid )
+			raid.cropArea = ComputeCropArea( raid )
+			raid.attackStartTick = currentTick
+
+
+
+			self.sv.isDirty = true
+			self.sv.synchToClients = true
+
+			raid.attackData.attackTick = nil
+			raid.needsSpawnPoints = true
+		end
+
+		if raid.needsSpawnPoints and not self.sv.navmeshHandles[raidKey] then
+			self.sv.navmeshHandles[raidKey] = {}
+			self.sv.spawnPointCellHandles[raidKey] = {}
+			self.sv.finishedNavMeshLoads[raidKey] = 0
+			local cellX = math.floor( raid.center.x / 64 )
+			local cellY = math.floor( raid.center.y / 64 )
+			local range = math.floor( GetRaidCellRange() )
+			for x = -range, range do
+				for y = -range, range do
+					self.sv.spawnPointCellHandles[raidKey][#self.sv.spawnPointCellHandles[raidKey]+1] = world:loadCellWithHandle( x + cellX, y + cellY )
+					self.sv.navmeshHandles[raidKey][#self.sv.navmeshHandles[raidKey]+1] = world:loadNavMeshWithHandle( x + cellX, y + cellY, "sv_navMeshCreated", { key = raidKey }, g_raidManager )
 				end
-				self.sv.activeRaidLoadHandles[raidKey] = nil
+			end
+		end
+
+		if self.sv.navmeshHandles[raidKey] and self.sv.finishedNavMeshLoads[raidKey] == #self.sv.navmeshHandles[raidKey] then
+			self.sv.raidPaths[raidKey] = {}
+			self.sv.raidsPathGenerationData[raidKey] = { rotation = math.rad( math.random() * 360 ), currentIndex = 1 }
+			self.sv.finishedNavMeshLoads[raidKey] = nil
+		end
+
+		-- Generate 1 path per tick until enough spawn points are gathered
+		if self.sv.raidPaths[raidKey] then
+			self.sv.raidPaths[raidKey][#self.sv.raidPaths[raidKey]+1] = CreateRaidPath( raid.center, world, self.sv.raidsPathGenerationData[raidKey].rotation, self.sv.raidsPathGenerationData[raidKey].currentIndex )
+			self.sv.raidsPathGenerationData[raidKey].currentIndex = self.sv.raidsPathGenerationData[raidKey].currentIndex + 1
+			if #self.sv.raidPaths[raidKey] == RAID_SAMPLE_POINT_COUNT then
+				local spawnPositions = FilterAndSelectPoints( self.sv.raidPaths[raidKey], world, raid.center )
+				if IsEmptyTable( spawnPositions ) then
+					-- Exploitable, since the plants mature without a fight, but better than crashing all raids.
+					sm.log.error( "Raid has no reachable spawn position and is closed: "..raidKey )
+					self:sv_closeRaid( raid, worldId, raidKey )
+				else
+					raid.attackData.spawnPositions = spawnPositions
+					shuffle( raid.attackData.spawnPositions )
+					raid.needsSpawnPoints = false
+					self.sv.isDirty = true
+					self.sv.synchToClients = true
+
+					-- Precompute each group's raider spread while the navmesh is still loaded, so spawning later doesn't depend on it
+					for _,group in ipairs( raid.attackData.groupSpawns ) do
+						local groupSpawnPos = raid.attackData.spawnPositions[( group.spawnIndex - 1 ) % #raid.attackData.spawnPositions + 1].path
+						local raiderCount = 0
+						for _,enemyData in ipairs( group.enemyList ) do
+							raiderCount = raiderCount + enemyData.quantity
+						end
+						group.raiderPositions = GenerateRaiderSpawnPositions( world, groupSpawnPos, raiderCount )
+					end
+
+					self:sv_releaseSpawnPointHandles( raidKey )
+				end
 			end
 		end
 	end
 end
+
 
 function RaidManager.Sv_GetClosestPlayerInRaid( worldId, raidKey, position )
 	if g_raidManager then
@@ -858,7 +1044,6 @@ function RaidManager.client_onCreate( self )
 	self.cl.worldRaids = {}
 	self.cl.heldPlant = nil
 	self.cl.localPlayerPlantingGui = nil
-	self.cl.trackedRaidEnemies = {}
 	self.cl.fadeTimer = 0
 	self.cl.oscillationTimer = 0
 end
@@ -892,7 +1077,7 @@ function RaidManager.client_onClientDataUpdate( self, clientData, channel )
 	if channel == 1 then
 		-- Add/Update worldRaids
 		local updatedWorldRaids = {}
-		for worldId, raids in pairs( clientData.worldRaidSync ) do
+		for worldId, raids in pairs( clientData ) do
 			updatedWorldRaids[worldId] = {}
 			local prevRaids = self.cl.worldRaids[worldId] or {}
 			for raidId, raidSync in pairs( raids ) do
@@ -936,24 +1121,21 @@ function RaidManager.client_onClientDataUpdate( self, clientData, channel )
 					raid.cl.markerEffectFar:destroy()
 					raid.cl.markerEffectFar = nil
 				end
-				if g_compassHud then
-					if raid.cl.compassMarkers then
-						for _,pointData in pairs( raid.cl.compassMarkers ) do
-							g_compassHud:compassRemoveIcon( pointData.name )
+				if raid.cl.groupDrops then
+					for _,drop in pairs( raid.cl.groupDrops ) do
+						if g_compassHud then
+							g_compassHud:compassRemoveIcon( drop.compass.name )
 						end
-						raid.cl.compassMarkers = nil
-					end
-				end
-				if raid.cl.activeDropEffects then
-					for _,effectData in pairs( raid.cl.activeDropEffects ) do
-						if sm.exists( effectData.effect ) then
-							effectData.effect:destroy()
-						end
-						if sm.exists( effectData.impactEffect ) then
-							effectData.impactEffect:destroy()
+						if drop.effects then
+							if sm.exists( drop.effects.pod ) then
+								drop.effects.pod:destroy()
+							end
+							if sm.exists( drop.effects.impact ) then
+								drop.effects.impact:destroy()
+							end
 						end
 					end
-					raid.cl.activeDropEffects = nil
+					raid.cl.groupDrops = nil
 				end
 				if g_compassHud then
 					g_compassHud:compassRemoveIcon( raid.raidSync.key )
@@ -971,86 +1153,14 @@ function RaidManager.Cl_OnWorldUpdate( worldId, deltaTime )
 	end
 end
 
-local function CreateCompassMarker( character )
-	if g_compassHud then
-		local icon = "icon_farmraid_compass_bot.png"
-		if character:getCharacterType() == unit_farmbot then
-			icon = "icon_farmraid_compass_farmbot.png"
-		end
-		g_compassHud:compassAddIcon( "enemy"..character.id, icon, false, 8, 12  )
-		g_compassHud:compassSetIconHost( "enemy"..character.id, character )
-		g_compassHud:setVisible( "enemy"..character.id, true )
-	end
-end
-
-function RaidManager.Cl_AddTrackedRaidEnemy( raidKey, character )
+-- Nil once the raid is gone
+function RaidManager.Cl_GetRaidCenter( worldId, raidKey )
 	if g_raidManagerClient then
-		g_raidManagerClient:cl_addTrackedRaidEnemy( raidKey, character )
+		local raids = g_raidManagerClient.cl.worldRaids[worldId]
+		local raid = raids and raids[raidKey]
+		return raid and raid.raidSync.center
 	end
-end
-
-function RaidManager.cl_addTrackedRaidEnemy( self, raidKey, character )
-	if self.cl.trackedRaidEnemies[raidKey] == nil then
-		self.cl.trackedRaidEnemies[raidKey] = {}
-	end
-	self.cl.trackedRaidEnemies[raidKey][character.id] = character
-	local myPlayer = sm.localPlayer.getPlayer()
-	local myCharacter = myPlayer and myPlayer.character or nil
-	local myPosition = sm.exists( myCharacter ) and myCharacter.worldPosition or nil
-	if not myPosition then
-		return
-	end
-	if self.cl.worldRaids[character:getWorld().id] and not IsEmptyTable( self.cl.worldRaids[character:getWorld().id] ) then
-		for raidId, raid in pairs( self.cl.worldRaids[character:getWorld().id] ) do
-			if raidId == raidKey then
-				local myDistance2 = myPosition and ( myPosition - raid.raidSync.center ):length2() or math.huge
-				local insideRaidArea = myDistance2 <= RAID_RADIUS * RAID_RADIUS
-				if insideRaidArea then
-					CreateCompassMarker( character )
-				end
-				break
-			end
-		end
-	end
-end
-
-function RaidManager.Cl_RemoveTrackedRaidEnemy( raidKey, character )
-	if g_raidManagerClient then
-		g_raidManagerClient:cl_removeTrackedRaidEnemy( raidKey, character )
-	end
-end
-
-function RaidManager.cl_removeTrackedRaidEnemy( self, raidKey, character )
-	if self.cl.trackedRaidEnemies[raidKey] then
-		if self.cl.trackedRaidEnemies[raidKey][character.id] then
-			if g_compassHud then
-				g_compassHud:compassRemoveIcon( "enemy"..character.id )
-			end
-			self.cl.trackedRaidEnemies[raidKey][character.id] = nil
-		end
-	end
-end
-
-function RaidManager.cl_markRaiders( self, raidKey )
-	if self.cl.trackedRaidEnemies[raidKey] == nil then
-		return
-	end
-	for _, character in pairs( self.cl.trackedRaidEnemies[raidKey] ) do
-		if sm.exists( character ) then
-			CreateCompassMarker( character)
-		end
-	end
-end
-
-function RaidManager.cl_unmarkRaiders( self, raidKey )
-	if self.cl.trackedRaidEnemies[raidKey] == nil then
-		return
-	end
-	for characterId, character in pairs( self.cl.trackedRaidEnemies[raidKey] ) do
-		if g_compassHud then
-			g_compassHud:compassRemoveIcon( "enemy"..character.id )
-		end
-	end
+	return nil
 end
 
 -- Gui and effects
@@ -1062,12 +1172,6 @@ local function GetCountdownText( raid, currentTick )
 end
 
 local function Cl_TryPlayCountdownEffect( raid, numericalValue )
-	local attackTick = raid.raidSync.attackData and raid.raidSync.attackData.attackTick
-	if attackTick == nil then
-		raid.cl.previousCountdownValue = nil
-		return
-	end
-
 	if raid.cl.previousCountdownValue ~= numericalValue then
 		raid.cl.previousCountdownValue = numericalValue
 		if RaidCountdownEffectValues[numericalValue] then
@@ -1118,154 +1222,131 @@ function RaidManager.cl_onWorldUpdate( self, worldId, deltaTime )
 
 	for raidId, raid in pairs( raids ) do
 		-- Update gui position
-		if raid.raidSync.attackData and raid.raidSync.attackData.attackPosition then
-			if raid.cl.guiWorldPosition == nil then
-				raid.cl.guiWorldPosition = raid.raidSync.attackData.attackPosition
-			else
-				raid.cl.previousPosition = raid.cl.guiWorldPosition
-				local pos = raid.raidSync.attackData and raid.raidSync.attackData.attackPosition
-				raid.cl.guiWorldPosition = magicPositionInterpolation( raid.cl.guiWorldPosition, pos, deltaTime, 1/6 )
-			end
+		if raid.cl.guiWorldPosition == nil then
+			raid.cl.guiWorldPosition = raid.raidSync.attackData.attackPosition
+		else
+			raid.cl.previousPosition = raid.cl.guiWorldPosition
+			local pos = raid.raidSync.attackData.attackPosition
+			raid.cl.guiWorldPosition = magicPositionInterpolation( raid.cl.guiWorldPosition, pos, deltaTime, 1/6 )
 		end
 
 		local myDistance2 = myPosition and ( myPosition - raid.raidSync.center ):length2() or math.huge
-		local insideRaidArea = myDistance2 <= RAID_RADIUS * RAID_RADIUS
+		local insideRaidArea = RaidManager.IsWithinRaidRadius( myDistance2, raid.cl.insideRaidArea )
+		raid.cl.insideRaidArea = insideRaidArea
 
 		if myDistance2 < closestRaidDistance2 then
 			closestRaidDistance2 = myDistance2
 			closestRaidId = raidId
 		end
-		local activeAttack = raid.raidSync.attackData and raid.raidSync.attackData.spawnPositions ~= nil
+		local activeAttack = raid.raidSync.attackData.spawnPositions ~= nil
 		local showInfo = insideRaidArea and raid.cl.isClosest and raid.raidSync.value > 0
-		local showMarker = raid.raidSync.center ~= nil and raid.raidSync.attackData.attackTick and currentTick > raid.raidSync.attackData.attackTick - RaidIncomingTickTime + RaidResetOnPlantTickTime
-		local showCompassDrops = insideRaidArea and raid.cl.isClosest and raid.raidSync.attackData and raid.raidSync.attackData.spawnPositions
-		local showRaidDropEffects = raid.raidSync.level > 1 and raid.raidSync.attackData and raid.raidSync.attackData.spawnPositions and raid.raidSync.timeoutTick
+		local countdownStarted = raid.raidSync.attackData.attackTick and currentTick > raid.raidSync.attackData.attackTick - RaidIncomingTickTime + RaidResetOnPlantTickTime
+		-- The far marker stays up for the whole raid; the near marker with the countdown only shows during the countdown
+		local showMarker = countdownStarted or raid.raidSync.timeoutTick ~= nil
+		local showNearMarker = showInfo and countdownStarted
+		local showFarMarker = showMarker and not insideRaidArea
+		local showCompassDrops = insideRaidArea and raid.cl.isClosest and raid.raidSync.attackData.spawnPositions
+		local showRaidDropEffects = raid.raidSync.level > 1 and raid.raidSync.attackData.spawnPositions and raid.raidSync.timeoutTick
 
-		if not raid.cl.notificationShown and raid.raidSync.attackData and raid.raidSync.attackData.attackTick
+		if not raid.cl.notificationShown and raid.raidSync.attackData.attackTick
 		and currentTick >= raid.raidSync.attackData.attackTick - RaidIncomingTickTime + RaidResetOnPlantTickTime then
 			NotificationManager.Cl_AddRaidWarningNotification( "#{RAID_WARNING_MESSAGE}" )
 			raid.cl.notificationShown = true
 		end
 
-		if raid.cl.previousInsideRaidArea ~= insideRaidArea then
-			raid.cl.previousInsideRaidArea = insideRaidArea
-			if insideRaidArea then
-				self:cl_markRaiders( raidId )
-			else
-				self:cl_unmarkRaiders( raidId )
-			end
-		end
+		anyRaidControllingGui = anyRaidControllingGui or insideRaidArea
 
-		if not anyRaidControllingGui then
-			anyRaidControllingGui = HasLocalPlayerInRange( raid.raidSync.center )
-		end
+		-- Drops follow the server's absolute ticks and play for any client within a long radius of the raid
+		local dropsInRange = myDistance2 <= DropEffectRadius * DropEffectRadius
 
-		local hasNearbyPlayer = HasNearbyPlayer( raid.raidSync.center )
-		if hasNearbyPlayer and showRaidDropEffects then
-			if raid.cl.compassMarkers == nil then
-				raid.cl.compassMarkers = {}
+		-- The countdown sounds play within the same long radius, not only where the near marker's numbers can be read
+		if dropsInRange and countdownStarted then
+			local _, secondsLeft = GetCountdownText( raid, currentTick )
+			Cl_TryPlayCountdownEffect( raid, secondsLeft )
+		end
+		if showRaidDropEffects and ( raid.cl.groupDrops or dropsInRange ) then
+			if raid.cl.groupDrops == nil then
+				raid.cl.groupDrops = {}
 				for i,groupData in ipairs( raid.raidSync.attackData.groupSpawns ) do
 					local position = raid.raidSync.attackData.spawnPositions[( groupData.spawnIndex - 1 ) % #raid.raidSync.attackData.spawnPositions + 1].path
-					local direction = ( position - ( raid.raidSync.attackData and raid.raidSync.attackData.attackPosition ) ):safeNormalize( sm.vec3.new( 0, 0, 1 ) )
+					local direction = ( position - raid.raidSync.attackData.attackPosition ):safeNormalize( sm.vec3.new( 0, 0, 1 ) )
 					local first = groupData.tickDelay == raid.raidSync.attackData.groupSpawns[1].tickDelay
 					local fromPos = first and position - direction * DropEffectTravelDistance or position + direction * DropEffectTravelDistance
-					raid.cl.compassMarkers[#raid.cl.compassMarkers+1] = { active = false, name = raid.raidSync.key..tostring( i ), fromPos = fromPos, toPos = position }
+					-- compass: the icon that travels to the drop point; effects: the pod and impact effects, created when the drop starts
+					local compass = { active = false, name = raid.raidSync.key..tostring( i ), fromPos = fromPos, toPos = position }
+					raid.cl.groupDrops[i] = { dropStartTick = nil, effects = nil, compass = compass }
 					if g_compassHud then
-						g_compassHud:compassAddIcon( raid.cl.compassMarkers[#raid.cl.compassMarkers].name, "icon_compass_dropcargo.png", true, 32 )
-						g_compassHud:compassSetIconWorldPosition( raid.cl.compassMarkers[#raid.cl.compassMarkers].name, fromPos )
-						g_compassHud:compassSetIconStacking( raid.cl.compassMarkers[#raid.cl.compassMarkers].name, false )
+						g_compassHud:compassAddIcon( compass.name, "icon_compass_dropcargo.png", true, 32 )
+						g_compassHud:compassSetIconWorldPosition( compass.name, fromPos )
+						g_compassHud:compassSetIconStacking( compass.name, false )
 					end
 				end
 			end
-			if raid.raidSync.attackData.groupSpawns then
-				if raid.cl.activeDropEffects == nil then
-					raid.cl.activeDropEffects = {}
-				end
-				local ticksPassed = ( currentTick - raid.raidSync.lastSavedTick ) + raid.raidSync.tickCounter
-				for i,groupData in ipairs( raid.raidSync.attackData.groupSpawns ) do
-					if ticksPassed >= ( groupData.tickDelay - InEffectDelayTicks ) and not raid.cl.compassMarkers[i].effectDone then
-						local spawnPoint = raid.raidSync.attackData.spawnPositions[( groupData.spawnIndex - 1 ) % #raid.raidSync.attackData.spawnPositions + 1].path
-						local material = raid.raidSync.attackData.spawnPositions[( groupData.spawnIndex - 1 ) % #raid.raidSync.attackData.spawnPositions + 1].material
-						if material == "" then
-							material = sm.physics.getGroundMaterial( spawnPoint )
-						end
-						local direction = spawnPoint - ( raid.raidSync.attackData and raid.raidSync.attackData.attackPosition )
-						direction.z = 0
-						if ( groupData.tickDelay - raid.raidSync.attackData.groupSpawns[1].tickDelay ) <= MultiDropRandomOffset * 40 then
-							local rotation = sm.vec3.getRotation( sm.vec3.new( 0, 1, 0 ), direction:safeNormalize( sm.vec3.new( 1, 0, 0 ) ) )
-							local effect = sm.effect.createEffect( "Raidrop01 - Droppod" )
-							effect:setPosition( spawnPoint )
-							effect:setRotation( rotation )
-							effect:setParameter( "material", sm.shape.material.metal )
-							effect:start()
-
-							local impactEffect = sm.effect.createEffect( "Raidrop01 - DroppodImpact" )
-							impactEffect:setPosition( spawnPoint )
-							impactEffect:setRotation( rotation )
-							impactEffect:setParameter( "material", sm.physics.getMaterialId( material ) )
-							impactEffect:start()
-							raid.cl.activeDropEffects[i] = { effect = effect, impactEffect = impactEffect, timer = 0 }
-						else
-							local rotation = sm.vec3.getRotation( sm.vec3.new( 0, 1, 0 ), ( -direction ):safeNormalize( sm.vec3.new( 1, 0, 0 ) ) )
-							local effect = sm.effect.createEffect( "Raidrop02 - Droppod" )
-							effect:setPosition( spawnPoint )
-							effect:setRotation( rotation )
-							effect:setParameter( "material", sm.shape.material.metal )
-							effect:start()
-							
-							local impactEffect = sm.effect.createEffect( "Raidrop01 - DroppodImpact" )
-							impactEffect:setPosition( spawnPoint )
-							impactEffect:setRotation( rotation )
-							impactEffect:setParameter( "material", sm.physics.getMaterialId( material ) )
-							impactEffect:start()
-							raid.cl.activeDropEffects[i] = { effect = effect, impactEffect = impactEffect, timer = 0 }
-						end
-						raid.cl.compassMarkers[i].effectStartTick = currentTick
-						raid.cl.compassMarkers[i].active = true
-						raid.cl.compassMarkers[i].effectDone = true
+			for i,groupData in ipairs( raid.raidSync.attackData.groupSpawns ) do
+				local drop = raid.cl.groupDrops[i]
+				local dropStartTick = groupData.dropStartTick
+				if dropsInRange and currentTick >= dropStartTick and not drop.dropStartTick then
+					-- Fast-forwards audio and tracks when the drop began before the client got here (e.g. after reload)
+					local elapsedTicks = currentTick - dropStartTick
+					local effectStartTime = elapsedTicks / 40
+					local spawnPosition = raid.raidSync.attackData.spawnPositions[( groupData.spawnIndex - 1 ) % #raid.raidSync.attackData.spawnPositions + 1]
+					local spawnPoint = spawnPosition.path
+					local material = spawnPosition.material
+					if material == "" then
+						material = sm.physics.getGroundMaterial( spawnPoint )
+					end
+					local direction = spawnPoint - raid.raidSync.attackData.attackPosition
+					direction.z = 0
+					-- Drops that land together with the first come in from the attack side, later ones from the opposite side
+					local isOpeningDrop = ( groupData.tickDelay - raid.raidSync.attackData.groupSpawns[1].tickDelay ) <= MultiDropRandomOffset * 40
+					local facing = isOpeningDrop and direction or -direction
+					local rotation = sm.vec3.getRotation( sm.vec3.new( 0, 1, 0 ), facing:safeNormalize( sm.vec3.new( 1, 0, 0 ) ) )
+					local effect = sm.effect.createEffect( isOpeningDrop and "Raidrop01 - Droppod" or "Raidrop02 - Droppod" )
+					effect:setPosition( spawnPoint )
+					effect:setRotation( rotation )
+					effect:setParameter( "material", sm.shape.material.metal )
+					effect:start( effectStartTime )
+						
+					local impactEffect = sm.effect.createEffect( "Raidrop01 - DroppodImpact" )
+					impactEffect:setPosition( spawnPoint )
+					impactEffect:setRotation( rotation )
+					impactEffect:setParameter( "material", sm.physics.getMaterialId( material ) )
+					impactEffect:start( effectStartTime )
+					drop.effects = { pod = effect, impact = impactEffect, timer = effectStartTime }
+					drop.dropStartTick = dropStartTick
+					if elapsedTicks < MarkerTickLifetime then
+						drop.compass.active = true
 						if g_compassHud and showCompassDrops then
-							g_compassHud:setVisible( raid.cl.compassMarkers[i].name, true )
-							g_compassHud:compassPingMarker( raid.cl.compassMarkers[i].name, "Gui - Raid_Arrows01_loop" )
+							g_compassHud:setVisible( drop.compass.name, true )
+							g_compassHud:compassPingMarker( drop.compass.name, "Gui - Raid_Arrows01_loop" )
 						end
-					elseif ticksPassed >= ( groupData.tickDelay - InEffectDelayTicks + MarkerTickLifetime ) and raid.cl.compassMarkers[i].active then
-						raid.cl.compassMarkers[i].active = false
-						if g_compassHud and showCompassDrops then
-							g_compassHud:setVisible( raid.cl.compassMarkers[i].name, false )
-						end
+					end
+				elseif currentTick >= dropStartTick + MarkerTickLifetime and drop.compass.active then
+					drop.compass.active = false
+					if g_compassHud then
+						g_compassHud:setVisible( drop.compass.name, false )
 					end
 				end
 			end
-			for _, compassData in ipairs( raid.cl.compassMarkers ) do
-				if compassData.effectStartTick and compassData.active and not compassData.movementDone then
-					local fraction = math.min( ( currentTick - compassData.effectStartTick ) / 40 / DropEffectDuration, 1.0 )
-					if fraction <= 1.0 then
-						if fraction >= 1.0 then
-							compassData.movementDone = true
-						end
-						local pos = lerp( compassData.fromPos, compassData.toPos, fraction )
-						if g_compassHud and showCompassDrops then
-							g_compassHud:compassSetIconWorldPosition( compassData.name, pos )
-						end
+			for _, drop in ipairs( raid.cl.groupDrops ) do
+				local compass = drop.compass
+				if compass.active and g_compassHud then
+					local visible = showCompassDrops and true or false
+					g_compassHud:setVisible( compass.name, visible )
+					if visible and not compass.movementDone then
+						local fraction = math.min( ( currentTick - drop.dropStartTick ) / 40 / DropEffectDuration, 1.0 )
+						compass.movementDone = fraction >= 1.0
+						g_compassHud:compassSetIconWorldPosition( compass.name, lerp( compass.fromPos, compass.toPos, fraction ) )
 					end
 				end
 			end
-			for i,effectData in reverse_ipairs( raid.cl.activeDropEffects ) do
-				if effectData.effect and effectData.effect:isPlaying() then
-					effectData.timer = effectData.timer + deltaTime
-					if effectData.timer >= DoorDissolveDelay then
-						local fraction = math.min( ( effectData.timer - DoorDissolveDelay ) / DoorDissolveDuration , 1.0 )
-						effectData.effect:setParameter( "pose2", lerp( 0.5, 1, fraction ) )
-					end
-				end
-			end
-		elseif showRaidDropEffects then
-			if raid.cl.compassMarkers then
-				for _,markerData in pairs( raid.cl.compassMarkers ) do
-					if markerData.active == true then
-						markerData.active = false
-						if g_compassHud then
-							g_compassHud:setVisible( markerData.name, false )
-						end
+			for _, drop in ipairs( raid.cl.groupDrops ) do
+				local effects = drop.effects
+				if effects and effects.pod:isPlaying() then
+					effects.timer = effects.timer + deltaTime
+					if effects.timer >= DoorDissolveDelay then
+						local fraction = math.min( ( effects.timer - DoorDissolveDelay ) / DoorDissolveDuration , 1.0 )
+						effects.pod:setParameter( "pose2", lerp( 0.5, 1, fraction ) )
 					end
 				end
 			end
@@ -1512,107 +1593,66 @@ function RaidManager.cl_onWorldUpdate( self, worldId, deltaTime )
 		end
 
 		if showMarker then
-			-- Create marker gui
-			if not showInfo then
+			if showFarMarker then
 				if raid.cl.markerEffectFar == nil then
 					raid.cl.markerEffectFar = sm.effect.createEffect( "RaidMarkerFar" )
 					raid.cl.markerEffectFar:setPosition( raid.cl.guiWorldPosition + RaidMarkerOffset )
 				end
-				if raid.cl.markerEffectFar and not raid.cl.markerEffectFar:isPlaying() then
+				if not raid.cl.markerEffectFar:isPlaying() then
 					raid.cl.markerEffectFar:start()
 				end
-				if raid.cl.markerEffectFar then
-					-- Update gui position
-					if raid.cl.guiWorldPosition and ( raid.cl.previousPosition == nil or raid.cl.previousPosition ~= raid.cl.guiWorldPosition ) then
-						raid.cl.markerEffectFar:setPosition( raid.cl.guiWorldPosition + RaidMarkerOffset )
-					end
+				if raid.cl.previousPosition ~= raid.cl.guiWorldPosition then
+					raid.cl.markerEffectFar:setPosition( raid.cl.guiWorldPosition + RaidMarkerOffset )
 				end
-				if raid.cl.markerEffectNear and raid.cl.markerEffectNear:isPlaying() then
-					raid.cl.markerEffectNear:stop()
-				end
-			else
+			elseif raid.cl.markerEffectFar and raid.cl.markerEffectFar:isPlaying() then
+				raid.cl.markerEffectFar:stop()
+			end
+
+			if showNearMarker then
 				if raid.cl.markerEffectNear == nil then
 					raid.cl.markerEffectNear = sm.effect.createEffect( "RaidMarkerNear" )
 					raid.cl.markerEffectNear:setPosition( raid.cl.guiWorldPosition + RaidMarkerOffset )
-					if raid.raidSync.attackData.attackTick then
-						local stringValue, numericalValue = GetCountdownText( raid, currentTick )
-						raid.cl.markerEffectNear:setParameter( "TextContent", stringValue )
-					end
-	
-					if raid.cl.compassPlaced == nil and g_compassHud then
-						raid.cl.compassPlaced = true
-						g_compassHud:compassAddIcon( raid.raidSync.key, "icon_compass_bot.png" )
-						g_compassHud:compassSetIconWorldPosition( raid.raidSync.key, raid.raidSync.center )
-						g_compassHud:setVisible( raid.raidSync.key, true )
-					end
 				end
-				if raid.cl.markerEffectNear and not raid.cl.markerEffectNear:isPlaying() then
+				if not raid.cl.markerEffectNear:isPlaying() then
 					raid.cl.markerEffectNear:start()
 				end
-				if raid.cl.markerEffectNear then
-					-- Update gui text
-					if raid.cl.guiWorldPosition and ( raid.cl.previousPosition == nil or raid.cl.previousPosition ~= raid.cl.guiWorldPosition ) then
-						raid.cl.markerEffectNear:setPosition( raid.cl.guiWorldPosition + RaidMarkerOffset )
-						if raid.cl.compassPlaced and g_compassHud then
-							g_compassHud:compassSetIconWorldPosition( raid.raidSync.key, raid.cl.guiWorldPosition )
-						end
-					end
-					if raid.raidSync.attackData.attackTick then
-						local stringValue, numericalValue = GetCountdownText( raid, currentTick )
-						raid.cl.markerEffectNear:setParameter( "TextContent", stringValue )
-						Cl_TryPlayCountdownEffect( raid, numericalValue )
-					else
-						raid.cl.markerEffectNear:setParameter( "TextContent", "" )
-						raid.cl.markerEffectNear:setParameter( "textureIndex", 2 )
-					end
+				if raid.cl.previousPosition ~= raid.cl.guiWorldPosition then
+					raid.cl.markerEffectNear:setPosition( raid.cl.guiWorldPosition + RaidMarkerOffset )
 				end
-				if raid.cl.markerEffectFar and raid.cl.markerEffectFar:isPlaying() then
-					raid.cl.markerEffectFar:stop()
-				end
-			end
-			if activeAttack and ( raid.cl.lastActivationTick == nil or ( currentTick - raid.cl.lastActivationTick ) > TicksBetweenLockOnEffects ) then
-				if raid.cl.cropEffects == nil then
-					raid.cl.cropEffects = {}
-					local player = sm.localPlayer.getPlayer()
-					local character = player and player.character
-					if character then
-						local playerPosition = sm.localPlayer.getPlayer().character.worldPosition
-						local function ascendingSort( a, b )
-							return ( a.worldPosition - playerPosition ):length2() < ( b.worldPosition - playerPosition ):length2()
-						end
-						table.sort( raid.raidSync.crops, ascendingSort )
-					end
-				end
-				for _,crop in ipairs( raid.raidSync.crops ) do
-					if sm.exists( crop ) then
-						if raid.cl.cropEffects[crop.id] == nil then
-							raid.cl.cropEffects[crop.id] = sm.effect.createEffect( "Raid - Lockontarget" )
-							raid.cl.cropEffects[crop.id]:setPosition( crop.worldPosition + sm.vec3.new( 0, 0, 0.3 ) )
-							raid.cl.cropEffects[crop.id]:start()
-							raid.cl.lastActivationTick = currentTick
-							break
-						end
-					end
-				end
+				local stringValue = GetCountdownText( raid, currentTick )
+				raid.cl.markerEffectNear:setParameter( "TextContent", stringValue )
+			elseif raid.cl.markerEffectNear and raid.cl.markerEffectNear:isPlaying() then
+				raid.cl.markerEffectNear:stop()
 			end
 		else
 			-- Destroy gui
 			if raid.cl.markerEffectNear then
 				raid.cl.markerEffectNear:destroy()
 				raid.cl.markerEffectNear = nil
-				if g_compassHud then
-					g_compassHud:compassRemoveIcon( raid.raidSync.key )
-				end
 			end
 			if raid.cl.markerEffectFar then
 				raid.cl.markerEffectFar:destroy()
 				raid.cl.markerEffectFar = nil
 			end
-			if g_compassHud then
-				if raid.cl.compassMarkers then
-					for _,pointData in pairs( raid.cl.compassMarkers ) do
-						g_compassHud:compassRemoveIcon( pointData.name )
-					end
+		end
+		-- The raid compass icon shows for the whole countdown and after the drops start only while the player is far
+		if g_compassHud then
+			local showRaidCompass = showMarker and ( countdownStarted or not insideRaidArea )
+			if showRaidCompass then
+				if raid.cl.compassPlaced == nil then
+					raid.cl.compassPlaced = true
+					g_compassHud:compassAddIcon( raid.raidSync.key, "icon_compass_bot.png" )
+					g_compassHud:compassSetIconWorldPosition( raid.raidSync.key, raid.cl.guiWorldPosition )
+				elseif raid.cl.previousPosition ~= raid.cl.guiWorldPosition then
+					g_compassHud:compassSetIconWorldPosition( raid.raidSync.key, raid.cl.guiWorldPosition )
+				end
+				g_compassHud:setVisible( raid.raidSync.key, true )
+			elseif raid.cl.compassPlaced then
+				if showMarker then
+					g_compassHud:setVisible( raid.raidSync.key, false )
+				else
+					g_compassHud:compassRemoveIcon( raid.raidSync.key )
+					raid.cl.compassPlaced = nil
 				end
 			end
 		end

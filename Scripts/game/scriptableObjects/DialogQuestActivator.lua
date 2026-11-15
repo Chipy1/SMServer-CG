@@ -1,4 +1,4 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/quest_util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/quest_util.lua" )
 
 DialogQuestActivator = class( nil )
 DialogQuestActivator.isSaveObject = true

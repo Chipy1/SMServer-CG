@@ -1,6 +1,6 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_items.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_harvestable.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_items.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_harvestable.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
 
 MiningManager = class( nil )
 

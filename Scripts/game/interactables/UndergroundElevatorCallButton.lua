@@ -1,4 +1,4 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/UndergroundElevatorManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/UndergroundElevatorManager.lua" )
 
 UndergroundElevatorCallButton = class( nil )
 
@@ -20,37 +20,12 @@ function UndergroundElevatorCallButton.server_onCreate( self )
 		self.storage:save( self.sv.saved )
 	end
 	self.network:setClientData( self.sv.saved )
-
-	self.sv.storageKey = TileStorageManager.Sv_GetTileStorageKeyFromObject( self.interactable )
-	self.sv.tileData = TileStorageManager.Sv_GetValueInSubTable( self.sv.storageKey, UNDERGROUND_ELEVATOR_TABLE, self.sv.saved.connectionTag )
-end
-
-function UndergroundElevatorCallButton.server_onFixedUpdate( self )
-	if self.sv.tileData == nil then
-		self.sv.tileData = TileStorageManager.Sv_GetValueInSubTable( self.sv.storageKey, UNDERGROUND_ELEVATOR_TABLE, self.sv.saved.connectionTag )
-	end
 end
 
 function UndergroundElevatorCallButton.sv_n_onInteract( self )
-	if self.sv.tileData == nil then
-		return
-	end
-	local isLocked = self.sv.tileData.locked
-	if isLocked == nil then
-		isLocked = true
-	end
-	if isLocked then
-		if LogEntryManager.Sv_HasLog( self.sv.tileData.lockUuid ) then
-			self.sv.tileData.locked = false
-			isLocked = false
-			TileStorageManager.Sv_SetValueInSubTable( self.sv.storageKey, UNDERGROUND_ELEVATOR_TABLE, self.sv.saved.connectionTag, self.sv.tileData )
-		end
-	end
 	if self.sv.saved.unlocked then
-		if self.sv.tileData.elevator and sm.exists( self.sv.tileData.elevator ) and not isLocked then
-			sm.event.sendToInteractable( self.sv.tileData.elevator, "sv_e_callButtonPressed" )
-		end
-	elseif not isLocked then
+		UndergroundElevatorManager.Sv_CallFromButton( self.interactable, self.sv.saved.connectionTag )
+	elseif LogEntryManager.Sv_HasLog( LOGS.log_underground_elevator_key_01 ) then
 		QuestManager.Sv_SendEvent( "mininghub_elevator_unlock" )
 		self.sv.saved.unlocked = true
 		self.network:setClientData( self.sv.saved )
@@ -82,7 +57,6 @@ function UndergroundElevatorCallButton.client_onClientDataUpdate( self, data, ch
 	elseif data.unlocked then
 		self:cl_setAnimation( self.cl.animations["Pose"], 0.0 )
 	end
-	self.cl.lockUuid = UNDERGROUND_CONNECTION_TO_KEY_UUID[data.connectionTag]
 end
 
 function UndergroundElevatorCallButton.client_onInteract( self, _, state )
@@ -95,7 +69,7 @@ function UndergroundElevatorCallButton.client_onInteract( self, _, state )
 end
 
 function UndergroundElevatorCallButton.client_canInteract( self )
-	if self.cl.lockUuid and not LogEntryManager.Cl_HasLog( self.cl.lockUuid ) then
+	if not LogEntryManager.Cl_HasLog( LOGS.log_underground_elevator_key_01 ) then
 		sm.gui.setInteractionText( "#{LOCKED}" )
 		return false
 	end

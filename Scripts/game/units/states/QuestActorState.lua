@@ -1,10 +1,10 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_constants.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_dialogs.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/units/states/BaseState.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/units/states/PathingState.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/WaypointQuestUnitManager.lua" )
-dofile( "$GAME_DATA/Scripts/game/managers/EffectManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/util/Timer.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_constants.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_dialogs.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/units/states/BaseState.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/units/states/PathingState.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/WaypointQuestUnitManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/EffectManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/util/Timer.lua" )
 
 QuestActorState = class( BaseState )
 

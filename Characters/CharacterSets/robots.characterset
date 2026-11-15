@@ -1,0 +1,1798 @@
+{
+	"characters": [
+		{
+			"capsule": {
+				"height": 1.8,
+				"radius": 0.3
+			},
+			"character": {
+				"data": {},
+				"scriptClass": "TapebotCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/TapebotCharacter.lua"
+			},
+			"hit": {
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Tapebot/char_tapebot_hit_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.899999976
+					]
+				}
+			},
+			"mass": 250.0,
+			"material": "Bots",
+			"movement": {
+				"canSwim": true,
+				"crouchSpeed": 3.0,
+				"facingRotationSpeed": 9.4245,
+				"headingRotationSpeed": 9.4245,
+				"ladderMoveSpeed": 3.200000048,
+				"moveSpeed": 4.0,
+				"slowDownSpeed": 2.5,
+				"sprintSpeed": 8.0
+			},
+			"name": "Tapebot1",
+			"paint": {
+				"defaultColor": "035cff",
+				"effect": "Paintcharacter - Medium",
+				"enable": true
+			},
+			"ragdoll": "$SURVIVAL_DATA/Character/Char_Tapebot/char_tapebot_ragdoll.json",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_Tapebot/char_tapebot.rend"
+			],
+			"showInEditor": true,
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					1.100000024
+				]
+			},
+			"unit": {
+				"data": {},
+				"scriptClass": "TapebotUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/TapebotUnit.lua"
+			},
+			"uuid": "04761b4a-a83e-4736-b565-120bc776edb2"
+		},
+		{
+			"capsule": {
+				"height": 1.8,
+				"radius": 0.3
+			},
+			"character": {
+				"data": {},
+				"scriptClass": "TapebotCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/TapebotCharacter.lua"
+			},
+			"hit": {
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Tapebot/char_tapebot_hit_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.899999976
+					]
+				}
+			},
+			"mass": 175.0,
+			"material": "Bots",
+			"movement": {
+				"canSwim": true,
+				"crouchSpeed": 3.0,
+				"facingRotationSpeed": 9.4245,
+				"headingRotationSpeed": 9.4245,
+				"ladderMoveSpeed": 3.200000048,
+				"moveSpeed": 4.0,
+				"slowDownSpeed": 2.5,
+				"sprintSpeed": 8.0
+			},
+			"name": "Tapebot2",
+			"paint": {
+				"defaultColor": "035cff",
+				"effect": "Paintcharacter - Medium",
+				"enable": true
+			},
+			"ragdoll": "$SURVIVAL_DATA/Character/Char_Tapebot/char_tapebot_ragdoll.json",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_Tapebot/char_tapebot02.rend"
+			],
+			"showInEditor": true,
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					1.100000024
+				]
+			},
+			"unit": {
+				"data": {},
+				"scriptClass": "TapebotUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/TapebotUnit.lua"
+			},
+			"uuid": "9dbbd2fb-7726-4e8f-8eb4-0dab228a561d"
+		},
+		{
+			"capsule": {
+				"height": 1.8,
+				"radius": 0.3
+			},
+			"character": {
+				"data": {},
+				"scriptClass": "TapebotCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/TapebotCharacter.lua"
+			},
+			"hit": {
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Tapebot/char_tapebot_hit_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.899999976
+					]
+				}
+			},
+			"mass": 250.0,
+			"material": "Bots",
+			"movement": {
+				"canSwim": true,
+				"crouchSpeed": 3.0,
+				"facingRotationSpeed": 9.4245,
+				"headingRotationSpeed": 9.4245,
+				"ladderMoveSpeed": 3.200000048,
+				"moveSpeed": 4.0,
+				"slowDownSpeed": 2.5,
+				"sprintSpeed": 8.0
+			},
+			"name": "Tapebot3",
+			"paint": {
+				"defaultColor": "035cff",
+				"effect": "Paintcharacter - Medium",
+				"enable": true
+			},
+			"ragdoll": "$SURVIVAL_DATA/Character/Char_Tapebot/char_tapebot_ragdoll.json",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_Tapebot/char_tapebot03.rend"
+			],
+			"showInEditor": true,
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					1.100000024
+				]
+			},
+			"unit": {
+				"data": {},
+				"scriptClass": "TapebotUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/TapebotUnit.lua"
+			},
+			"uuid": "fcb2e8ce-ca94-45e4-a54b-b5acc156170b"
+		},
+		{
+			"capsule": {
+				"height": 1.8,
+				"radius": 0.3
+			},
+			"character": {
+				"data": {},
+				"scriptClass": "TapebotCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/TapebotCharacter.lua"
+			},
+			"hit": {
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Tapebot/char_tapebot_hit_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.899999976
+					]
+				}
+			},
+			"mass": 250.0,
+			"material": "Bots",
+			"movement": {
+				"canSwim": true,
+				"crouchSpeed": 3.0,
+				"facingRotationSpeed": 9.4245,
+				"headingRotationSpeed": 9.4245,
+				"ladderMoveSpeed": 3.200000048,
+				"moveSpeed": 4.0,
+				"slowDownSpeed": 2.5,
+				"sprintSpeed": 8.0
+			},
+			"name": "Tapebot4",
+			"paint": {
+				"defaultColor": "035cff",
+				"effect": "Paintcharacter - Medium",
+				"enable": true
+			},
+			"ragdoll": "$SURVIVAL_DATA/Character/Char_Tapebot/char_tapebot_ragdoll.json",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_Tapebot/char_tapebot04.rend"
+			],
+			"showInEditor": true,
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					1.100000024
+				]
+			},
+			"unit": {
+				"data": {},
+				"scriptClass": "TapebotUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/TapebotUnit.lua"
+			},
+			"uuid": "68d3b2f3-ed4b-4967-9d22-8ee6f555df63"
+		},
+		{
+			"capsule": {
+				"height": 1.8,
+				"radius": 0.3
+			},
+			"character": {
+				"data": {
+					"robotModel": "red"
+				},
+				"scriptClass": "TapebotCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/TapebotCharacter.lua"
+			},
+			"hit": {
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Tapebot/char_tapebot_hit_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.899999976
+					]
+				}
+			},
+			"mass": 250.0,
+			"material": "Bots",
+			"movement": {
+				"canSwim": true,
+				"crouchSpeed": 3.0,
+				"facingRotationSpeed": 9.4245,
+				"headingRotationSpeed": 9.4245,
+				"ladderMoveSpeed": 3.200000048,
+				"moveSpeed": 4.0,
+				"slowDownSpeed": 2.5,
+				"sprintSpeed": 8.0
+			},
+			"name": "TapebotRed",
+			"paint": {
+				"defaultColor": "ec1919",
+				"effect": "Paintcharacter - Medium",
+				"enable": true
+			},
+			"ragdoll": "$SURVIVAL_DATA/Character/Char_Tapebot/char_tapebot_ragdoll.json",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_Tapebot/char_tapebot_red.rend"
+			],
+			"showInEditor": true,
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					1.100000024
+				]
+			},
+			"unit": {
+				"data": {
+					"robotModel": "red"
+				},
+				"scriptClass": "TapebotUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/TapebotUnit.lua"
+			},
+			"uuid": "c3d31c47-0c9b-4b07-9bd4-8f022dc4333e"
+		},
+		{
+			"capsule": {
+				"height": 1.2,
+				"radius": 0.5
+			},
+			"character": {
+				"data": {},
+				"scriptClass": "TotebotCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/TotebotCharacter.lua"
+			},
+			"hit": {
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Totebot/char_totebot_hit_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.75
+					]
+				}
+			},
+			"mass": 275.0,
+			"material": "Bots",
+			"movement": {
+				"canSwim": true,
+				"crouchSpeed": 1.0,
+				"facingRotationSpeed": 9.4245,
+				"headingRotationSpeed": 9.4245,
+				"ladderMoveSpeed": 3.200000048,
+				"moveSpeed": 1.8,
+				"slowDownSpeed": 1.0,
+				"sprintSpeed": 4.0
+			},
+			"name": "TotebotGreen",
+			"paint": {
+				"defaultColor": "49642d",
+				"effect": "Paintcharacter - Small",
+				"enable": true
+			},
+			"ragdoll": "$SURVIVAL_DATA/Character/Char_Totebot/char_totebot_ragdoll.json",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_Totebot/char_totebot.rend",
+				"$SURVIVAL_DATA/Character/Char_Totebot/char_totebot_head_01.rend",
+				"$SURVIVAL_DATA/Character/Char_Totebot/char_totebot_swim.rend",
+				"$SURVIVAL_DATA/Character/Char_Totebot/char_totebot_head_01_swim.rend"
+			],
+			"showInEditor": true,
+			"sound": {
+				"crouchedMovementSoundFrames": [
+					1
+				],
+				"movementSoundFrames": [
+					1
+				]
+			},
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_Totebot/char_totebot_tumble_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					0.75
+				]
+			},
+			"unit": {
+				"data": {},
+				"scriptClass": "TotebotGreenUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/TotebotGreenUnit.lua"
+			},
+			"uuid": "8984bdbf-521e-4eed-b3c4-2b5e287eb879"
+		},
+		{
+			"capsule": {
+				"height": 1.2,
+				"radius": 0.5
+			},
+			"character": {
+				"data": {},
+				"scriptClass": "TotebotLeafCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/TotebotLeafCharacter.lua"
+			},
+			"hit": {
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Totebot/char_totebot_hit_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.75
+					]
+				}
+			},
+			"mass": 275.0,
+			"material": "Bots",
+			"movement": {
+				"canSwim": true,
+				"crouchSpeed": 1.0,
+				"facingRotationSpeed": 9.4245,
+				"headingRotationSpeed": 9.4245,
+				"ladderMoveSpeed": 3.200000048,
+				"moveSpeed": 1.8,
+				"slowDownSpeed": 1.0,
+				"sprintSpeed": 4.0
+			},
+			"name": "TotebotLeaf",
+			"paint": {
+				"defaultColor": "49642d",
+				"effect": "Paintcharacter - Small",
+				"enable": true
+			},
+			"ragdoll": "$SURVIVAL_DATA/Character/Char_Totebot/char_totebot_ragdoll.json",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_Totebot/char_totebot.rend",
+				"$SURVIVAL_DATA/Character/Char_Totebot/char_totebot_head_01_leaf.rend",
+				"$SURVIVAL_DATA/Character/Char_Totebot/char_totebot_swim.rend",
+				"$SURVIVAL_DATA/Character/Char_Totebot/char_totebot_head_01_swim.rend"
+			],
+			"showInEditor": true,
+			"sound": {
+				"crouchedMovementSoundFrames": [
+					1
+				],
+				"movementSoundFrames": [
+					1
+				]
+			},
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_Totebot/char_totebot_tumble_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					0.75
+				]
+			},
+			"unit": {
+				"data": {},
+				"scriptClass": "TotebotLeafUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/TotebotLeafUnit.lua"
+			},
+			"uuid": "55fd93fa-09ed-4a26-bfa1-4601694d5127"
+		},
+		{
+			"capsule": {
+				"height": 1.9,
+				"radius": 0.5
+			},
+			"character": {
+				"data": {},
+				"scriptClass": "HaybotCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/HaybotCharacter.lua"
+			},
+			"hit": {
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Haybot/char_haybot_hit_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						1.100000024
+					]
+				}
+			},
+			"mass": 375.0,
+			"material": "Bots",
+			"movement": {
+				"canSwim": true,
+				"crouchSpeed": 3.0,
+				"facingRotationSpeed": 9.4245,
+				"headingRotationSpeed": 9.4245,
+				"ladderMoveSpeed": 3.200000048,
+				"moveSpeed": 2.54,
+				"slowDownSpeed": 5.5,
+				"sprintSpeed": 6.7
+			},
+			"name": "Haybot",
+			"paint": {
+				"defaultColor": "e75b0f",
+				"effect": "Paintcharacter - Medium",
+				"enable": true
+			},
+			"ragdoll": "$SURVIVAL_DATA/Character/Char_Haybot/char_haybot_ragdoll.json",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_Haybot/char_haybot.rend",
+				"$SURVIVAL_DATA/Character/Char_Haybot/char_haybot_swim.rend"
+			],
+			"showInEditor": true,
+			"sound": {
+				"crouchedMovementSoundFrames": [
+					1
+				],
+				"movementSoundFrames": [
+					1
+				]
+			},
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_Haybot/char_haybot_tumble_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					0.683000028
+				]
+			},
+			"unit": {
+				"data": {},
+				"scriptClass": "HaybotUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/HaybotUnit.lua"
+			},
+			"uuid": "c8bfb8f3-7efc-49ac-875a-eb85ac0614db"
+		},
+		{
+			"capsule": {
+				"crouchHeight": 3.0,
+				"height": 3.0,
+				"radius": 1.4
+			},
+			"character": {
+				"data": {},
+				"scriptClass": "FarmbotCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/FarmbotCharacter.lua"
+			},
+			"hit": {
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Farmbot/char_farmbot_hit_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						2.0
+					]
+				}
+			},
+			"mass": 2500.0,
+			"material": "Bots",
+			"movement": {
+				"canSwim": false,
+				"crouchSpeed": 26.0,
+				"facingRotationSpeed": 3.5,
+				"headingRotationSpeed": 3.5,
+				"ladderMoveSpeed": 3.200000048,
+				"moveSpeed": 7.0,
+				"slowDownSpeed": 5.5,
+				"sprintSpeed": 8.0
+			},
+			"name": "Farmbot",
+			"paint": {
+				"defaultColor": "c52c18",
+				"effect": "Paintcharacter - Large",
+				"enable": true
+			},
+			"ragdoll": "$SURVIVAL_DATA/Character/Char_Farmbot/char_farmbot_ragdoll.json",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_Farmbot/char_farmbot.rend"
+			],
+			"showInEditor": true,
+			"sound": {
+				"crouchedMovementSoundFrames": [
+					1
+				],
+				"movementSoundFrames": [
+					1
+				]
+			},
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_Farmbot/char_farmbot_tumble_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					1.549999952
+				]
+			},
+			"unit": {
+				"data": {},
+				"scriptClass": "FarmbotUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/FarmbotUnit.lua"
+			},
+			"uuid": "9f4fde94-312f-4417-b13b-84029c5d6b52"
+		},
+		{
+			"capsule": {
+				"height": 2.5,
+				"radius": 0.5
+			},
+			"character": {
+				"data": {},
+				"scriptClass": "TotebotRedCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/TotebotRedCharacter.lua"
+			},
+			"hit": {
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Totebot_red/char_totebot_red_hit_col.obj",
+					"offset": [
+						0.0,
+						-5.0,
+						0.0
+					]
+				}
+			},
+			"mass": 300.0,
+			"material": "Bots",
+			"movement": {
+				"canSwim": true,
+				"crouchSpeed": 4.0,
+				"facingRotationSpeed": 9.4245,
+				"headingRotationSpeed": 9.4245,
+				"ladderMoveSpeed": 3.200000048,
+				"moveSpeed": 6.0,
+				"slowDownSpeed": 4.0,
+				"sprintSpeed": 14.0
+			},
+			"name": "TotebotRed",
+			"paint": {
+				"defaultColor": "cb0a00",
+				"effect": "Paintcharacter - Small",
+				"enable": true
+			},
+			"ragdoll": "$SURVIVAL_DATA/Character/Char_totebot_red/char_totebot_red_ragdoll.json",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_totebot_red/char_totebot_red.rend",
+				"$SURVIVAL_DATA/Character/Char_Totebot/char_totebot_swim.rend",
+				"$SURVIVAL_DATA/Character/Char_totebot_red/char_totebot_red_head.rend",
+				"$SURVIVAL_DATA/Character/Char_totebot_red/char_totebot_red_head_swim.rend"
+			],
+			"showInEditor": true,
+			"sound": {
+				"crouchedMovementSoundFrames": [
+					1
+				],
+				"movementSoundFrames": [
+					1
+				]
+			},
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_totebot_red/char_totebot_red_tumble_col.obj",
+				"mass": 275.0,
+				"offset": [
+					0.0,
+					0.0,
+					1.3
+				]
+			},
+			"unit": {
+				"data": {},
+				"scriptClass": "TotebotRedUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/TotebotRedUnit.lua"
+			},
+			"uuid": "9360d346-3ff2-4925-a068-660cf5dd5267"
+		},
+		{
+			"capsule": {
+				"height": 1.75,
+				"radius": 0.5
+			},
+			"character": {
+				"data": {},
+				"scriptClass": "TotebotYellowCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/TotebotYellowCharacter.lua"
+			},
+			"hit": {
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Totebot_yellow/char_totebot_yellow_hit_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.75
+					]
+				}
+			},
+			"mass": 275.0,
+			"material": "Bots",
+			"movement": {
+				"canSwim": true,
+				"crouchSpeed": 1.0,
+				"facingRotationSpeed": 9.4245,
+				"headingRotationSpeed": 9.4245,
+				"jumpImpulse": 20.0,
+				"ladderMoveSpeed": 3.200000048,
+				"moveSpeed": 3.0,
+				"slowDownSpeed": 1.0,
+				"sprintSpeed": 8.0
+			},
+			"name": "TotebotYellow",
+			"paint": {
+				"defaultColor": "a9831c",
+				"effect": "Paintcharacter - Small",
+				"enable": true
+			},
+			"ragdoll": "$SURVIVAL_DATA/Character/Char_totebot_yellow/char_totebot_yellow_ragdoll.json",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_Totebot_yellow/char_totebot_yellow.rend",
+				"$SURVIVAL_DATA/Character/Char_Totebot/char_totebot_swim.rend",
+				"$SURVIVAL_DATA/Character/Char_Totebot_yellow/char_totebot_yellow_head.rend",
+				"$SURVIVAL_DATA/Character/Char_Totebot_yellow/char_totebot_yellow_head_swim.rend"
+			],
+			"showInEditor": true,
+			"sound": {
+				"crouchedMovementSoundFrames": [
+					1
+				],
+				"movementSoundFrames": [
+					1
+				]
+			},
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_Totebot_yellow/char_totebot_yellow_tumble_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					0.600000024
+				]
+			},
+			"unit": {
+				"data": {},
+				"scriptClass": "TotebotYellowUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/TotebotYellowUnit.lua"
+			},
+			"uuid": "2dea48a4-6a79-11ed-a1eb-0242ac120002"
+		},
+		{
+			"capsule": {
+				"height": 1.5,
+				"radius": 0.5
+			},
+			"character": {
+				"data": {},
+				"scriptClass": "TotebotBlueCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/TotebotBlueCharacter.lua"
+			},
+			"hit": {
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Totebot_blue/char_totebot_blue_hit_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.75
+					]
+				}
+			},
+			"mass": 275.0,
+			"material": "Bots",
+			"movement": {
+				"canSwim": true,
+				"crouchSpeed": 2.0,
+				"facingRotationSpeed": 9.4245,
+				"headingRotationSpeed": 9.4245,
+				"ladderMoveSpeed": 3.200000048,
+				"moveSpeed": 6.0,
+				"slowDownSpeed": 2.0,
+				"sprintSpeed": 16.0
+			},
+			"name": "TotebotBlue",
+			"paint": {
+				"defaultColor": "1a538c",
+				"effect": "Paintcharacter - Small",
+				"enable": true
+			},
+			"ragdoll": "$SURVIVAL_DATA/Character/Char_totebot_blue/char_totebot_blue_ragdoll.json",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_Totebot_blue/char_totebot_blue.rend",
+				"$SURVIVAL_DATA/Character/Char_Totebot_blue/char_totebot_blue_head.rend"
+			],
+			"showInEditor": true,
+			"sound": {
+				"crouchedMovementSoundFrames": [
+					1
+				],
+				"movementSoundFrames": [
+					1
+				]
+			},
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/char_Totebot_blue/char_totebot_blue_tumble_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					0.800000012
+				]
+			},
+			"unit": {
+				"data": {},
+				"scriptClass": "TotebotBlueUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/TotebotBlueUnit.lua"
+			},
+			"uuid": "58992f50-ca36-44e1-8c47-4996d89d6a9a"
+		},
+		{
+			"alwaysLoaded": true,
+			"capsule": {
+				"height": 1.0,
+				"radius": 0.5
+			},
+			"character": {
+				"data": {},
+				"scriptClass": "ScannerbotCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/ScannerbotCharacter.lua"
+			},
+			"hit": {
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Farmbot/char_farmbot_hit_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.0
+					]
+				}
+			},
+			"mass": 5000000.0,
+			"movement": {
+				"canSwim": false,
+				"crouchSpeed": 3,
+				"facingRotationSpeed": 2.0,
+				"headingRotationSpeed": 3.1415,
+				"jumpImpulse": 7.0,
+				"ladderMoveSpeed": 3.200000048,
+				"levitateSpeed": 8.0,
+				"moveSpeed": 8.0,
+				"slowDownSpeed": 2.5,
+				"sprintSpeed": 100.0
+			},
+			"name": "Scannerbot",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_scannerbot/char_scannerbot.rend"
+			],
+			"showInEditor": false,
+			"unit": {
+				"data": {},
+				"scriptClass": "ScannerbotUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/ScannerbotUnit.lua"
+			},
+			"uuid": "e503cf1b-611c-4692-9431-2ddcfd030375"
+		},
+		{
+			"capsule": {
+				"height": 2.75,
+				"radius": 1.2
+			},
+			"character": {
+				"data": {},
+				"scriptClass": "MinerbotCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/MinerbotCharacter.lua"
+			},
+			"hit": {
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Minerbot/char_minerbot_hit_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.0
+					]
+				}
+			},
+			"mass": 3000.0,
+			"material": "Bots",
+			"movement": {
+				"canSwim": false,
+				"crouchSpeed": 3.0,
+				"facingRotationSpeed": 12.566,
+				"headingRotationSpeed": 12.566,
+				"jumpImpulse": 7.0,
+				"ladderMoveSpeed": 3.200000048,
+				"levitateSpeed": 5.0,
+				"moveSpeed": 8.0,
+				"slowDownSpeed": 2.5,
+				"sprintSpeed": 24.0
+			},
+			"name": "Minerbot",
+			"paint": {
+				"defaultColor": "007572ff",
+				"effect": "Paintcharacter - Small",
+				"enable": true
+			},
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_Minerbot/char_minerbot.rend"
+			],
+			"rootMotion": true,
+			"showInEditor": true,
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_col.obj",
+				"offset": [
+					3.0,
+					0.0,
+					0.800000012
+				]
+			},
+			"unit": {
+				"data": {},
+				"scriptClass": "MinerbotUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/MinerbotUnit.lua"
+			},
+			"uuid": "92da8324-3cfe-4529-ac1c-c71facda50a3"
+		},
+		{
+			"animateOnServer": true,
+			"capsule": {
+				"crouchHeight": 3.0,
+				"height": 3.0,
+				"radius": 1.4
+			},
+			"character": {
+				"data": {},
+				"scriptClass": "TrashbotCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/TrashbotCharacter.lua"
+			},
+			"hit": {
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Trashbot/char_trashbot_hit_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						2.0
+					]
+				}
+			},
+			"mass": 5000.0,
+			"material": "Mechanical",
+			"movement": {
+				"canSwim": true,
+				"crouchSpeed": 3.0,
+				"facingRotationSpeed": 12.566,
+				"headingRotationSpeed": 3.1415,
+				"ladderMoveSpeed": 3.200000048,
+				"moveSpeed": 4.0,
+				"slowDownSpeed": 2.5,
+				"sprintSpeed": 8.0,
+				"static": true
+			},
+			"name": "Trashbot",
+			"ragdoll": "$SURVIVAL_DATA/Character/Char_Trashbot/char_trashbot_ragdoll.json",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_Trashbot/char_trashbot.rend",
+				"$SURVIVAL_DATA/Character/Char_Trashbot/char_trashbot_shipmechanic.rend"
+			],
+			"rootMotion": true,
+			"showInEditor": false,
+			"sound": {
+				"crouchedMovementSoundFrames": [
+					1
+				],
+				"movementSoundFrames": [
+					1
+				]
+			},
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_Trashbot/char_trashbot_tumble_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					1.549999952
+				]
+			},
+			"unit": {
+				"data": {},
+				"scriptClass": "TrashbotUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/TrashbotUnit.lua"
+			},
+			"uuid": "2ef81574-9b6a-4f79-8306-7f80fff2050b"
+		},
+		{
+			"capsule": {
+				"height": 2.2,
+				"radius": 1.1
+			},
+			"character": {
+				"data": {
+					"color": "green"
+				},
+				"scriptClass": "TrashBallCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/TrashBallCharacter.lua"
+			},
+			"hit": {
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Trashball/char_trashball_hit_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.75
+					]
+				}
+			},
+			"mass": 2000,
+			"material": "Slime",
+			"movement": {
+				"canSwim": true,
+				"crouchSpeed": 1.0,
+				"facingRotationSpeed": 50.566,
+				"headingRotationSpeed": 1.566,
+				"ladderMoveSpeed": 3.200000048,
+				"moveSpeed": 2.0,
+				"slowDownSpeed": 0.1,
+				"sprintSpeed": 26.0
+			},
+			"name": "TrashballGreen",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_Trashball/char_trashball.rend"
+			],
+			"showInEditor": false,
+			"sound": {
+				"crouchedMovementSoundFrames": [
+					1
+				],
+				"movementSoundFrames": [
+					1
+				]
+			},
+			"unit": {
+				"data": {},
+				"scriptClass": "TrashBallUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/TrashBallUnit.lua"
+			},
+			"uuid": "aaba2a88-67a7-41fe-b704-6fdf7c333494"
+		},
+		{
+			"capsule": {
+				"height": 2.2,
+				"radius": 1.1
+			},
+			"character": {
+				"data": {
+					"color": "purple"
+				},
+				"scriptClass": "TrashBallCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/TrashBallCharacter.lua"
+			},
+			"hit": {
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Trashball/char_trashball_hit_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.75
+					]
+				}
+			},
+			"mass": 2000,
+			"material": "Slime",
+			"movement": {
+				"canSwim": true,
+				"crouchSpeed": 1.0,
+				"facingRotationSpeed": 50.566,
+				"headingRotationSpeed": 1.566,
+				"ladderMoveSpeed": 3.200000048,
+				"moveSpeed": 2.0,
+				"slowDownSpeed": 0.1,
+				"sprintSpeed": 26.0
+			},
+			"name": "TrashballPurple",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_Trashball/char_trashball.rend"
+			],
+			"showInEditor": false,
+			"sound": {
+				"crouchedMovementSoundFrames": [
+					1
+				],
+				"movementSoundFrames": [
+					1
+				]
+			},
+			"unit": {
+				"data": {},
+				"scriptClass": "TrashBallUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/TrashBallUnit.lua"
+			},
+			"uuid": "a2206782-c3be-454d-8c23-8b6e9aa5e9b9"
+		},
+		{
+			"capsule": {
+				"height": 0.6,
+				"radius": 0.3
+			},
+			"character": {
+				"data": {},
+				"scriptClass": "CablebotCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/CablebotCharacter.lua"
+			},
+			"hit": {
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Cablebot/char_cablebot_hit_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.25
+					]
+				}
+			},
+			"mass": 50.0,
+			"material": "Bots",
+			"movement": {
+				"canSwim": true,
+				"crouchSpeed": 1.0,
+				"facingRotationSpeed": 9.4245,
+				"headingRotationSpeed": 9.4245,
+				"ladderMoveSpeed": 3.200000048,
+				"moveSpeed": 1.8,
+				"slowDownSpeed": 1.0,
+				"sprintSpeed": 3.6
+			},
+			"name": "Cablebot",
+			"paint": {
+				"defaultColor": "49642d",
+				"effect": "Paintcharacter - Small",
+				"enable": true
+			},
+			"ragdoll": "$SURVIVAL_DATA/Character/Char_Cablebot/char_cablebot_ragdoll.json",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_Cablebot/char_cablebot.rend"
+			],
+			"showInEditor": true,
+			"sound": {
+				"crouchedMovementSoundFrames": [
+					1
+				],
+				"movementSoundFrames": [
+					1
+				]
+			},
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_Cablebot/char_cablebot_tumble_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					0.100000001
+				]
+			},
+			"unit": {
+				"data": {},
+				"scriptClass": "CablebotUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/CablebotUnit.lua"
+			},
+			"uuid": "b837888a-0480-4a34-bc34-d72261a14385"
+		},
+		{
+			"capsule": {
+				"height": 1.8,
+				"radius": 0.3
+			},
+			"character": {
+				"data": {
+					"robotModel": "green"
+				},
+				"scriptClass": "TapebotCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/TapebotCharacter.lua"
+			},
+			"hit": {
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Tapebot/char_tapebot_hit_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.899999976
+					]
+				}
+			},
+			"mass": 250.0,
+			"material": "Bots",
+			"movement": {
+				"canSwim": true,
+				"crouchSpeed": 3.0,
+				"facingRotationSpeed": 9.4245,
+				"headingRotationSpeed": 9.4245,
+				"ladderMoveSpeed": 3.200000048,
+				"moveSpeed": 4.0,
+				"slowDownSpeed": 2.5,
+				"sprintSpeed": 8.0
+			},
+			"name": "TapebotGreen1",
+			"paint": {
+				"defaultColor": "19ec19",
+				"effect": "Paintcharacter - Medium",
+				"enable": true
+			},
+			"ragdoll": "$SURVIVAL_DATA/Character/Char_Tapebot/char_tapebot_ragdoll.json",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_Tapebot_green/char_tapebot_green01.rend"
+			],
+			"showInEditor": true,
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					1.100000024
+				]
+			},
+			"unit": {
+				"data": {
+					"robotModel": "green"
+				},
+				"scriptClass": "TapebotUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/TapebotUnit.lua"
+			},
+			"uuid": "c68914f8-d769-4638-9071-f7dbd1d97351"
+		},
+		{
+			"capsule": {
+				"height": 1.8,
+				"radius": 0.3
+			},
+			"character": {
+				"data": {
+					"robotModel": "green"
+				},
+				"scriptClass": "TapebotCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/TapebotCharacter.lua"
+			},
+			"hit": {
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Tapebot/char_tapebot_hit_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.899999976
+					]
+				}
+			},
+			"mass": 250.0,
+			"material": "Bots",
+			"movement": {
+				"canSwim": true,
+				"crouchSpeed": 3.0,
+				"facingRotationSpeed": 9.4245,
+				"headingRotationSpeed": 9.4245,
+				"ladderMoveSpeed": 3.200000048,
+				"moveSpeed": 4.0,
+				"slowDownSpeed": 2.5,
+				"sprintSpeed": 8.0
+			},
+			"name": "TapebotGreen2",
+			"paint": {
+				"defaultColor": "19ec19",
+				"effect": "Paintcharacter - Medium",
+				"enable": true
+			},
+			"ragdoll": "$SURVIVAL_DATA/Character/Char_Tapebot/char_tapebot_ragdoll.json",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_Tapebot_green/char_tapebot_green02.rend"
+			],
+			"showInEditor": true,
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					1.100000024
+				]
+			},
+			"unit": {
+				"data": {
+					"robotModel": "green"
+				},
+				"scriptClass": "TapebotUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/TapebotUnit.lua"
+			},
+			"uuid": "f3ded3f4-ddf9-441d-83f1-28b8cf2c7581"
+		},
+		{
+			"capsule": {
+				"height": 1.8,
+				"radius": 0.3
+			},
+			"character": {
+				"data": {
+					"robotModel": "green"
+				},
+				"scriptClass": "TapebotCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/TapebotCharacter.lua"
+			},
+			"hit": {
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Tapebot/char_tapebot_hit_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.899999976
+					]
+				}
+			},
+			"mass": 250.0,
+			"material": "Bots",
+			"movement": {
+				"canSwim": true,
+				"crouchSpeed": 3.0,
+				"facingRotationSpeed": 9.4245,
+				"headingRotationSpeed": 9.4245,
+				"ladderMoveSpeed": 3.200000048,
+				"moveSpeed": 4.0,
+				"slowDownSpeed": 2.5,
+				"sprintSpeed": 8.0
+			},
+			"name": "TapebotGreen3",
+			"paint": {
+				"defaultColor": "19ec19",
+				"effect": "Paintcharacter - Medium",
+				"enable": true
+			},
+			"ragdoll": "$SURVIVAL_DATA/Character/Char_Tapebot/char_tapebot_ragdoll.json",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_Tapebot_green/char_tapebot_green03.rend"
+			],
+			"showInEditor": true,
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					1.100000024
+				]
+			},
+			"unit": {
+				"data": {
+					"robotModel": "green"
+				},
+				"scriptClass": "TapebotUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/TapebotUnit.lua"
+			},
+			"uuid": "54a06cf0-c035-41a5-b19e-158496d35586"
+		},
+		{
+			"capsule": {
+				"height": 1.8,
+				"radius": 0.3
+			},
+			"character": {
+				"data": {
+					"robotModel": "yellow"
+				},
+				"scriptClass": "TapebotCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/TapebotCharacter.lua"
+			},
+			"hit": {
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Tapebot/char_tapebot_hit_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.899999976
+					]
+				}
+			},
+			"mass": 250.0,
+			"material": "Bots",
+			"movement": {
+				"canSwim": true,
+				"crouchSpeed": 3.0,
+				"facingRotationSpeed": 9.4245,
+				"headingRotationSpeed": 9.4245,
+				"ladderMoveSpeed": 3.200000048,
+				"moveSpeed": 4.0,
+				"slowDownSpeed": 2.5,
+				"sprintSpeed": 8.0
+			},
+			"name": "TapebotYellow",
+			"paint": {
+				"defaultColor": "ecec19",
+				"effect": "Paintcharacter - Medium",
+				"enable": true
+			},
+			"ragdoll": "$SURVIVAL_DATA/Character/Char_Tapebot/char_tapebot_ragdoll.json",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_Tapebot_yellow/char_tapebot_yellow.rend"
+			],
+			"showInEditor": true,
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					1.100000024
+				]
+			},
+			"unit": {
+				"data": {
+					"robotModel": "yellow"
+				},
+				"scriptClass": "TapebotUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/TapebotUnit.lua"
+			},
+			"uuid": "97efd943-d176-479a-a6f4-46373327ddcd"
+		},
+		{
+			"capsule": {
+				"height": 1.25,
+				"radius": 0.5
+			},
+			"character": {
+				"data": {},
+				"scriptClass": "LootbotCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/LootbotCharacter.lua"
+			},
+			"hit": {
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Totebot/char_totebot_hit_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.75
+					]
+				}
+			},
+			"mass": 275.0,
+			"material": "Bots",
+			"movement": {
+				"canSwim": true,
+				"crouchSpeed": 2.0,
+				"facingRotationSpeed": 9.4245,
+				"headingRotationSpeed": 9.4245,
+				"ladderMoveSpeed": 3.200000048,
+				"moveSpeed": 4.0,
+				"slowDownSpeed": 1.0,
+				"sprintSpeed": 8.0
+			},
+			"name": "Lootbot",
+			"paint": {
+				"defaultColor": "ffd700",
+				"effect": "Paintcharacter - Small",
+				"enable": true
+			},
+			"ragdoll": "$SURVIVAL_DATA/Character/Char_Totebot/char_totebot_ragdoll.json",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_Lootbot/char_lootbot.rend",
+				"$SURVIVAL_DATA/Character/Char_Lootbot/char_lootbot_head.rend",
+				"$SURVIVAL_DATA/Character/Char_Totebot/char_totebot_swim.rend",
+				"$SURVIVAL_DATA/Character/Char_Totebot/char_totebot_head_01_swim.rend"
+			],
+			"showInEditor": true,
+			"sound": {
+				"crouchedMovementSoundFrames": [
+					1
+				],
+				"movementSoundFrames": [
+					1
+				]
+			},
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_Totebot/char_totebot_tumble_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					0.883000016
+				]
+			},
+			"unit": {
+				"data": {},
+				"scriptClass": "LootbotUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/LootbotUnit.lua"
+			},
+			"uuid": "8828e9d2-650c-11ed-9022-0242ac120002"
+		},
+		{
+			"capsule": {
+				"height": 1.2,
+				"radius": 0.5
+			},
+			"character": {
+				"data": {},
+				"scriptClass": "GenericBuilderQuestCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/GenericBuilderQuestCharacter.lua"
+			},
+			"hit": {
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Totebot/char_totebot_hit_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.75
+					]
+				}
+			},
+			"mass": 275.0,
+			"material": "Bots",
+			"movement": {
+				"canSwim": true,
+				"crouchSpeed": 1.0,
+				"facingRotationSpeed": 9.4245,
+				"headingRotationSpeed": 9.4245,
+				"ladderMoveSpeed": 3.200000048,
+				"moveSpeed": 1.8,
+				"slowDownSpeed": 1.0,
+				"sprintSpeed": 4.0,
+				"static": true
+			},
+			"name": "BuilderguideTotebot",
+			"paint": {
+				"defaultColor": "49642d",
+				"effect": "Paintcharacter - Small",
+				"enable": true
+			},
+			"ragdoll": "$SURVIVAL_DATA/Character/Char_totebot/char_totebot_ragdoll.json",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_cagedtotebot/char_cagedtotebot.rend"
+			],
+			"showInEditor": true,
+			"sound": {
+				"crouchedMovementSoundFrames": [
+					1
+				],
+				"movementSoundFrames": [
+					1
+				]
+			},
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_Totebot/char_totebot_tumble_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					0.75
+				]
+			},
+			"unit": {
+				"data": {},
+				"scriptClass": "GenericBuilderQuestUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/GenericBuilderQuestUnit.lua"
+			},
+			"uuid": "a864d8fe-6d9f-4279-9c9b-35419cc2cd87"
+		},
+		{
+			"animateOnServer": true,
+			"capsule": {
+				"crouchHeight": 3.0,
+				"height": 3.0,
+				"radius": 1.4
+			},
+			"character": {
+				"data": {},
+				"scriptClass": "TrashbotCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/TrashbotCharacter.lua"
+			},
+			"hit": {
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Trashbot/char_trashbot_hit_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						2.0
+					]
+				}
+			},
+			"mass": 5000.0,
+			"material": "Mechanical",
+			"movement": {
+				"canSwim": true,
+				"crouchSpeed": 3.0,
+				"facingRotationSpeed": 12.566,
+				"headingRotationSpeed": 3.1415,
+				"ladderMoveSpeed": 3.200000048,
+				"moveSpeed": 4.0,
+				"slowDownSpeed": 2.5,
+				"sprintSpeed": 8.0,
+				"static": true
+			},
+			"name": "Trashbot02",
+			"ragdoll": "$SURVIVAL_DATA/Character/Char_Trashbot/char_trashbot_ragdoll.json",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_Trashbot/char_trashbot.rend"
+			],
+			"rootMotion": true,
+			"showInEditor": false,
+			"sound": {
+				"crouchedMovementSoundFrames": [
+					1
+				],
+				"movementSoundFrames": [
+					1
+				]
+			},
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_Trashbot/char_trashbot_tumble_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					1.549999952
+				]
+			},
+			"unit": {
+				"data": {},
+				"scriptClass": "TrashbotUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/TrashbotUnit.lua"
+			},
+			"uuid": "c3434728-2724-4327-aba9-af168231d0b0"
+		},
+		{
+			"animateOnServer": true,
+			"capsule": {
+				"height": 3.0,
+				"radius": 1.5
+			},
+			"character": {
+				"data": {},
+				"scriptClass": "DrillbotCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/DrillbotCharacter.lua"
+			},
+			"hit": {
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_hit_stand_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.0
+					]
+				}
+			},
+			"mass": 50000.0,
+			"movement": {
+				"canSwim": false,
+				"crouchSpeed": 3.0,
+				"facingRotationSpeed": 12.566,
+				"headingRotationSpeed": 12.566,
+				"jumpImpulse": 7.0,
+				"ladderMoveSpeed": 3.200000048,
+				"levitateSpeed": 5.0,
+				"moveSpeed": 8.0,
+				"slowDownSpeed": 2.5,
+				"sprintSpeed": 16.0,
+				"static": true
+			},
+			"paint": {
+				"defaultColor": "cb0a00",
+				"effect": "Paintcharacter - Small",
+				"enable": false
+			},
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_Drillbot/char_drillbot_torso.rend"
+			],
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					0.800000012
+				]
+			},
+			"unit": {
+				"data": {},
+				"scriptClass": "DrillbotUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/DrillbotUnit.lua"
+			},
+			"uuid": "531d0a62-6142-4c65-be24-9af58be4a730"
+		},
+		{
+			"animateOnServer": true,
+			"capsule": {
+				"height": 3.0,
+				"radius": 1.5
+			},
+			"character": {
+				"data": {},
+				"scriptClass": "DrillbotLegsCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/DrillbotLegsCharacter.lua"
+			},
+			"hit": {
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_hit_stand_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.0
+					]
+				}
+			},
+			"mass": 50000.0,
+			"movement": {
+				"canSwim": false,
+				"crouchSpeed": 3.0,
+				"facingRotationSpeed": 12.566,
+				"headingRotationSpeed": 12.566,
+				"jumpImpulse": 7.0,
+				"ladderMoveSpeed": 3.200000048,
+				"levitateSpeed": 5.0,
+				"moveSpeed": 8.0,
+				"slowDownSpeed": 2.5,
+				"sprintSpeed": 16.0,
+				"static": true
+			},
+			"paint": {
+				"defaultColor": "cb0a00",
+				"effect": "Paintcharacter - Small",
+				"enable": false
+			},
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_Drillbot/char_drillbot_lowerbody.rend"
+			],
+			"rootMotion": true,
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					0.800000012
+				]
+			},
+			"unit": {
+				"data": {},
+				"scriptClass": "DrillbotLegsUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/DrillbotLegsUnit.lua"
+			},
+			"uuid": "0bdd32f3-064f-4cf0-b6bb-da7dd2cdc5e7"
+		},
+		{
+			"capsule": {
+				"height": 1.75,
+				"radius": 0.5
+			},
+			"character": {
+				"data": {},
+				"scriptClass": "SeedbotCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/SeedbotCharacter.lua"
+			},
+			"hit": {
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Totebot/char_totebot_seed_hit_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.75
+					]
+				}
+			},
+			"mass": 275.0,
+			"material": "Bots",
+			"movement": {
+				"canSwim": true,
+				"crouchSpeed": 2.0,
+				"facingRotationSpeed": 9.4245,
+				"headingRotationSpeed": 9.4245,
+				"ladderMoveSpeed": 3.200000048,
+				"moveSpeed": 3.0,
+				"slowDownSpeed": 1.0,
+				"sprintSpeed": 6.0
+			},
+			"name": "Seedbot",
+			"paint": {
+				"defaultColor": "49642d",
+				"effect": "Paintcharacter - Small",
+				"enable": true
+			},
+			"ragdoll": "$SURVIVAL_DATA/Character/Char_Totebot/char_totebot_ragdoll.json",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_Totebot/char_totebot.rend",
+				"$SURVIVAL_DATA/Character/Char_Totebot/char_totebot_head_01_leaf.rend",
+				"$SURVIVAL_DATA/Character/Char_Totebot/char_totebot_swim.rend",
+				"$SURVIVAL_DATA/Character/Char_Totebot/char_totebot_head_01_swim.rend"
+			],
+			"showInEditor": true,
+			"sound": {
+				"crouchedMovementSoundFrames": [
+					1
+				],
+				"movementSoundFrames": [
+					1
+				]
+			},
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_Totebot/char_totebot_seed_tumble_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					0.883000016
+				]
+			},
+			"unit": {
+				"data": {},
+				"scriptClass": "SeedbotUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/SeedbotUnit.lua"
+			},
+			"uuid": "4fbefe2d-83c7-4859-982e-1720f04079a3"
+		},
+		{
+			"animateOnServer": true,
+			"capsule": {
+				"height": 10.0,
+				"radius": 10.0
+			},
+			"character": {
+				"data": {},
+				"scriptClass": "CinematicDrillbotCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/CinematicDrillbotCharacter.lua"
+			},
+			"movement": {
+				"canSwim": false,
+				"crouchSpeed": 3,
+				"facingRotationSpeed": 3.0,
+				"headingRotationSpeed": 3.0,
+				"ladderMoveSpeed": 3.200000048,
+				"moveSpeed": 3,
+				"slowDownSpeed": 2.5,
+				"sprintSpeed": 8,
+				"static": true
+			},
+			"name": "cinematic_drillbot",
+			"paint": {
+				"defaultColor": "cb0a00",
+				"effect": "Paintcharacter - Small",
+				"enable": false
+			},
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_Drillbot/char_drillbot_fullbody.rend"
+			],
+			"rootMotion": true,
+			"showInEditor": true,
+			"unit": {
+				"data": {},
+				"scriptClass": "CinematicDrillbotUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/CinematicDrillbotUnit.lua"
+			},
+			"uuid": "de4924b9-89e8-427d-bbe1-10d4da10bb27"
+		}
+	]
+}

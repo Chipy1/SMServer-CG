@@ -1,5 +1,5 @@
 -- LootHarvestable.lua --
-dofile "$SURVIVAL_DATA/Scripts/game/harvestable/LootHarvestable.lua"
+dofile "$CONTENT_DATA/Scripts/game/harvestable/LootHarvestable.lua"
 
 LimitedLootHarvestable = class( LootHarvestable )
 

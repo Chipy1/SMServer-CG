@@ -1,6 +1,6 @@
-dofile("$SURVIVAL_DATA/Scripts/blueprint_util.lua")
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/QuestManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/quests/LiftPlatformBuilderQuest.lua" )
+dofile("$CONTENT_DATA/Scripts/blueprint_util.lua")
+dofile( "$CONTENT_DATA/Scripts/game/managers/QuestManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/quests/LiftPlatformBuilderQuest.lua" )
 
 BuilderGuideLiftPlatform = class( nil )
 

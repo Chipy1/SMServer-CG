@@ -1,4 +1,4 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/characters/BaseQuestWaypointCharacter.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/characters/BaseQuestWaypointCharacter.lua" )
 
 WarehouseLorenzoCharacter = class( BaseQuestWaypointCharacter )
 

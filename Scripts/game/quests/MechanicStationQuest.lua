@@ -1,5 +1,5 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/QuestManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/quest_util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/QuestManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/quest_util.lua" )
 
 MechanicStationQuest = class()
 MechanicStationQuest.isSaveObject = true
@@ -104,12 +104,16 @@ function MechanicStationQuest.sv_e_onQuestEvent( self, data )
 			self.sv.saved.stage = Stages.find_battery
 		end
 	elseif data.event == QuestEvent.InventoryChanges then
-		if FindInventoryChange( data.params.changes, obj_survivalobject_powercore ) > 0 then
-			self.sv.saved.stage = Stages.activate_station
+		if self.sv.saved.stage < Stages.activate_station then
+			if FindInventoryChange( data.params.changes, obj_survivalobject_powercore ) > 0 then
+				self.sv.saved.stage = Stages.activate_station
+			end
 		end
 	elseif data.event == "event.quest_mechanicstation.power_restored" then
+		if self.sv.saved.stage < Stages.build_craftbot then
+			self.sv.saved.stage = Stages.build_craftbot
+		end
 		self.scriptableObject.publicData = { activatePhone = true }
-		self.sv.saved.stage = Stages.build_craftbot
 		local world = WorldManager.Sv_GetWorld( "overworld" )
 		local tileKey = TileStorageManager.Sv_GetTileStorageKeyFromCell( world, -29, -26 )
 		SetTileStorageFlag( tileKey, "effect" )

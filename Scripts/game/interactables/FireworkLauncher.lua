@@ -1,6 +1,6 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_projectiles.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_constants.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_projectiles.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_constants.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
 
 FireworkLauncher = class()
 FireworkLauncher.poseWeightCount = 1

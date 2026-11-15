@@ -1,6 +1,6 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/kinematics/KinematicBase.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_constants.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/DrillbotManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/kinematics/KinematicBase.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_constants.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/DrillbotManager.lua" )
 
 DrillbotFace = class( KinematicBase )
 

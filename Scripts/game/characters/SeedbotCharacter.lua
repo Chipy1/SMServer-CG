@@ -1,4 +1,4 @@
-dofile "$SURVIVAL_DATA/Scripts/game/characters/TotebotCharacter.lua"
+dofile "$CONTENT_DATA/Scripts/game/characters/TotebotCharacter.lua"
 
 SeedbotCharacter = class( TotebotCharacter )
 

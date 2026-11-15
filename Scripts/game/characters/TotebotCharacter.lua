@@ -1,4 +1,4 @@
-dofile "$SURVIVAL_DATA/Scripts/game/characters/BaseEnemyCharacter.lua"
+dofile "$CONTENT_DATA/Scripts/game/characters/BaseEnemyCharacter.lua"
 TotebotCharacter = class( BaseEnemyCharacter )
 
 local animationSets = {
@@ -144,6 +144,7 @@ function TotebotCharacter.cl_initAnimationSwitch( self )
 end
 
 function TotebotCharacter.client_onUpdate( self, deltaTime )
+	BaseEnemyCharacter.client_onUpdate( self, deltaTime )
 	if not self.graphicsLoaded then
 		return
 	end

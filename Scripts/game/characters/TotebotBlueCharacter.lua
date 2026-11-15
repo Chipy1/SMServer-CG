@@ -1,5 +1,5 @@
-dofile "$SURVIVAL_DATA/Scripts/game/util/Timer.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/characters/TotebotCharacter.lua"
+dofile "$CONTENT_DATA/Scripts/game/util/Timer.lua"
+dofile "$CONTENT_DATA/Scripts/game/characters/TotebotCharacter.lua"
 
 TotebotBlueCharacter = class( TotebotCharacter )
 

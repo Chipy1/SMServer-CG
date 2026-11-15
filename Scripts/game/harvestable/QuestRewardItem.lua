@@ -1,6 +1,6 @@
-dofile "$SURVIVAL_DATA/Scripts/util.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_constants.lua"
-dofile( "$SURVIVAL_DATA/Scripts/game/harvestable/QuestRewardBase.lua" )
+dofile "$CONTENT_DATA/Scripts/util.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_constants.lua"
+dofile( "$CONTENT_DATA/Scripts/game/harvestable/QuestRewardBase.lua" )
 dofile( "$CUSTOMIZATION_DATA/Scripts/game/quest_reward_util.lua" )
 
 QuestRewardItem = class( QuestRewardBase )

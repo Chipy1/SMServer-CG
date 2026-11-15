@@ -1,6 +1,6 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_constants.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/interactables/DrillCasing.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_constants.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/interactables/DrillCasing.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
 
 PlasmaDrill = class( nil )
 PlasmaDrill.poseWeightCount = 1
@@ -588,6 +588,8 @@ function PlasmaDrill.client_onCreate( self )
 	self.cl = {}
 	self.cl.currentSettingsLevel = 1
 	self.cl.hasCharge = false
+	self.cl.hadCharge = false
+	self.cl.wantsToDrill = false
 	self.cl.drillLevel = DrillLevels[tostring( self.shape:getShapeUuid() )]
 	self.cl.impactEffects = {}
 	self.cl.secondaryImpactEffects = {}
@@ -608,9 +610,27 @@ end
 function PlasmaDrill.client_onFixedUpdate( self, dt )
 	local logic, _ = self:getParents()
 	local onLift = self.shape:getBody():isOnLift()
-	local drilling = not onLift and logic and logic:isActive() and self.cl.hasCharge
+	local wantsToDrill = not onLift and logic and logic:isActive()
 
-	if drilling then
+	local wantsToStartDrilling = wantsToDrill and not self.cl.wantsToDrill
+	self.cl.wantsToDrill = wantsToDrill
+
+	local ranOutOfCharge = self.cl.hadCharge and not self.cl.hasCharge
+	self.cl.hadCharge = self.cl.hasCharge
+
+	if logic and ( ( wantsToStartDrilling and not self.cl.hasCharge ) or ranOutOfCharge ) then
+		for _, logicParent in ipairs( logic:getParents() ) do
+			if logicParent:hasSteering() then
+				local seatedCharacter = logicParent:getSeatCharacter()
+				if ( seatedCharacter and seatedCharacter:getPlayer() ) == sm.localPlayer.getPlayer() then
+					NotificationManager.Cl_AddGenericNotification( "#{INFO_OUT_OF_ENERGY}" )
+					break
+				end
+			end
+		end
+	end
+
+	if wantsToDrill and self.cl.hasCharge then
 		local worldPos = self.shape.worldPosition
 		local drillSettings = DrillSettings[self.cl.currentSettingsLevel]
 		local radius = drillSettings.radius

@@ -1,13 +1,13 @@
 
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
 
 LOOT_TABLES = LOOT_TABLES or {}
 LOOT_SOURCES = LOOT_SOURCES or {}
 LOOT_CONDITIONS = LOOT_CONDITIONS or {}
 
-dofile( "$SURVIVAL_DATA/Scripts/game/loot/loottables.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/loot/lootsources.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/loot/lootconditions.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/loot/loottables.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/loot/lootsources.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/loot/lootconditions.lua" )
 
 local function SolveValue( value, default )
 	if value then

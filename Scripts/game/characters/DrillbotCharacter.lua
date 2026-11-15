@@ -1,7 +1,7 @@
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_constants.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/DrillbotManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_collections.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_constants.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/DrillbotManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_collections.lua" )
 
 DrillbotCharacter = class( nil )
 
@@ -136,18 +136,46 @@ local ComboDelays = {
 	}
 }
 
-local function ResolveDrillbotTarget( bossState )
-	local targetPlayer = bossState and bossState.targetPlayer or nil
-	if targetPlayer and sm.exists( targetPlayer ) and sm.exists( targetPlayer.character ) then
-		return targetPlayer.character
+local FnResolveDrillbotTarget
+do
+	local function GetValidTargetCharacter( player, drillbotCharacter )
+		if player and sm.exists( player ) then
+			local playerCharacter = player.character
+			if sm.exists( playerCharacter ) and not playerCharacter:isDowned() and InSameWorld( playerCharacter, drillbotCharacter ) then
+				return playerCharacter
+			end
+		end
+		return nil
 	end
 
-	local hostPlayer = sm.player.getHostPlayer()
-	if hostPlayer and sm.exists( hostPlayer ) and sm.exists( hostPlayer.character ) then
-		return hostPlayer.character
-	end
+	local function ResolveDrillbotTarget( bossState, drillbotCharacter )
+		local targetPlayer = bossState and bossState.targetPlayer or nil
+		local targetCharacter = GetValidTargetCharacter( targetPlayer, drillbotCharacter )
+		if targetCharacter then
+			return targetCharacter
+		end
 
-	return nil
+		local hostPlayer = sm.player.getHostPlayer()
+		local hostCharacter = GetValidTargetCharacter( hostPlayer, drillbotCharacter )
+		if hostCharacter then
+			return hostCharacter
+		end
+
+		-- Fallback to the player with the lowest id
+		local allPlayers = sm.player.getAllPlayers()
+		local lowestPlayerId = nil
+		local fallbackCharacter = nil
+		for _, player in ipairs( allPlayers ) do
+			local character = GetValidTargetCharacter( player, drillbotCharacter )
+			if character and ( lowestPlayerId == nil or player.id < lowestPlayerId ) then
+				lowestPlayerId = player.id
+				fallbackCharacter = character
+			end
+		end
+
+		return fallbackCharacter
+	end
+	FnResolveDrillbotTarget = ResolveDrillbotTarget
 end
 
 local function GetCatchupRate( expectedProgress, localProgress )
@@ -600,7 +628,7 @@ function DrillbotCharacter.client_onUpdate( self, deltaTime )
 		-- Convert animation time to an aim offset based on the cart width
 		local cartAimOffset = ( self.cl.shootXBendAnimation.time - 0.5 ) * DRILLBOT_ARENA_WIDTH
 		local fightCenter = DrillbotManager.Cl_GetFightCenter()
-		local targetCharacter = ResolveDrillbotTarget( bossState )
+		local targetCharacter = FnResolveDrillbotTarget( bossState, self.character )
 		if fightCenter and targetCharacter then
 			local cartAimPosition = fightCenter + xAxis * cartAimOffset
 			local axisToPlayer = xAxis * ( targetCharacter.worldPosition - cartAimPosition ):dot( xAxis )
@@ -639,7 +667,7 @@ function DrillbotCharacter.client_onUpdate( self, deltaTime )
 				-- Set initial direction
 				local drillPosition = self:cl_getDrillPosition()
 				local desiredWorldDirection = sm.vec3.new( 0, 1, 0 )
-				local targetCharacter = ResolveDrillbotTarget( bossState )
+				local targetCharacter = FnResolveDrillbotTarget( bossState, self.character )
 				if targetCharacter then
 					if drillPosition then
 						local desiredPositionXY = sm.vec3.new( targetCharacter.worldPosition.x, targetCharacter.worldPosition.y, 0 )
@@ -671,7 +699,7 @@ function DrillbotCharacter.client_onUpdate( self, deltaTime )
 			local desiredWorldDirection = sm.vec3.new( 0, 1, 0 )
 			local remainingDistance = 0
 
-			local targetCharacter = ResolveDrillbotTarget( bossState )
+			local targetCharacter = FnResolveDrillbotTarget( bossState, self.character )
 
 			if targetCharacter then
 				if drillPosition then
@@ -1196,7 +1224,7 @@ end
 function DrillbotCharacter.cl_getAttackableTriggerIndex( self )
 
 	local bossState = DrillbotManager.Cl_GetBossState()
-	local targetCharacter = ResolveDrillbotTarget( bossState )
+	local targetCharacter = FnResolveDrillbotTarget( bossState, self.character )
 
 	local targetTriggerIndex
 	local triggerIndices = {}

@@ -1,6 +1,6 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_shapes.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_constants.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/WarehouseManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_shapes.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_constants.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/WarehouseManager.lua" )
 
 Elevator = class()
 Elevator.maxParentCount = 255
@@ -334,6 +334,7 @@ function Elevator.server_onFixedUpdate( self )
 	if self.sv.prevPower == 0 and self.saved.portal and self.interactable.power ~= 0 then
 		self.network:sendToClients( "cl_n_startMovingSounds", { contentsA = self.saved.portal:getContentsA(), contentsB = self.saved.portal:getContentsB() } )
 	elseif self.sv.prevPower ~= 0 and self.interactable.power == 0 then
+		sm.event.sendToInteractable( elevatorPanelButton, "sv_e_shutOff" )
 		self.network:sendToClients( "cl_n_stopMovingSounds", { contentsA = self.saved.portal:getContentsA(), contentsB = self.saved.portal:getContentsB() } ) 
 	end
 

@@ -1,5 +1,5 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/WarehouseManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/QuestManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/WarehouseManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/QuestManager.lua" )
 
 WarehouseConsoleBase = class()
 

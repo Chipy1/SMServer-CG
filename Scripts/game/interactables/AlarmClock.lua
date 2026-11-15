@@ -1,5 +1,5 @@
 -- AlarmClock.lua --
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
 
 ---@class AlarmClock : ShapeClass
 ---@field sv table
@@ -10,7 +10,7 @@ AlarmClock.connectionInput = sm.interactable.connectionType.none
 AlarmClock.maxChildCount = 255
 AlarmClock.maxParentCount = 0
 AlarmClock.colorNormal = sm.color.new( 0xee2a7bff )
-AlarmClock.colorHighlight = sm.color.new( 0xee2a7bff )
+AlarmClock.colorHighlight = sm.color.new( 0xfc5c9fff )
 
 -------- Server --------
 

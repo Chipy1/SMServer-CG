@@ -1,8 +1,8 @@
 -- GasEngine.lua --
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_constants.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_items.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/TutorialManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_constants.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_items.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/TutorialManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
 
 GasEngine = class()
 GasEngine.maxParentCount = 2
@@ -10,7 +10,7 @@ GasEngine.maxChildCount = 255
 GasEngine.connectionInput = sm.interactable.connectionType.logic + sm.interactable.connectionType.power + sm.interactable.connectionType.gasoline
 GasEngine.connectionOutput = sm.interactable.connectionType.bearing
 GasEngine.colorNormal = sm.color.new( 0xff8000ff )
-GasEngine.colorHighlight = sm.color.new( 0xff8000ff )
+GasEngine.colorHighlight = sm.color.new( 0xffc45aff )
 GasEngine.connectIcon = "gas"
 GasEngine.connectIconScale = 0.75
 
@@ -73,7 +73,7 @@ local EngineLevels = {
 		cost = 4,
 		title = "#{LEVEL} 1",
 		gearCount = 5,
-		bearingCount = 2,
+		bearingCount = 4,
 		pointsPerFuel = 4000
 	},
 	[tostring(ITEMS.obj_interactive_gasengine_02)] = {
@@ -83,7 +83,7 @@ local EngineLevels = {
 		cost = 6,
 		title = "#{LEVEL} 2",
 		gearCount = 7,
-		bearingCount = 4,
+		bearingCount = 6,
 		pointsPerFuel = 6000
 	},
 	[tostring(ITEMS.obj_interactive_gasengine_03)] = {
@@ -93,7 +93,7 @@ local EngineLevels = {
 		cost = 8,
 		title = "#{LEVEL} 3",
 		gearCount = 9,
-		bearingCount = 6,
+		bearingCount = 8,
 		pointsPerFuel = 9000
 	},
 	[tostring(ITEMS.obj_interactive_gasengine_04)] = {
@@ -103,7 +103,7 @@ local EngineLevels = {
 		cost = 10,
 		title = "#{LEVEL} 4",
 		gearCount = 11,
-		bearingCount = 8,
+		bearingCount = 10,
 		pointsPerFuel = 13500
 	},
 	[tostring(ITEMS.obj_interactive_gasengine_05)] = {
@@ -111,7 +111,7 @@ local EngineLevels = {
 		effect = "GasEngine - Level 5",
 		title = "#{LEVEL} 5",
 		gearCount = #Gears,
-		bearingCount = 10,
+		bearingCount = 12,
 		pointsPerFuel = 20250
 	},
 	[tostring(obj_survivalobject_gasengine)] = {
@@ -119,7 +119,7 @@ local EngineLevels = {
 		effect = "GasEngine - Level 5",
 		title = "#{LEVEL} 5",
 		gearCount = #Gears,
-		bearingCount = 10,
+		bearingCount = 12,
 		pointsPerFuel = 20250,
 		creativeFuel = true
 	}

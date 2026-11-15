@@ -1,4 +1,4 @@
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
 
 ElevatorManager = class( nil )
 
@@ -35,102 +35,179 @@ function ElevatorManager.sv_loadElevatorsOnOverworldCell( self, x, y, cellTags )
 
 	local exits = {}
 	local nodes = sm.cell.getNodesByTag( x, y, "ELEVATOR_EXIT_HINT" )
-	for i,n in ipairs( nodes ) do
-		local vector = n.rotation * ( sm.vec3.new( 0, 1, 0 ) * n.scale )
-		local x1, y1 = getCell( n.position.x + vector.x, n.position.y + vector.y )
-		exits[i] = { x = x1, y = y1 }
+	for i = 1, #nodes do
+		local node = nodes[ i ]
+		local vector = node.rotation * ( sm.vec3.new( 0, 1, 0 ) * node.scale )
+		local cellX, cellY = getCell( node.position.x + vector.x, node.position.y + vector.y )
+		exits[ i ] = { x = cellX, y = cellY }
 	end
 
-	local setParamsOnElevators = function( tags, exits )
-		local elevators = sm.cell.getInteractablesByTags( x, y, tags )
-		for _,e in ipairs( elevators ) do
-			local maxLevels = 0
-			local foundFloorTag = false
-			local foundTestTag = false
-			for _, tag in ipairs( cellTags ) do
-				if CELL_TAG_TO_WAREHOUSE_FLOORS[tag] then
-					maxLevels = CELL_TAG_TO_WAREHOUSE_FLOORS[tag]
-					foundFloorTag = true
-					foundTestTag = tag == "POI_TEST"
-					break
-				end
-			end
-			assert( tags[2] ~= "ENTRANCE" or #exits > 0, "Elevator on ("..x..", "..y..") does not have an exit hint" )
-			--assert( tags[2] ~= "ENTRANCE" or maxLevels ~= 0, "Elevator is not placed on a warehouse tile" )
-			if foundFloorTag == false then
-				maxLevels = 4
-			end
-
-			local params = {
-				name = tags[1].."_"..tags[2],
-				x = x,
-				y = y,
-				exits = exits,
-				maxLevels = maxLevels,
-				test = foundTestTag,
-				cellTags = cellTags
-			}
-			e:setParams( params )
+	-- Cell-wide values; computed once instead of once per elevator.
+	local maxLevels = 0
+	local foundFloorTag = false
+	local foundTestTag = false
+	for i = 1, #cellTags do
+		local tag = cellTags[ i ]
+		local floors = CELL_TAG_TO_WAREHOUSE_FLOORS[ tag ]
+		if floors then
+			maxLevels = floors
+			foundFloorTag = true
+			foundTestTag = tag == "POI_TEST"
+			break
 		end
 	end
-
-	local setParamsOnButtons = function( tags, goingUp )
-		local buttons = sm.cell.getInteractablesByTags( x, y, tags )
-		for _,b in ipairs( buttons ) do
-			local params = {
-				goingUp = goingUp
-			}
-			b:setParams( params )
-		end
+	if not foundFloorTag then
+		maxLevels = 4
 	end
 
-	setParamsOnElevators( { "ELEVATOR", "ENTRANCE" }, exits )
-	setParamsOnElevators( { "ELEVATOR", "EXIT" } )
-	setParamsOnButtons( { "ELEVATOR_BUTTON", "ENTRANCE" }, true )
-	setParamsOnButtons( { "ELEVATOR_BUTTON", "EXIT" }, false )
+	local elevators = sm.cell.getInteractablesByTags( x, y, { "ELEVATOR", "ENTRANCE" } )
+	if #exits == 0 and #elevators > 0 then
+		sm.log.error( "Elevator on ("..x..", "..y..") does not have an exit hint" )
+	end
+	for i = 1, #elevators do
+		elevators[ i ]:setParams( {
+			name = "ELEVATOR_ENTRANCE",
+			x = x,
+			y = y,
+			exits = exits,
+			maxLevels = maxLevels,
+			test = foundTestTag,
+			cellTags = cellTags
+		} )
+	end
+
+	elevators = sm.cell.getInteractablesByTags( x, y, { "ELEVATOR", "EXIT" } )
+	for i = 1, #elevators do
+		elevators[ i ]:setParams( {
+			name = "ELEVATOR_EXIT",
+			x = x,
+			y = y,
+			maxLevels = maxLevels,
+			test = foundTestTag,
+			cellTags = cellTags
+		} )
+	end
+
+	local buttons = sm.cell.getInteractablesByTags( x, y, { "ELEVATOR_BUTTON", "ENTRANCE" } )
+	for i = 1, #buttons do
+		buttons[ i ]:setParams( { goingUp = true } )
+	end
+
+	buttons = sm.cell.getInteractablesByTags( x, y, { "ELEVATOR_BUTTON", "EXIT" } )
+	for i = 1, #buttons do
+		buttons[ i ]:setParams( { goingUp = false } )
+	end
 end
 
 function ElevatorManager.sv_loadElevatorsOnWarehouseCell( self, x, y, warehouseIndex, level )
-	local setParamsOnElevators = function( tags )
-		local elevators = sm.cell.getInteractablesByTags( x, y, tags )
-		for _,e in ipairs( elevators ) do
-			local params = {
-				name = tags[1].."_"..tags[2],
-				warehouseIndex = warehouseIndex,
-				level = level
-			}
-			e:setParams( params )
-		end
+	local elevators = sm.cell.getInteractablesByTags( x, y, { "ELEVATOR", "ENTRANCE" } )
+	for i = 1, #elevators do
+		elevators[ i ]:setParams( {
+			name = "ELEVATOR_ENTRANCE",
+			warehouseIndex = warehouseIndex,
+			level = level
+		} )
 	end
 
-	local setParamsOnButtons = function( tags, goingUp )
-		local buttons = sm.cell.getInteractablesByTags( x, y, tags )
-		for _,b in ipairs( buttons ) do
-			local params = {
-				goingUp = goingUp
-			}
-			b:setParams( params )
-		end
+	elevators = sm.cell.getInteractablesByTags( x, y, { "ELEVATOR", "UP" } )
+	for i = 1, #elevators do
+		elevators[ i ]:setParams( {
+			name = "ELEVATOR_UP",
+			warehouseIndex = warehouseIndex,
+			level = level
+		} )
 	end
 
-	setParamsOnElevators( { "ELEVATOR", "ENTRANCE" } )
-	setParamsOnElevators( { "ELEVATOR", "UP" } )
-	setParamsOnElevators( { "ELEVATOR", "DOWN" } )
-	setParamsOnElevators( { "ELEVATOR", "EXIT" } )
-	
-	setParamsOnButtons( { "ELEVATOR_BUTTON", "ENTRANCE" }, false )
-	setParamsOnButtons( { "ELEVATOR_BUTTON", "UP" }, true )
-	setParamsOnButtons( { "ELEVATOR_BUTTON", "DOWN" }, false )
-	setParamsOnButtons( { "ELEVATOR_BUTTON", "EXIT" }, true )
+	elevators = sm.cell.getInteractablesByTags( x, y, { "ELEVATOR", "DOWN" } )
+	for i = 1, #elevators do
+		elevators[ i ]:setParams( {
+			name = "ELEVATOR_DOWN",
+			warehouseIndex = warehouseIndex,
+			level = level
+		} )
+	end
+
+	elevators = sm.cell.getInteractablesByTags( x, y, { "ELEVATOR", "EXIT" } )
+	for i = 1, #elevators do
+		elevators[ i ]:setParams( {
+			name = "ELEVATOR_EXIT",
+			warehouseIndex = warehouseIndex,
+			level = level
+		} )
+	end
+
+	local buttons = sm.cell.getInteractablesByTags( x, y, { "ELEVATOR_BUTTON", "ENTRANCE" } )
+	for i = 1, #buttons do
+		buttons[ i ]:setParams( { goingUp = false } )
+	end
+
+	buttons = sm.cell.getInteractablesByTags( x, y, { "ELEVATOR_BUTTON", "UP" } )
+	for i = 1, #buttons do
+		buttons[ i ]:setParams( { goingUp = true } )
+	end
+
+	buttons = sm.cell.getInteractablesByTags( x, y, { "ELEVATOR_BUTTON", "DOWN" } )
+	for i = 1, #buttons do
+		buttons[ i ]:setParams( { goingUp = false } )
+	end
+
+	buttons = sm.cell.getInteractablesByTags( x, y, { "ELEVATOR_BUTTON", "EXIT" } )
+	for i = 1, #buttons do
+		buttons[ i ]:setParams( { goingUp = true } )
+	end
 end
 
 function ElevatorManager.sv_saveElevators( self )
 	sm.storage.save( STORAGE_CHANNEL_ELEVATORS, self.elevators )
-
 end
 
 local function CellKey( world, x, y )
 	return world.id..":("..x..","..y..")"
+end
+
+-- Loads the 3x3 cell block around a cell coordinate and returns the load handles.
+local function LoadCellsAroundCell( world, x, y )
+	local handles = {}
+	local count = 0
+	for cellX = x - 1, x + 1 do
+		for cellY = y - 1, y + 1 do
+			if world:isCellInBounds( cellX, cellY ) then
+				local handle = world:loadCellWithHandle( cellX, cellY, nil )
+				if handle ~= nil then
+					count = count + 1
+					handles[ count ] = handle
+				end
+			end
+		end
+	end
+	return handles
+end
+
+-- Determines which portal opening an interactable belongs to.
+-- World comparison works after reloads; missing openings cover the creation flow
+-- (the creator registers before setting opening A, the finder before setting opening B).
+local function GetElevatorSide( portal, interactable )
+	local body = interactable.body
+	local world = body and body:getWorld()
+	if world ~= nil then
+		local worldId = world.id
+		local worldA = portal:getWorldA()
+		if worldA and sm.exists( worldA ) and worldA.id == worldId then
+			return "a"
+		end
+		local worldB = portal:getWorldB()
+		if worldB and sm.exists( worldB ) and worldB.id == worldId then
+			return "b"
+		end
+	end
+
+	if not portal:hasOpeningA() then
+		return "a"
+	end
+	if not portal:hasOpeningB() then
+		return "b"
+	end
+	return nil
 end
 
 function ElevatorManager.sv_onCellLoaded( self, world, x, y )
@@ -143,11 +220,13 @@ end
 
 function ElevatorManager.server_onFixedUpdate( self )
 	local save = false
-	for _,elevator in pairs( self.activeElevators ) do
+	local elevators = self.activeElevators
+
+	for i = 1, #elevators do
+		local elevator = elevators[ i ]
+
 		-- Transfer
 		if elevator.ticksToDestination == ELEVATOR_TRANSFER_TICK then
-			print( "Transfering to", elevator.destination )
-
 			if self:sv_isElevatorReadyForTransfer( elevator ) then
 				if elevator.destination == "b" then
 					elevator.portal:transferAToB()
@@ -156,163 +235,199 @@ function ElevatorManager.server_onFixedUpdate( self )
 				end
 			else
 				sm.log.info( "An elevator wants to transfer to '"..elevator.destination.."' but destination is not ready, added 1 second" )
-				elevator.ticksToDestination = elevator.ticksToDestination + 40
+				elevator.ticksToDestination = ELEVATOR_TRANSFER_TICK + 40
 
-				if self:sv_needToLoadWorlds( elevator.portal ) then
-					self:sv_loadPortalWorlds( elevator.portal )
+				local portal = elevator.portal
+				if self:sv_needToLoadWorlds( portal ) then
+					self:sv_loadPortalWorlds( portal )
 				end
 
-				self:sv_prepareCells( elevator.portal )
+				self:sv_prepareCells( portal )
 			end
 			save = true
 		end
 
-		-- Open doors
-		if elevator.ticksToDestination == 0 then
-			if elevator.a and sm.exists( elevator.a ) then
-				elevator.a.active = elevator.destination == "a"
-				elevator.a:setPower( 0 )
+		local ticks = elevator.ticksToDestination
+
+		if ticks == 0 then
+			-- Open doors, but only when the applied state differs from the destination.
+			local destination = elevator.destination
+			if elevator.doorSide ~= destination then
+				local doorA = elevator.a
+				if doorA and sm.exists( doorA ) then
+					doorA.active = destination == "a"
+					doorA:setPower( 0 )
+				end
+				local doorB = elevator.b
+				if doorB and sm.exists( doorB ) then
+					doorB.active = destination == "b"
+					doorB:setPower( 0 )
+				end
+				elevator.doorSide = destination
 			end
-			if elevator.b and sm.exists( elevator.b ) then
-				elevator.b.active = elevator.destination == "b"
-				elevator.b:setPower( 0 )
-			end
-		elseif elevator.ticksToDestination > 0 then -- Elevator is moving
+		elseif ticks > 0 then -- Elevator is moving
 
 			-- Countdown
-			elevator.ticksToDestination = elevator.ticksToDestination - 1
-			if elevator.ticksToDestination == 0 then
+			ticks = ticks - 1
+			elevator.ticksToDestination = ticks
+			if ticks == 0 then
 				save = true
 				self:sv_arrived( elevator )
 			end
 
-			-- Close doors
-			if elevator.a and sm.exists( elevator.a ) then
-				elevator.a.active = false
-				if elevator.ticksToDestination == ELEVATOR_MOVEWALLS_TICK then
-					elevator.a:setPower( elevator.destination == "a" and -1 or 1 )
+			-- Close doors once per travel and move the walls at the exit section.
+			local closeDoors = elevator.doorSide ~= nil
+			if closeDoors or ticks == ELEVATOR_MOVEWALLS_TICK then
+				local destination = elevator.destination
+
+				local doorA = elevator.a
+				if doorA and sm.exists( doorA ) then
+					if closeDoors then
+						doorA.active = false
+					end
+					if ticks == ELEVATOR_MOVEWALLS_TICK then
+						doorA:setPower( destination == "a" and -1 or 1 )
+					end
+				end
+
+				local doorB = elevator.b
+				if doorB and sm.exists( doorB ) then
+					if closeDoors then
+						doorB.active = false
+					end
+					if ticks == ELEVATOR_MOVEWALLS_TICK then
+						doorB:setPower( destination == "b" and 1 or -1 )
+					end
+				end
+
+				if closeDoors then
+					elevator.doorSide = nil
 				end
 			end
-			if elevator.b and sm.exists( elevator.b ) then
-				elevator.b.active = false
-				if elevator.ticksToDestination == ELEVATOR_MOVEWALLS_TICK then
-					elevator.b:setPower( elevator.destination == "b" and 1 or -1 )
-				end
-			end
+
+			local portal = elevator.portal
 
 			-- Start Fade
-			if elevator.ticksToDestination == ELEVATOR_START_FADE then
-				if elevator.destination == "b" then
-					if elevator.portal:getWorldB() then
-						self:sv_sendFadeToBlackEvent( elevator.portal:getContentsA(), true )
+			if ticks == ELEVATOR_START_FADE then
+				local destination = elevator.destination
+				if destination == "b" then
+					if portal:getWorldB() then
+						self:sv_sendFadeToBlackEvent( portal:getContentsA(), true )
 					end
-				end
-				if elevator.destination == "a" then
-					if elevator.portal:getWorldA() then
-						self:sv_sendFadeToBlackEvent( elevator.portal:getContentsB(), true )
+				elseif destination == "a" then
+					if portal:getWorldA() then
+						self:sv_sendFadeToBlackEvent( portal:getContentsB(), true )
 					end
 				end
 			end
 
-			if elevator.ticksToDestination == ELEVATOR_LOAD_WORLDS_TICK then
-				self:sv_loadPortalWorlds( elevator.portal )
+			if ticks == ELEVATOR_LOAD_WORLDS_TICK then
+				self:sv_loadPortalWorlds( portal )
 			end
 
-			-- Transfer
-			if elevator.ticksToDestination < ELEVATOR_LOAD_WORLDS_TICK and
-			   elevator.ticksToDestination > ELEVATOR_TRANSFER_TICK
+			-- Prepare for transfer
+			if ticks < ELEVATOR_LOAD_WORLDS_TICK and
+			   ticks > ELEVATOR_TRANSFER_TICK
 			then
-				-- Prepare for transfer
-				self:sv_prepareCells( elevator.portal )
+				local handles = self.loadHandles[ portal.id ]
+				if handles == nil or handles.a == nil or handles.b == nil then
+					self:sv_prepareCells( portal )
+				end
 			end
 
 			-- End Fade
-			if elevator.ticksToDestination == ELEVATOR_END_FADE then
-				if elevator.destination == "a" then
-					if elevator.portal:getWorldB() then
-						self:sv_sendFadeToBlackEvent( elevator.portal:getContentsA(), false )
+			if ticks == ELEVATOR_END_FADE then
+				local destination = elevator.destination
+				if destination == "a" then
+					if portal:getWorldB() then
+						self:sv_sendFadeToBlackEvent( portal:getContentsA(), false )
 					end
-				end
-				if elevator.destination == "b" then
-					if elevator.portal:getWorldA() then
-						self:sv_sendFadeToBlackEvent( elevator.portal:getContentsB(), false )
+				elseif destination == "b" then
+					if portal:getWorldA() then
+						self:sv_sendFadeToBlackEvent( portal:getContentsB(), false )
 					end
 				end
 			end
 		end
 	end
+
 	if save then
 		self:sv_saveElevators()
 	end
 end
 
 function ElevatorManager.sv_loadBForPlayersInElevator( self, portalId, world, x, y )
-	if self.loadHandles[portalId] == nil then
-		self.loadHandles[portalId] = {}
+	local handles = self.loadHandles[ portalId ]
+	if handles == nil then
+		handles = {}
+		self.loadHandles[ portalId ] = handles
 	end
 
-	if self.loadHandles[portalId].b == nil then
-		printf( "Loading cell %s:(%s,%s) (ElevatorManager.sv_loadBForPlayersInElevator)", world.id, x, y )
-
-		self.loadHandles[portalId].b = {}
-		for cellX = x - 1, x + 1, 1 do
-			for cellY = y - 1, y + 1, 1 do
-				if world:isCellInBounds( cellX, cellY ) then
-					table.insert( self.loadHandles[portalId].b, world:loadCellWithHandle( cellX, cellY, nil ) )
-				end
-			end
-		end
+	if handles.b ~= nil then
+		return
 	end
+
+	if world == nil or not sm.exists( world ) then
+		return
+	end
+
+	handles.b = LoadCellsAroundCell( world, x, y )
 end
 
 function ElevatorManager.sv_sendFadeToBlackEvent( self, contents, start )
 	if contents == nil then
 		return
 	end
-	for _,object in ipairs( contents ) do
+
+	local eventName, params
+	if start then
+		eventName = "sv_startFadeToBlack"
+		params = { duration = ELEVATOR_FADE_DURATION, timeout = ELEVATOR_FADE_TIMEOUT }
+	else
+		eventName = "sv_endFadeToBlack"
+		params = { duration = ELEVATOR_FADE_DURATION }
+	end
+
+	for i = 1, #contents do
+		local object = contents[ i ]
 		if type( object ) == "Character" and sm.exists( object ) then
 			local player = object:getPlayer()
 			if player then
-				if start then
-					sm.event.sendToPlayer( player, "sv_startFadeToBlack", { duration = ELEVATOR_FADE_DURATION, timeout = ELEVATOR_FADE_TIMEOUT } )
-				else
-					sm.event.sendToPlayer( player, "sv_endFadeToBlack", { duration = ELEVATOR_FADE_DURATION } )
-				end
+				sm.event.sendToPlayer( player, eventName, params )
 			end
 		end
 	end
 end
 
 function ElevatorManager.sv_prepareCells( self, portal )
-	if self.loadHandles[portal.id] == nil then
-		self.loadHandles[portal.id] = {}
+	local handles = self.loadHandles[ portal.id ]
+	if handles ~= nil and handles.a ~= nil and handles.b ~= nil then
+		return
+	end
+	if handles == nil then
+		handles = {}
+		self.loadHandles[ portal.id ] = handles
 	end
 
-	local function loadCells( world, position )
-		local x = math.floor( position.x / 64 )
-		local y = math.floor( position.y / 64 )
-		printf( "Loading cell %s:(%s,%s) (ElevatorManager.sv_prepareCells)", world.id, x, y )
-
-		local handles = {}
-		for cellX = x-1, x+1, 1 do
-			for cellY = y-1, y+1, 1 do
-				if world:isCellInBounds( cellX, cellY ) then
-					table.insert( handles, world:loadCellWithHandle( cellX, cellY, nil ) )
-				end
+	if handles.a == nil then
+		local world = portal:getWorldA()
+		if world and sm.exists( world ) then
+			local position = portal:getPositionA()
+			if position then
+				local x, y = getCell( position.x, position.y )
+				handles.a = LoadCellsAroundCell( world, x, y )
 			end
 		end
-		return handles
 	end
 
-	if self.loadHandles[portal.id].a == nil then
-		if sm.exists( portal:getWorldA() ) then
-			self.loadHandles[portal.id].a = loadCells( portal:getWorldA(), portal:getPositionA() )
-		end
-	end
-
-	if self.loadHandles[portal.id].b == nil then
-		if sm.exists( portal:getWorldB() ) then
-			self.loadHandles[portal.id].b = loadCells( portal:getWorldB(), portal:getPositionB() )
+	if handles.b == nil then
+		local world = portal:getWorldB()
+		if world and sm.exists( world ) then
+			local position = portal:getPositionB()
+			if position then
+				local x, y = getCell( position.x, position.y )
+				handles.b = LoadCellsAroundCell( world, x, y )
+			end
 		end
 	end
 end
@@ -320,59 +435,110 @@ end
 -- Shape context
 
 function ElevatorManager.sv_registerElevator( self, interactable, portal )
-	local elevator = self.elevators[portal.id]
-	if elevator then
-		-- Exists, check if A (load) otherwise, set as B
-		assert( elevator.a )
-		if elevator.a ~= interactable then
-			assert( elevator.b == nil or elevator.b == interactable )
+	local elevator = self.elevators[ portal.id ]
+	local changed = false
+
+	if elevator == nil then
+		-- Does not exist, create it with the interactable on its resolved side.
+		elevator = {
+			portal = portal,
+			destination = "b",
+			ticksToDestination = 0, -- At destination
+		}
+		if GetElevatorSide( portal, interactable ) == "b" then
 			elevator.b = interactable
+		else
+			elevator.a = interactable
 		end
-	else
-		-- Does not exist, create and set as A
-		elevator = {}
-		elevator.portal = portal
-		elevator.destination = "b"
-		elevator.ticksToDestination = 0 -- At destination
-		elevator.a = interactable
-		self.elevators[portal.id] = elevator
+		self.elevators[ portal.id ] = elevator
+		changed = true
+	elseif elevator.a ~= interactable and elevator.b ~= interactable then
+		-- Exists, bind the interactable to its own portal side (or to a stale slot).
+		local side = GetElevatorSide( portal, interactable )
+		if side == "a" then
+			if elevator.a == nil or not sm.exists( elevator.a ) then
+				elevator.a = interactable
+				changed = true
+			else
+				sm.log.error( "ElevatorManager: duplicate A-side interactable registered for one portal" )
+			end
+		elseif side == "b" then
+			if elevator.b == nil or not sm.exists( elevator.b ) then
+				elevator.b = interactable
+				changed = true
+			else
+				sm.log.error( "ElevatorManager: duplicate B-side interactable registered for one portal" )
+			end
+		elseif elevator.a == nil or not sm.exists( elevator.a ) then
+			elevator.a = interactable
+			changed = true
+		elseif elevator.b == nil or not sm.exists( elevator.b ) then
+			elevator.b = interactable
+			changed = true
+		else
+			sm.log.error( "ElevatorManager: more than two interactables registered for one portal" )
+		end
 	end
 
-	self:sv_saveElevators()
+	-- Any (re)created interactable starts with closed doors; let the fixed update re-apply the state.
+	elevator.doorSide = nil
+
+	if elevator.portal ~= portal then
+		elevator.portal = portal
+		changed = true
+	end
+
+	if changed then
+		self:sv_saveElevators()
+	end
+
 	addToArrayIfNotExists( self.activeElevators, elevator )
-	self.objectToElevator[interactable.id] = elevator
+	self.objectToElevator[ interactable.id ] = elevator
 end
 
 
 function ElevatorManager.sv_removeElevator( self, interactable )
-	local elevator = self.objectToElevator[interactable.id]
+	local elevator = self.objectToElevator[ interactable.id ]
 	if elevator == nil then
 		return
 	end
 
-	self.objectToElevator[interactable.id] = nil
-	local remove = true
-	for _,e in pairs( self.objectToElevator ) do
+	self.objectToElevator[ interactable.id ] = nil
+
+	local stillMapped = false
+	for _, e in pairs( self.objectToElevator ) do
 		if e == elevator then
-			remove = false
+			stillMapped = true
 			break
 		end
 	end
-	if remove then
-		removeFromArray( self.activeElevators, function( value ) return value == elevator end )
+
+	if not stillMapped then
+		local active = self.activeElevators
+		for i = 1, #active do
+			if active[ i ] == elevator then
+				active[ i ] = active[ #active ]
+				active[ #active ] = nil
+				break
+			end
+		end
 	end
 end
 
 function ElevatorManager.sv_getElevatorDestination( self, interactable )
-	local elevator = self.objectToElevator[interactable.id]
-	assert( elevator, "Attempt to get an non existing elevator for interactable"..interactable.id )
+	local elevator = self.objectToElevator[ interactable.id ]
+	if elevator == nil then
+		return nil
+	end
 
 	return elevator.destination, elevator.ticksToDestination
 end
 
 function ElevatorManager.sv_getElevatorHome( self, interactable )
-	local elevator = self.objectToElevator[interactable.id]
-	assert( elevator, "Attempt to get an non existing elevator for interactable"..interactable.id )
+	local elevator = self.objectToElevator[ interactable.id ]
+	if elevator == nil then
+		return nil
+	end
 
 	if interactable == elevator.b then
 		return "b"
@@ -381,110 +547,114 @@ function ElevatorManager.sv_getElevatorHome( self, interactable )
 end
 
 function ElevatorManager.sv_call( self, interactable )
-	local elevator = self.objectToElevator[interactable.id]
-	assert( elevator )
+	local elevator = self.objectToElevator[ interactable.id ]
+	if elevator == nil or elevator.ticksToDestination ~= 0 then -- Not on the move
+		return
+	end
 
-	if elevator.ticksToDestination == 0 then -- Not on the move
-		print( "Elevator CALL!" )
-		if elevator.destination == "b" and interactable == elevator.a then
-			elevator.destination = "a"
-			elevator.ticksToDestination = ELEVATOR_TRAVEL_TICKS
-		elseif elevator.destination == "a" and interactable == elevator.b then
-			elevator.destination = "b"
-			elevator.ticksToDestination = ELEVATOR_TRAVEL_TICKS
-		end
+	if elevator.destination == "b" and interactable == elevator.a then
+		elevator.destination = "a"
+		elevator.ticksToDestination = ELEVATOR_TRAVEL_TICKS
+	elseif elevator.destination == "a" and interactable == elevator.b then
+		elevator.destination = "b"
+		elevator.ticksToDestination = ELEVATOR_TRAVEL_TICKS
 	end
 end
 
 
 function ElevatorManager.sv_go( self, interactable )
-	print( "Elevator GO!" )
-	local elevator = self.objectToElevator[interactable.id]
-	assert( elevator )
+	local elevator = self.objectToElevator[ interactable.id ]
+	if elevator == nil or elevator.ticksToDestination ~= 0 then -- Not on the move
+		return
+	end
 
-	if elevator.ticksToDestination == 0 then -- Not on the move
-		if elevator.destination == "a" and interactable == elevator.a then
-			-- A to B
-			elevator.destination = "b"
-			elevator.ticksToDestination = ELEVATOR_TRAVEL_TICKS
+	if elevator.destination == "a" and interactable == elevator.a then
+		-- A to B
+		elevator.destination = "b"
+		elevator.ticksToDestination = ELEVATOR_TRAVEL_TICKS
 
-		elseif elevator.destination == "b" and interactable == elevator.b then
-			-- B to A
-			elevator.destination = "a"
-			elevator.ticksToDestination = ELEVATOR_TRAVEL_TICKS
-		elseif interactable == elevator.a then
-			elevator.destination = "b"
-			elevator.ticksToDestination = ELEVATOR_TRANSFER_TICK + 40
-			elevator.a:setPower( 1 )
-			print("Elevator pressed at wrong location, AtoB")
-		elseif interactable == elevator.b then
-			elevator.destination = "a"
-			elevator.ticksToDestination = ELEVATOR_TRANSFER_TICK + 40
-			elevator.b:setPower( -1 )
-			print("Elevator pressed at wrong location, BtoA")
-		end
+	elseif elevator.destination == "b" and interactable == elevator.b then
+		-- B to A
+		elevator.destination = "a"
+		elevator.ticksToDestination = ELEVATOR_TRAVEL_TICKS
+	elseif interactable == elevator.a then
+		elevator.destination = "b"
+		elevator.ticksToDestination = ELEVATOR_TRANSFER_TICK + 40
+		elevator.a:setPower( 1 )
+	elseif interactable == elevator.b then
+		elevator.destination = "a"
+		elevator.ticksToDestination = ELEVATOR_TRANSFER_TICK + 40
+		elevator.b:setPower( -1 )
 	end
 end
 
 function ElevatorManager.sv_arrived( self, elevator )
-	print( "ElevatorManager.sv_arrived" )
-	local handles = self.loadHandles[elevator.portal.id]
-	if handles then
-		if handles.a then
-			for _, handle in ipairs(handles.a) do
-				handle:release()
-			end
-			handles.a = nil
-		end
-		if handles.b then
-			for _, handle in ipairs(handles.b) do
-				handle:release()
-			end
-			handles.b = nil
-		end
-		self.loadHandles[elevator.portal.id] = nil
+	local portalId = elevator.portal.id
+	local handles = self.loadHandles[ portalId ]
+	if handles == nil then
+		return
 	end
+
+	local list = handles.a
+	if list ~= nil then
+		for i = 1, #list do
+			list[ i ]:release()
+		end
+		handles.a = nil
+	end
+
+	list = handles.b
+	if list ~= nil then
+		for i = 1, #list do
+			list[ i ]:release()
+		end
+		handles.b = nil
+	end
+
+	self.loadHandles[ portalId ] = nil
 end
 
 
 function ElevatorManager.sv_isElevatorReadyForTransfer( self, elevator )
-	local function worldReady ( world, position )
-		local x = math.floor( position.x / 64 )
-		local y = math.floor( position.y / 64 )
-		if world then
-			if sm.exists( world ) then
-				if self.loadedCells[CellKey( world, x, y )] then
-					return true
-				end
-			end
-		end
+	local portal = elevator.portal
+	local world, position
+	if elevator.destination == "a" then
+		world = portal:getWorldA()
+		position = portal:getPositionA()
+	else
+		world = portal:getWorldB()
+		position = portal:getPositionB()
+	end
+
+	if world == nil or position == nil or not sm.exists( world ) then
 		return false
 	end
-	local portal = elevator.portal
-	local aReady = worldReady( portal:getWorldA(), portal:getPositionA() )
-	local bReady = worldReady( portal:getWorldB(), portal:getPositionB() )
-	
-	if elevator.destination == "a" then
-		return aReady
-	else
-		return bReady
-	end
+
+	local x = math.floor( position.x / 64 )
+	local y = math.floor( position.y / 64 )
+	return self.loadedCells[ CellKey( world, x, y ) ] == true
 end
 
 function ElevatorManager.sv_needToLoadWorlds( self, portal )
-	local needA = portal:getWorldA() and not sm.exists( portal:getWorldA() )
-	local needB = portal:getWorldB() and not sm.exists( portal:getWorldB() )
-
-	return needA or needB
+	local worldA, worldB = portal:getWorldA(), portal:getWorldB()
+	if worldA and not sm.exists( worldA ) then
+		return true
+	end
+	if worldB and not sm.exists( worldB ) then
+		return true
+	end
+	return false
 end
 
 function ElevatorManager.sv_loadPortalWorlds( self, portal )
-	if portal:getWorldA() and not sm.exists( portal:getWorldA() ) then
-		sm.world.loadWorld( portal:getWorldA() )
+	local worldA = portal:getWorldA()
+	if worldA and not sm.exists( worldA ) then
+		sm.world.loadWorld( worldA )
 	end
 
-	if portal:getWorldB() and not sm.exists( portal:getWorldB() ) then
-		sm.world.loadWorld( portal:getWorldB() )
+	local worldB = portal:getWorldB()
+	if worldB and not sm.exists( worldB ) then
+		sm.world.loadWorld( worldB )
 	end
 end
 
@@ -495,20 +665,34 @@ function ElevatorManager.Sv_CreateElevatorDestination( params )
 end
 
 function ElevatorManager.sv_e_createElevatorDestination( self, params )
+	local portal = params.portal
+	if portal == nil then
+		sm.log.error( "ElevatorManager: elevator destination requested without a portal" )
+		return
+	end
+
 	-- Warehouse get or create
 	local warehouse
 	if params.warehouseIndex then
 		warehouse = WarehouseManager.Sv_GetWarehouseFromIndex( params.warehouseIndex )
 	else
-		assert( params.name == "ELEVATOR_ENTRANCE" )
+		if params.name ~= "ELEVATOR_ENTRANCE" then
+			sm.log.error( "ElevatorManager: no warehouse to create a destination for '"..tostring( params.name ).."'" )
+			return
+		end
 		warehouse = WarehouseManager.Sv_CreateWarehouse( {
-			world = params.portal:getWorldA(),
+			world = portal:getWorldA(),
 			position = params.position,
 			maxLevels = params.maxLevels,
 			exits = params.exits,
 			cellTags = params.cellTags,
 			test = params.test,
 		} )
+	end
+
+	if warehouse == nil then
+		sm.log.error( "ElevatorManager: warehouse "..tostring( params.warehouseIndex ).." not found" )
+		return
 	end
 
 	-- Level up
@@ -520,20 +704,22 @@ function ElevatorManager.sv_e_createElevatorDestination( self, params )
 			level = params.level - 1
 		elseif params.name == "ELEVATOR_EXIT" then
 			if #warehouse.exits > 0 then
-				for _,cell in ipairs( warehouse.exits ) do
-					if not sm.exists( warehouse.world ) then
-						sm.world.loadWorld( warehouse.world )
-					end
+				if not sm.exists( warehouse.world ) then
+					sm.world.loadWorld( warehouse.world )
+				end
+				for i = 1, #warehouse.exits do
+					local cell = warehouse.exits[ i ]
 					local name = params.name.." "..cell.x..","..cell.y
-					sm.portal.addWorldPortalHook( warehouse.world, name, params.portal )
-					ElevatorManager.Sv_LoadBForPlayersInElevator( params.portal.id, warehouse.world, cell.x, cell.y )
+					sm.portal.addWorldPortalHook( warehouse.world, name, portal )
+					ElevatorManager.Sv_LoadBForPlayersInElevator( portal.id, warehouse.world, cell.x, cell.y )
 				end
 			else
 				sm.log.error( "No exit hint found, this elevator is going nowhere!" )
 			end
 			return
 		else
-			assert( false )
+			sm.log.error( "ElevatorManager: invalid elevator destination name '"..tostring( params.name ).."'" )
+			return
 		end
 	else
 		if params.name == "ELEVATOR_EXIT" then
@@ -541,19 +727,20 @@ function ElevatorManager.sv_e_createElevatorDestination( self, params )
 		elseif params.name == "ELEVATOR_ENTRANCE" then
 			level = 1
 		else
+			sm.log.error( "ElevatorManager: invalid elevator name '"..tostring( params.name ).."'" )
+			return
 		end
 	end
 
 	-- Create warehouse world
-	local worldData = {}
-	worldData.level = level
-	worldData.isQuestWarehouse = warehouse.isQuestWarehouse
-	worldData.warehouseIndex = warehouse.index
-	worldData.maxLevels = warehouse.maxLevels
+	local worldData = {
+		level = level,
+		isQuestWarehouse = warehouse.isQuestWarehouse,
+		warehouseIndex = warehouse.index,
+		maxLevels = warehouse.maxLevels,
+	}
 
-
-
-	local world = sm.world.createWorld( "$SURVIVAL_DATA/Scripts/game/worlds/WarehouseWorld.lua", "WarehouseWorld", worldData, math.random( 1073741823 ) )
+	local world = sm.world.createWorld( "$CONTENT_DATA/Scripts/game/worlds/WarehouseWorld.lua", "WarehouseWorld", worldData, math.random( 1073741823 ) )
 	warehouse.worlds[#warehouse.worlds+1] = world
 	WarehouseManager.Sv_SaveAndSynch()
 
@@ -566,8 +753,8 @@ function ElevatorManager.sv_e_createElevatorDestination( self, params )
 	else
 		name = params.name
 	end
-	sm.portal.addWorldPortalHook( world, name, params.portal )
-	ElevatorManager.Sv_LoadBForPlayersInElevator( params.portal.id, world, 0, 0 )
+	sm.portal.addWorldPortalHook( world, name, portal )
+	ElevatorManager.Sv_LoadBForPlayersInElevator( portal.id, world, 0, 0 )
 end
 
 function ElevatorManager.Sv_OnCellLoaded( world, x, y )

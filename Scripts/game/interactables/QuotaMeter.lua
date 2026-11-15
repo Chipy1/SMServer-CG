@@ -1,7 +1,7 @@
 QuotaMeter = class( nil )
 
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/QuestManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/ProgressionManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/QuestManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/ProgressionManager.lua" )
 
 -- The progress bar submesh ("m_bar") uses the UVAnimDifAsg material with uv0.u = 1/30,
 -- i.e. 30 horizontal frames. Frame 0 = empty bar, frame 29 = full bar.

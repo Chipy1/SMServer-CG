@@ -1,5 +1,5 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_projectiles.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/interactables/PackingStationScreen.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_projectiles.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/interactables/PackingStationScreen.lua" )
 
 MininghubSmelterDeposit = class( PackingStationScreen )
 local MaxFillCount = 50

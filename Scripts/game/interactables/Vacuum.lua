@@ -1,8 +1,8 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/util/Curve.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_shapes.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/util/pipes.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_projectiles.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/util/Curve.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_shapes.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/util/pipes.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_projectiles.lua" )
 
 ---@class Vacuum : ShapeClass
 ---@field sv table
@@ -14,7 +14,7 @@ Vacuum.maxParentCount = 1
 Vacuum.maxChildCount = 0
 local ProjectileVelocity = 20
 Vacuum.colorNormal = sm.color.new( 0xaf6114ff )
-Vacuum.colorHighlight = sm.color.new( 0xaf6114ff )
+Vacuum.colorHighlight = sm.color.new( 0xbe742eff )
 
 local RapidFireDelay = 8
 local SlowFireDelayTicks = 40
@@ -98,6 +98,19 @@ local function ValidatePackingStationInteraction( self )
 	return false,nil,nil
 end
 
+local function GetSeedIncomingObject( self, seedUuid )
+	local seedAmount = PlantSeedDropAmount( seedUuid )
+	if seedAmount <= 0 then
+		return nil, 0
+	end
+
+	local containerShape = sm.pipeGraph.getContainerShapeToCollectTo( self.shape, { seedUuid }, { seedAmount } )
+	if containerShape then
+		return { containerShape = containerShape, uuid = seedUuid, amount = seedAmount }, seedAmount
+	end
+	return nil, seedAmount
+end
+
 
 function Vacuum.server_onCreate( self )
 	self.sv = {}
@@ -166,6 +179,7 @@ function Vacuum.sv_updateStates( self )
 			local size = sm.vec3.new( 0.5, 0.5, 0.5 )
 			local filter = sm.areaTrigger.filter.staticBody + sm.areaTrigger.filter.dynamicBody + sm.areaTrigger.filter.areaTrigger + sm.areaTrigger.filter.harvestable
 			self.sv.areaTrigger = sm.areaTrigger.createAttachedBox( self.interactable, size, sm.vec3.new( 0.0, -1.0, 0.0 ), sm.quat.identity(), filter )
+			self.sv.areaTrigger:setIncludeShapesInContent( true )
 		end
 	else
 		if self.sv.areaTrigger then
@@ -509,14 +523,7 @@ function Vacuum.server_onFixedUpdate( self )
 					if pubData and not pubData.harvested then
 						local containerShapeHvs = sm.pipeGraph.getContainerShapeToCollectTo( self.shape, { ITEMS.obj_resource_cotton }, { 1 } )
 						if containerShapeHvs then
-							local seedIncomingObj = nil
-							local seedAmount = PlantSeedDropAmount( ITEMS.obj_seed_cotton )
-							if seedAmount > 0 then
-								local seedContainer = sm.pipeGraph.getContainerShapeToCollectTo( self.shape, { ITEMS.obj_seed_cotton }, { seedAmount } )
-								if seedContainer then
-									seedIncomingObj = { containerShape = seedContainer, uuid = ITEMS.obj_seed_cotton, amount = seedAmount }
-								end
-							end
+							local seedIncomingObj = GetSeedIncomingObject( self, ITEMS.obj_seed_cotton )
 							table.insert( incomingObjects, { containerShape = containerShapeHvs, harvestable = result, uuid = ITEMS.obj_resource_cotton, amount = 1, seedIncomingObj = seedIncomingObj } )
 						end
 					end
@@ -524,14 +531,7 @@ function Vacuum.server_onFixedUpdate( self )
 					if pubData and not pubData.harvested then
 						local containerShapeHvs = sm.pipeGraph.getContainerShapeToCollectTo( self.shape, { ITEMS.obj_resource_flower }, { 1 } )
 						if containerShapeHvs then
-							local seedIncomingObj = nil
-							local seedAmount = PlantSeedDropAmount( ITEMS.obj_seed_pigmentflower )
-							if seedAmount > 0 then
-								local containerShapeSeed = sm.pipeGraph.getContainerShapeToCollectTo( self.shape, { ITEMS.obj_seed_pigmentflower }, { seedAmount } )
-								if containerShapeSeed then
-									seedIncomingObj = { containerShape = containerShapeSeed, uuid = ITEMS.obj_seed_pigmentflower, amount = seedAmount }
-								end
-							end
+							local seedIncomingObj = GetSeedIncomingObject( self, ITEMS.obj_seed_pigmentflower )
 							table.insert( incomingObjects, { containerShape = containerShapeHvs, harvestable = result, uuid = ITEMS.obj_resource_flower, amount = 1, seedIncomingObj = seedIncomingObj } )
 						end
 					end
@@ -551,20 +551,26 @@ function Vacuum.server_onFixedUpdate( self )
 							if containerShapeHvs then
 								-- Collect seeds from harvestable
 								local seedUuid = data["seed"]
-								local seedIncomingObj = nil
 								if seedUuid then
 									seedUuid = sm.uuid.new( seedUuid )
-									local seedAmount = PlantSeedDropAmount( seedUuid )
-									if seedAmount > 0 then
-										local containerShapeSeed = sm.pipeGraph.getContainerShapeToCollectTo( self.shape, { seedUuid }, { seedAmount } )
-										if containerShapeSeed then
-											seedIncomingObj = { containerShape = containerShapeSeed, uuid = seedUuid, amount = seedAmount }
-										end
-									end
 								end
+								local seedIncomingObj = seedUuid and GetSeedIncomingObject( self, seedUuid ) or nil
 								table.insert( incomingObjects, { containerShape = containerShapeHvs, harvestable = result, uuid = harvestUuid, amount = amount, seedIncomingObj = seedIncomingObj } )
 							end
 						end
+					end
+				end
+			elseif type( result ) == "Shape" and sm.exists( result ) then
+				local growbedInteractable = result:getInteractable()
+				local pubData = growbedInteractable and sm.exists( growbedInteractable ) and growbedInteractable:getPublicData()
+				if pubData and pubData.harvest and pubData.type == "mature" and not pubData.harvested then
+					local containerShapeGrowbed = sm.pipeGraph.getContainerShapeToCollectTo( self.shape, { pubData.harvest }, { pubData.amount } )
+					if containerShapeGrowbed then
+						local seedIncomingObj, seedAmount = nil, 0
+						if pubData.seed then
+							seedIncomingObj, seedAmount = GetSeedIncomingObject( self, pubData.seed )
+						end
+						table.insert( incomingObjects, { containerShape = containerShapeGrowbed, uuid = pubData.harvest, amount = pubData.amount, seedIncomingObj = seedIncomingObj, seedUuid = pubData.seed, seedAmount = seedAmount, hostInteractable = growbedInteractable, spendFunc = "sv_e_onVacuumHarvest" } )
 					end
 				end
 			end

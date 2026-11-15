@@ -1,6 +1,6 @@
 -- BreachState.lua --
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/CombatAttackState.lua"
-dofile( "$SURVIVAL_DATA/Scripts/game/units/states/BaseState.lua" )
+dofile "$CONTENT_DATA/Scripts/game/units/states/CombatAttackState.lua"
+dofile( "$CONTENT_DATA/Scripts/game/units/states/BaseState.lua" )
 
 BreachState = class( BaseState )
 

@@ -1,10 +1,11 @@
-dofile "$SURVIVAL_DATA/Scripts/game/units/BaseUnit.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/BaseUnit.lua"
 
 BaseTotebotUnit = class( BaseUnit )
 
 function BaseTotebotUnit.server_onCreate( self )
 	sm.message.subscribe( MESSAGE_TYPES.GENERAL.ProjectileHit, "sv_m_projectileHit" )
 	sm.message.subscribe( MESSAGE_TYPES.GENERAL.ProjectileFire, "sv_m_projectileFire" )
+	sm.message.subscribe( MESSAGE_TYPES.GENERAL.ProjectileBounce, "sv_m_projectileBounce" )
 	sm.message.subscribe( MESSAGE_TYPES.GENERAL.Collision, "sv_m_collision" )
 end
 

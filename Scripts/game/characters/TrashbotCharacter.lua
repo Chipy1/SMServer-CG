@@ -1,5 +1,5 @@
-dofile "$SURVIVAL_DATA/Scripts/util.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/trashbot/TrashbotStageValues.lua"
+dofile "$CONTENT_DATA/Scripts/util.lua"
+dofile "$CONTENT_DATA/Scripts/game/trashbot/TrashbotStageValues.lua"
 
 TrashbotCharacter = class( nil )
 
@@ -35,7 +35,7 @@ local TrashbotKinematicPieces = {
 local EyeEffectDelayTime = math.floor( 0.6 * 40 )
 
 -- Horizontal radius (meters) around the trashbot within which the boss music plays.
-local BossMusicRadius = 80
+local BossMusicRadius = BOSS_ARENA_RADIUS
 
 local NonBroomAnims = {
 		"koDmg",
@@ -1397,12 +1397,8 @@ function TrashbotCharacter.cl_isLocalPlayerInBossRadius( self )
 	if playerCharacter:getWorld() ~= self.character:getWorld() then
 		return false
 	end
-	local delta = playerCharacter.worldPosition - self.character.worldPosition
 	-- Truncated sphere: full radius horizontally, half the radius vertically.
-	if math.abs( delta.z ) > BossMusicRadius * 0.5 then
-		return false
-	end
-	return ( delta.x * delta.x + delta.y * delta.y ) <= ( BossMusicRadius * BossMusicRadius )
+	return IsPositionInTruncatedSphere( playerCharacter.worldPosition, self.character.worldPosition, BossMusicRadius, BossMusicRadius * 0.5 )
 end
 
 function TrashbotCharacter.cl_startBossMusic( self )

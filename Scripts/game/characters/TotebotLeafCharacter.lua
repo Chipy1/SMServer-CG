@@ -1,5 +1,5 @@
-dofile "$SURVIVAL_DATA/Scripts/game/characters/BaseEnemyCharacter.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/characters/TotebotCharacter.lua"
+dofile "$CONTENT_DATA/Scripts/game/characters/BaseEnemyCharacter.lua"
+dofile "$CONTENT_DATA/Scripts/game/characters/TotebotCharacter.lua"
 TotebotLeafCharacter = class( TotebotCharacter )
 
 local animationSets = {

@@ -1,11 +1,11 @@
-dofile "$SURVIVAL_DATA/Scripts/game/units/unit_util.lua"
-dofile "$SURVIVAL_DATA/Scripts/util.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/util/Timer.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_shapes.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_units.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/PathingState.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_constants.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/BaseUnit.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/unit_util.lua"
+dofile "$CONTENT_DATA/Scripts/util.lua"
+dofile "$CONTENT_DATA/Scripts/game/util/Timer.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_shapes.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_units.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/PathingState.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_constants.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/BaseUnit.lua"
 
 SeedbotUnit = class( BaseUnit )
 
@@ -34,8 +34,7 @@ function SeedbotUnit.server_onCreate( self )
 	self.saved.seedType = self.saved.seedType or "tomato"
 
 	sm.event.sendToCharacter( self.unit.character, "sv_e_setSeedType", self.saved.seedType, sm.event.types.blind )
-	self.storage:save( self.saved )
-
+	
 	self.unit.eyeHeight = self.unit.character:getHeight() * 0.75
 	self.unit.visionFrustum = {
 		{ 3.0, math.rad( 80.0 ), math.rad( 80.0 ) },
@@ -78,6 +77,8 @@ function SeedbotUnit.server_onCreate( self )
 
 	self.currentState = self.idleState
 	self.currentState:start()
+
+	self.storage:save( self.saved )
 end
 
 function SeedbotUnit.server_onRefresh( self )
@@ -87,7 +88,6 @@ function SeedbotUnit.server_onFixedUpdate( self, dt )
 	-- Remove the unit when the death timestamp is reached
 	if sm.exists( self.unit ) and not self.destroyed and not self.saved.markedForRemoval then
 		if self.saved.deathTickTimestamp and sm.game.getCurrentTick() >= self.saved.deathTickTimestamp then
-			RobotOnDestroy( self )
 			self.saved.markedForRemoval = true
 			return
 		end

@@ -1,4 +1,4 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/units/states/BaseState.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/units/states/BaseState.lua" )
 
 PushbackState = class( BaseState )
 

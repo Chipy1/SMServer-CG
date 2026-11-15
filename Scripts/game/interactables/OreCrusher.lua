@@ -1,7 +1,7 @@
-dofile "$SURVIVAL_DATA/Scripts/util.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/util/pipes.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_items.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/interactables/Refinery.lua"
+dofile "$CONTENT_DATA/Scripts/util.lua"
+dofile "$CONTENT_DATA/Scripts/game/util/pipes.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_items.lua"
+dofile "$CONTENT_DATA/Scripts/game/interactables/Refinery.lua"
 
 OreCrusher = class( Refinery )
 local AnimUnpackTime = 0.85

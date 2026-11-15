@@ -1,5 +1,5 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_constants.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_constants.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
 
 local TimeStep = 0.025
 
@@ -313,6 +313,52 @@ function ApplyTransform( currentTransform, applyTransform, weight, initialPositi
 	return currentTransform
 end
 
+-- Tracks are blended in name order so the server, clients and terrain scripts agree. Rotations do not commute, so pairs() order would not be enough.
+function SortedTrackNames( tracks )
+	local names = {}
+	for trackName, _ in pairs( tracks ) do
+		names[#names + 1] = trackName
+	end
+	table.sort( names )
+	return names
+end
+
+-- The state a track resumes from when its kinematic loads. Shared by Kinematic.server_onCreate and the terrain scripts so both place the kinematic identically.
+-- A clean unload ( stored.unloaded ) pauses a track from the unload tick. A record from an earlier session without one ( a crash ) pauses it from lastSessionTick, the last saved game tick, so the time before it loads in this session does not count. A record written this session without one keeps its absolute tick.
+-- A pending persistent activation starts the track when the kinematic loads, never earlier. A kinematic that does not save its state has no record of consuming it, so the activation starts the track on every load.
+-- Returns nil when there is nothing stored or pending for the track.
+function ResolveStoredTrackState( stored, trackName, activation, currentTick, lastSessionTick )
+	local storedTrack = stored and stored.tracks and stored.tracks[trackName]
+	local state = nil
+	if storedTrack then
+		state = {}
+		for key, value in pairs( storedTrack ) do
+			state[key] = value
+		end
+		-- unloadTick is the tick of the record's last store, unload or not ( see Kinematic.sv_store ).
+		local pausedSince = nil
+		if stored.unloaded then
+			pausedSince = stored.unloadTick
+		elseif stored.unloadTick and stored.unloadTick <= lastSessionTick then
+			pausedSince = lastSessionTick
+		end
+		if state.tick and pausedSince then
+			state.tick = state.tick + ( currentTick - pausedSince )
+		end
+	end
+
+	if activation and activation.tick and ( activation.trackName or "track" ) == trackName then
+		-- Determine if the activation should be applied based on the stored unloadTick and the activation tick, unloadTick is the tick of the record's last store...
+		-- same rule as Kinematic.sv_activate: a moving track ignores activation
+		if ( stored == nil or stored.unloadTick == nil or activation.tick > stored.unloadTick ) and not ( state and state.moving ) then
+			state = state or {}
+			state.moving = true
+			state.tick = currentTick
+		end
+	end
+	return state
+end
+
 function LoadKinematicFromStorage( kinematic, storageData, worldPosition, currentTick, world, cellX, cellY )
 	if storageData then
 		local storageKey = nil
@@ -335,32 +381,39 @@ function LoadKinematicFromStorage( kinematic, storageData, worldPosition, curren
 			activation = storageData[KINEMATIC_EVENTTRIGGER_TABLE][kinematic.params.eventListen]
 		end
 
-		if activation and stored and activation.tick and kinematic.params and kinematic.params.track then
-			
-			local trackName = activation.trackName or "track"
-			local trackParamData = kinematic.params.track[trackName]
-			if not trackParamData then
-				sm.log.error( "Kinematic activation in storage referred to unknown track:", trackName )
-				return
-			end
-			local trackData, trackSettings = EvaluateNodes( trackParamData, worldPosition, kinematic.rot, kinematic.scale )
-			local updateData = {
-				moving = activation.moving or true,
-				playForward = activation.playForward or true,
-				trackIndex = activation.trackIndex or 1,
-				tick = activation.tick or currentTick,
-				weight = activation.weight or 1
-			}
-			local _, _, transform = KinematicTrackUpdate( trackData, trackSettings, updateData, currentTick )
-			if transform then
-				if updateData.weight == 1 then
-					kinematic.storedPos = transform.worldPosition
-					kinematic.storedRot = transform.worldRotation
-				else
-					kinematic.storedPos = transform.worldPosition * updateData.weight
-					kinematic.storedRot = sm.quat.slerp( kinematic.rot, transform.worldRotation, updateData.weight )
+		-- Blend the tracks the same way Kinematic.server_onFixedUpdate does, so the kinematic is created where its first update expects it.
+		local finalTransform = nil
+		if kinematic.params and kinematic.params.track then
+			for _, trackName in ipairs( SortedTrackNames( kinematic.params.track ) ) do
+				local trackParamData = kinematic.params.track[trackName]
+				local state = ResolveStoredTrackState( stored, trackName, activation, currentTick, sm.terrainGeneration.getLastSessionTick() )
+				local weight = state and state.weight or 1
+				if state and weight > 0 then
+					local transform = nil
+					if state.moving then
+						local trackDataList, trackSettings = EvaluateNodes( trackParamData, worldPosition, kinematic.rot, kinematic.scale )
+						local updateData = {
+							moving = true,
+							playForward = state.playForward ~= false,
+							trackIndex = state.trackIndex or 1,
+							tick = state.tick or currentTick,
+							weight = weight
+						}
+						local _, _, trackTransform = KinematicTrackUpdate( trackDataList, trackSettings, updateData, currentTick )
+						transform = trackTransform
+					else
+						transform = state.lastTransform
+					end
+					if transform then
+						finalTransform = ApplyTransform( finalTransform, transform, weight, worldPosition, kinematic.rot )
+					end
 				end
 			end
+		end
+
+		if finalTransform then
+			kinematic.storedPos = finalTransform.worldPosition
+			kinematic.storedRot = finalTransform.worldRotation
 		elseif stored then
 			if stored.position then
 				kinematic.storedPos = stored.position

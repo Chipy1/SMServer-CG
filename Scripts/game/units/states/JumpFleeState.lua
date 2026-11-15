@@ -1,7 +1,7 @@
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/util/Timer.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/units/states/BaseState.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/units/states/JumpMoveState.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/util/Timer.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/units/states/BaseState.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/units/states/JumpMoveState.lua" )
 
 JumpFleeState = class( PathingState )
 
@@ -24,12 +24,20 @@ end
 
 --[[API functions]]
 
+function JumpFleeState.sv_updateDirection( self )
+	local fleeFromPosition = self.fleeFrom -- nil flees from the closest player
+	if fleeFromPosition == nil then
+		local closestPlayerCharacter = GetClosestPlayerCharacter( self.unit.character.worldPosition, self.unit.character:getWorld() )
+		fleeFromPosition = closestPlayerCharacter and closestPlayerCharacter.worldPosition
+	end
+	if fleeFromPosition then
+		self.movementDirection = ( self.unit.character.worldPosition - fleeFromPosition ):safeNormalize( self.movementDirection )
+	end
+end
+
 function JumpFleeState.start( self )
 	self.started = true
-	local closestPlayerCharacter = GetClosestPlayerCharacter( self.unit.character.worldPosition, self.unit.character:getWorld() )
-	if closestPlayerCharacter then
-		self.movementDirection = ( self.unit.character.worldPosition - closestPlayerCharacter.worldPosition ):safeNormalize( self.movementDirection )
-	end
+	self:sv_updateDirection()
 	self.jumpMoveState:sv_setDirection( self.movementDirection )
 	self.currentState:stop()
 	self.currentState = self.jumpMoveState
@@ -47,10 +55,7 @@ function JumpFleeState.onFixedUpdate( self, timeStep )
 	local character = self.unit.character
 	if not sm.exists( character ) then return end
 
-	local closestPlayerCharacter = GetClosestPlayerCharacter( self.unit.character.worldPosition, self.unit.character:getWorld() )
-	if closestPlayerCharacter then
-		self.movementDirection = ( self.unit.character.worldPosition - closestPlayerCharacter.worldPosition ):safeNormalize( self.movementDirection )
-	end
+	self:sv_updateDirection()
 	self.jumpMoveState:sv_setDirection( self.movementDirection )
 
 	if self.currentState then

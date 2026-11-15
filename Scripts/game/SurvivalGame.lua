@@ -1,43 +1,119 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/BeaconManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/DialogManager.lua" )
-dofile( "$GAME_DATA/Scripts/game/managers/EffectManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/ElevatorManager.lua"  )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/MinidungeonElevatorManager.lua"  )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/QuestManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/RespawnManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/UnitManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/WorldManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_constants.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_harvestable.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_shapes.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_units.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_projectiles.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_meleeattacks.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/util/recipes.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/util/Timer.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/QuestEntityManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/RaidManager.lua" )
-dofile( "$GAME_DATA/Scripts/game/managers/TileStorageManager.lua" )
-dofile( "$GAME_DATA/Scripts/game/managers/KinematicManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/WarehouseManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/UndergroundElevatorManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/ScannerbotManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/RecipeManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/TutorialManager.lua" )
-dofile( "$GAME_DATA/Scripts/game/managers/WeatherManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/PatrolManager.lua" )
+print = sm.log.info
+
+dofile( "$CONTENT_DATA/Scripts/loader.lua")
+dofile( "$CONTENT_DATA/Scripts/game/managers/BeaconManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/DialogManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/EffectManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/ElevatorManager.lua"  )
+dofile( "$CONTENT_DATA/Scripts/game/managers/MinidungeonElevatorManager.lua"  )
+dofile( "$CONTENT_DATA/Scripts/game/managers/QuestManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/RespawnManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/UnitManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/WorldManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_constants.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_harvestable.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_shapes.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_units.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_projectiles.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_meleeattacks.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/util/recipes.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/util/Timer.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/QuestEntityManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/RaidManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/TileStorageManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/KinematicManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/WarehouseManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/UndergroundElevatorManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/ScannerbotManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/RecipeManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/TutorialManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/WeatherManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/PatrolManager.lua" )
 dofile( "$CUSTOMIZATION_DATA/Scripts/game/quest_reward_util.lua" )
 dofile( "$CONTENT_DATA/Scripts/smserver/core.lua" )
 
+local table_remove = table.remove
+
+-- Read by EffectManager to decide whether a named cinematic needs server-side playback:
+-- server_onCreate sets it to true and client_onCreate clears it, so a listen-server host and a
+-- connected client report false while a dedicated server keeps true. It is deliberately global:
+-- manager scriptable objects share the game Lua state.
+g_isDedicatedServer = nil
+
+--[[
+local HOST_EXCLUDE_FLAG_STORAGE_KEY = "__EXCLUDE_HOST_PLAYER_FLAG"
+g_excludeHostPlayer = sm.storage.load( HOST_EXCLUDE_FLAG_STORAGE_KEY ) == true
+
+-- Custom game: g_excludeHostPlayer hides the host player from stock code.
+--
+-- Measured on 1.0.7.896 dedicated (-dedicated_server -last_save): sm.isHost is
+-- true, getHostPlayer() returns the real host player (id=1, name=Chipy) and
+-- getAllPlayers() returns 1 entry. getHostPlayer() is therefore NOT nil on a
+-- dedicated server, but the host entry *is* present in the player list even
+-- though no host client is connected.
+--
+-- Consequence: excluding that entry unconditionally empties the list on a
+-- dedicated server. RaidManager's per-tick HasNearbyPlayer() then never sees a
+-- player, so a raid never loads cells, never generates spawn points and never
+-- spawns its waves. The filter therefore refuses to remove the last entry.
+local old_sm_player_getAllPlayers = sm.player.getAllPlayers
+local hostExcludeWarningLogged = false
+function sm.player.getAllPlayers( ... )
+	local list = old_sm_player_getAllPlayers( ... )
+	if not g_excludeHostPlayer or type( list ) ~= "table" then
+		return list
+	end
+	local ok, host = pcall( sm.player.getHostPlayer )
+	if not ok or host == nil or host.id == nil then
+		if not hostExcludeWarningLogged then
+			hostExcludeWarningLogged = true
+			sm.log.warning( "SMSERVER: g_excludeHostPlayer is enabled but there is no host player; host exclusion is inactive" )
+		end
+		return list
+	end
+	-- Never return an empty list: an empty player list disables raids, unit
+	-- targeting and every stock system that probes for nearby players.
+	if #list <= 1 then
+		return list
+	end
+	for index = #list, 1, -1 do
+		local player = list[ index ]
+		if player ~= nil and player.id == host.id then
+			table.remove( list, index )
+		end
+	end
+	return list
+end
 
 
+]]
 
+local HOST_EXCLUDE_FLAG_STORAGE_KEY = "__EXCLUDE_HOST_PLAYER_FLAG"
+g_excludeHostPlayer = (sm.storage.load( HOST_EXCLUDE_FLAG_STORAGE_KEY ) == true)
 
+local sm_player_getAllPlayers = sm.player.getAllPlayers
+local sm_player_getHostPlayer = sm.player.getHostPlayer
 
+get_host_player_chestno = sm_player_getHostPlayer
 
-
-
-
+--function sm.player.getAllPlayers( ... )
+--	local list = sm_player_getAllPlayers(...)
+--	if g_excludeHostPlayer or g_isDedicatedServer then
+--		local host_player = sm_player_getHostPlayer()
+--		for i, player in ipairs(list) do
+--			if player.id == host_player.id then
+--				table_remove(list, i)
+--			end
+--		end
+--	end
+--	return list
+--end
+--
+--function sm.player.getHostPlayer( ... )
+--	if not g_excludeHostPlayer and not g_isDedicatedServer then
+--		return sm_player_getHostPlayer(...)
+--	end
+--end
 
 
 
@@ -68,13 +144,17 @@ local function isBlockedShapeUuid( uuid )
 end
 
 function SurvivalGame.server_onCreate( self )
-	self.sv = {}
-	self.sv.saved = self.storage:load()
+	g_isDedicatedServer = true
+	self.sv = {
+		saved = self.storage:load()
+	}
+	
 	if self.sv.saved == nil then
-		self.sv.saved = {}
-		self.sv.saved.data = self.data
-		printf( "Seed: %.0f", self.sv.saved.data.seed )
-		self.sv.saved.overworld = sm.world.createWorld( "$SURVIVAL_DATA/Scripts/game/worlds/Overworld.lua", "Overworld", { dev = self.sv.saved.data.dev }, self.sv.saved.data.seed )
+		self.sv.saved = {
+			data = self.data
+		}
+		printf( "Seed: %.0f", self.data.seed )
+		self.sv.saved.overworld = sm.world.createWorld( "$CONTENT_DATA/Scripts/game/worlds/Overworld.lua", "Overworld", { dev = self.data.dev }, self.data.seed )
 	else
 		if self.sv.saved.overworld and not sm.exists( self.sv.saved.overworld ) then
 			-- Load overworld to create TileStorageKeys
@@ -89,7 +169,6 @@ function SurvivalGame.server_onCreate( self )
 	self.storage:save( self.sv.saved )
 
 	self.data = nil
-
 
 
 
@@ -134,13 +213,12 @@ function SurvivalGame.server_onCreate( self )
 
 	self.sv.time = sm.storage.load( STORAGE_CHANNEL_TIME )
 	if self.sv.time then
-		print( "Loaded timeData:" )
-		print( self.sv.time )
+		print( "Loaded timeData:", self.sv.time)
 	else
 		self.sv.time = {}
 		self.sv.time.timeOfDay = GAME_START_TIME -- 06:00
 		self.sv.time.timeProgress = true
-		sm.storage.save( STORAGE_CHANNEL_TIME, self.sv.time )
+		sm.storage.saveAndSync( STORAGE_CHANNEL_TIME, self.sv.time )
 	end
 	self.sv.gotoLocations = { "marker", "start", "mechanicstation", "hideout", "mainelevator", "excavation", "questfarmer", "questwarehouse", "garage", "scannerbot", "void",
 		"underground1", "underground2", "underground3", "underground4", "underground5", "underground6", "underground7", "underground8" }
@@ -150,9 +228,78 @@ function SurvivalGame.server_onCreate( self )
 	self.sv.syncTimer = Timer()
 	self.sv.syncTimer:start( 0 )
 
+	-- Deferred: scriptable object references are only guaranteed to be resolved after the load
+	-- sequence, and the check must not run before that.
+	self.sv.bosstrainRepairTick = sm.game.getCurrentTick() + 20
+	-- The raid manager is a base-game singleton scriptable object. Log once whether it exists,
+	-- so a dedicated log shows immediately whether raids can run at all in this custom game.
+	self.sv.raidManagerCheckTick = sm.game.getCurrentTick() + 20
+	-- One-shot environment probe: records whether getHostPlayer() actually returns a player here.
+	-- The API stub declares a non-optional return, so only a real run can tell whether it is nil
+	-- on a dedicated server. Change this into a guaranteed-safe guard once the log settles it.
+	self.sv.hostProbeTick = sm.game.getCurrentTick() + 20
+end
 
+-- A save can end up with the bosstrain quest in a state where no quest object is alive: either it is
+-- flagged as completed, or it is listed as active but the object is gone. In both cases
+-- BosstrainQuest.server_onCreate never runs, so the quest cannot repair itself and the train ride
+-- (which is now fully server driven) never starts. SurvivalGame always runs, so the repair lives here:
+-- drop the bad entry and recreate the quest object, which then applies its normal recovery.
+function SurvivalGame.sv_repairBosstrainQuestIfStuck( self )
+	local questName = "quest_bosstrain"
+	local successorName = "quest_endgame"
 
+	if not ( g_questManagerServer and g_questManagerServer.sv and g_questManagerServer.sv.saved ) then
+		return
+	end
+	local saved = g_questManagerServer.sv.saved
+	saved.activeQuests = saved.activeQuests or {}
+	saved.completedQuests = saved.completedQuests or {}
 
+	local function commit()
+		g_questManagerServer.storage:save( saved )
+		g_questManagerServer.network:setClientData( saved )
+	end
+
+	-- Case 1: listed as active, but the quest object does not exist (orphaned save entry).
+	local activeQuest = saved.activeQuests[questName]
+	if activeQuest ~= nil then
+		local alive = true
+		local ok, result = pcall( sm.exists, activeQuest )
+		if ok then
+			alive = result
+		end
+		if not alive then
+			saved.activeQuests[questName] = nil
+			commit()
+			printf( "SurvivalGame: dropped stale active entry for '%s'; recreating the quest object", questName )
+			QuestManager.Sv_ActivateQuest( questName, nil, true )
+		end
+		return
+	end
+
+	-- Case 2: flagged as completed, but the successor quest never started.
+	if not QuestManager.Sv_IsQuestComplete( questName ) then
+		return
+	end
+	if QuestManager.Sv_IsQuestActive( successorName ) or QuestManager.Sv_IsQuestComplete( successorName ) then
+		return
+	end
+
+	local removed = false
+	for index = #saved.completedQuests, 1, -1 do
+		if saved.completedQuests[index] == questName then
+			table.remove( saved.completedQuests, index )
+			removed = true
+		end
+	end
+	if not removed then
+		return
+	end
+
+	commit()
+	printf( "SurvivalGame: '%s' was flagged complete without '%s'; recreating the quest object", questName, successorName )
+	QuestManager.Sv_ActivateQuest( questName, nil, true )
 end
 
 function SurvivalGame.server_onDestroy( self )
@@ -161,27 +308,46 @@ function SurvivalGame.server_onDestroy( self )
 
 end
 
-function SurvivalGame.server_onRefresh( self )
+function SurvivalGame.server_onRefresh( self ) --debug function for hot reload
 	g_craftingRecipeSets = nil
 	self:loadCraftingRecipes()
 end
 
 function SurvivalGame.server_onUnload( self )
-	TileStorageManager.Sv_Save()
+	-- Tile storage uses deferred refs (sm.storage.saveRefDeferred) and is written by the engine
+	-- during shutdown, so there is nothing to flush here. TileStorageManager.Sv_Save() no longer
+	-- exists in 1.0.7.894.
 end
 
 function SurvivalGame.client_onCreate( self )
-	
-	self.cl = {}
-	self.cl.time = {}
-	self.cl.time.timeOfDay = 0.0
+	g_isDedicatedServer = false
+	self.cl = {
+		time = {
+			timeOfDay = 0.0,
+			timeProgress = true
+		}
+	}
+
+	local time = self.cl.time
 	if sm.isHost then
-		-- Host sets time immediately to avoid incorrect time during startup
-		self.cl.time.timeOfDay = self.sv.time.timeOfDay
-		local todWraped = math.fmod( self.cl.time.timeOfDay, 1 )
-		sm.game.setTimeOfDay( todWraped )
+		local sv_time = self.sv.time
+		if sv_time and sv_time.timeOfDay then
+			time.timeOfDay = sv_time.timeOfDay
+		else
+			local saved_time = sm.storage.load( STORAGE_CHANNEL_TIME )
+			if saved_time and saved_time.timeOfDay then
+				time.timeOfDay = saved_time.timeOfDay
+			else
+				sm.log.error("WHERE IS MY TIME!>!!!?!??@#?!") --written out of anger lolololol
+			end
+		end
 	end
-	self.cl.time.timeProgress = true
+
+
+	if sm.isHost then
+		sm.game.setTimeOfDay( math.fmod( self.cl.time.timeOfDay, 1 ) )
+	end
+	
 	self.cl.overworld = nil
 	self.cl.gotoLocations = {}
 
@@ -234,11 +400,12 @@ function SurvivalGame.client_onCreate( self )
 end
 
 function SurvivalGame.bindChatCommands( self )
+	sm.game.bindChatCommand( "/getMyId", {}, "cl_onChatCommand", "Print your player id" )
 	sm.game.bindChatCommand( "/kick", { { "string", "player name", false } }, "cl_onChatCommand", "Kick a player from server" )
 	sm.game.bindChatCommand( "/ban", { { "string", "player name", false } }, "cl_onChatCommand", "Ban a player from server" )
 
 	-- smserver commands (server-side admin check in sv_onChatCommand)
-	sm.game.bindChatCommand( "/op", { { "string", "player name", false }, { "bool", "enable", true } }, "cl_onChatCommand", "Grant or revoke administrator rights" )
+	sm.game.bindChatCommand( "/op", { { "int", "player id", false }, { "bool", "enable", true } }, "cl_onChatCommand", "Grant or revoke administrator rights" )
 	sm.game.bindChatCommand( "/ender", { { "string", "player name", true } }, "cl_onChatCommand", "Open a public or player ender chest" )
 	sm.game.bindChatCommand( "/tp", { { "string", "player name", false } }, "cl_onChatCommand", "Teleport to a player" )
 	sm.game.bindChatCommand( "/tpr", { { "string", "player name", false } }, "cl_onChatCommand", "Teleport a player to you" )
@@ -246,16 +413,21 @@ function SurvivalGame.bindChatCommands( self )
 	sm.game.bindChatCommand( "/give", { { "string", "item uuid", false }, { "int", "quantity", true } }, "cl_onChatCommand", "Give yourself an item" )
 	sm.game.bindChatCommand( "/spawnpart", { { "string", "part uuid", false } }, "cl_onChatCommand", "Spawn a part in front of you" )
 	sm.game.bindChatCommand( "/ppos", {}, "cl_onChatCommand", "Print your position" )
+	sm.game.bindChatCommand( "/listPlayers", {}, "cl_onChatCommand", "List connected players with their ids" )
 	sm.game.bindChatCommand( "/unlimited", {}, "cl_onChatCommand", "Use the unlimited inventory" )
 	sm.game.bindChatCommand( "/limited", {}, "cl_onChatCommand", "Use the limited inventory" )
-
+	-- quest commands
+	sm.game.bindChatCommand( "/quest", { { "string", "action", true }, { "string", "questName", true } }, "cl_onChatCommand", "Manage quests: list, start, complete, abandon, reset" )
+	sm.game.bindChatCommand( "/unlockkey", { { "string", "keyName", true } }, "cl_onChatCommand", "Unlock a progression log/key: all, elevator, accesscard_01..04, minerboss" )
+	sm.game.bindChatCommand( "/unlockelevator", { { "string", "target", true } }, "cl_onChatCommand", "Unlock main-elevator tier(s): all, scrapyard, or 0..8" )
 	
+	sm.game.bindChatCommand( "/setHostExcluded", {{"bool", "", false, {"true", "false"}}}, "cl_onChatCommand", "Set g_excludeHostPlayer" )
 
 
 
-	local addCheats = g_survivalDev
+	--local addCheats = g_survivalDev
 
-	if addCheats then
+	--if addCheats then
 		sm.game.bindChatCommand( "/ammo", { { "int", "quantity", true } }, "cl_onChatCommand", "Give ammo (default 100)" )
 		sm.game.bindChatCommand( "/spudgun", {}, "cl_onChatCommand", "Give the spudgun" )
 		sm.game.bindChatCommand( "/gatling", {}, "cl_onChatCommand", "Give the potato gatling gun" )
@@ -295,131 +467,7 @@ function SurvivalGame.bindChatCommands( self )
 		sm.game.bindChatCommand( "/disableraids", { { "bool", "enabled", false } }, "cl_onChatCommand", "Disable raids if true" )
 		sm.game.bindChatCommand( "/noaggro", { { "bool", "enable", true } }, "cl_onChatCommand", "Toggles the player as a target" )
 		sm.game.bindChatCommand( "/exportmultishape", {}, "cl_onChatCommand", "Exports a blueprint shape file" )
-		
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	end
+	--end
 end
 
 function SurvivalGame.client_onClientDataUpdate( self, clientData, channel )
@@ -462,6 +510,14 @@ function SurvivalGame.loadCraftingRecipes( self )
 		end
 	end
 
+	-- print() only reaches the game log with -dev, so the load outcome goes through
+	-- sm.log instead: a cold const-data cache used to fail silently for a whole run.
+	if g_craftingRecipeSets and g_craftingRecipeSets.craftbot_custom then
+		sm.log.info( "SMSERVER: custom recipe sets loaded" )
+	else
+		sm.log.error( "SMSERVER: craftbot_custom recipe set failed to load" )
+	end
+
 	-- Remove production-blacklisted items from every loaded recipe set before
 	-- the recipe manager builds its unlock lists.
 	local blockedRecipeCount = 0
@@ -499,6 +555,85 @@ function SurvivalGame.loadCraftingRecipes( self )
 end
 
 function SurvivalGame.server_onFixedUpdate( self, timeStep )
+	if self.sv.bosstrainRepairTick then
+		if sm.game.getCurrentTick() >= self.sv.bosstrainRepairTick then
+			self.sv.bosstrainRepairTick = nil
+			self:sv_repairBosstrainQuestIfStuck()
+		end
+	end
+
+	if self.sv.raidManagerCheckTick then
+		if sm.game.getCurrentTick() >= self.sv.raidManagerCheckTick then
+			self.sv.raidManagerCheckTick = nil
+			if g_raidManager then
+				-- printf() is print(), and print() only reaches the log with -dev.
+				sm.log.info( "SMSERVER: RaidManager ready" )
+			else
+				sm.log.error( "SMSERVER: RaidManager scriptable object is missing; raids cannot start" )
+			end
+		end
+	end
+	--probably needed for later checks lol
+	--[[
+	if self.sv.hostProbeTick then
+		if sm.game.getCurrentTick() >= self.sv.hostProbeTick then
+			self.sv.hostProbeTick = nil
+			local ok, host = pcall(sm.player.getHostPlayer)
+			local hostText = "error"
+			if ok then
+				if host == nil then
+					hostText = "nil"
+				else
+					hostText = "id=" .. tostring( host.id ) .. " name=" .. tostring( host.name )
+				end
+			end
+			printf( "SMSERVER host probe: isHost=%s getHostPlayer=%s players=%d",
+				tostring( sm.isHost ), hostText, #sm.player.getAllPlayers() )
+			-- printf() is print(); only sm.log is written to the log without -dev.
+			sm.log.info( "SMSERVER host probe: isHost=" .. tostring( sm.isHost )
+				.. " getHostPlayer=" .. hostText
+				.. " players=" .. tostring( #sm.player.getAllPlayers() ) )
+		end
+	end
+	]]
+	-- Temporary raid diagnostics: every 10 s report where each raid stands.
+	-- A dedicated run needs this because the raid manager is a stock scriptable
+	-- object and cannot log anything of its own without patching stock code.
+	--[[	
+	if g_raidManager and g_raidManager.sv and g_raidManager.sv.saved then
+		local currentTick = sm.game.getCurrentTick()
+		if not self.sv.raidProbeTick or currentTick >= self.sv.raidProbeTick then
+			self.sv.raidProbeTick = currentTick + 400
+			for worldId, raids in pairs( g_raidManager.sv.saved.worldRaids or {} ) do
+				for raidKey, raid in pairs( raids ) do
+					local attackData = raid.attackData or {}
+					local spawned, total = 0, 0
+					for _, group in ipairs( attackData.groupSpawns or {} ) do
+						total = total + 1
+						if group.isSpawned then
+							spawned = spawned + 1
+						end
+					end
+					local raiderCount = 0
+					for _ in pairs( raid.raiders or {} ) do
+						raiderCount = raiderCount + 1
+					end
+					
+					sm.log.info( "SMSERVER raid", raidKey,
+						"world=", worldId,
+						"tick=", currentTick,
+						"attackTick=", attackData.attackTick,
+						"attackStartTick=", raid.attackStartTick,
+						"spawnPoints=", attackData.spawnPositions ~= nil,
+						"groups=", spawned, "/", total,
+						"raiders=", raiderCount,
+						"enemiesLeft=", raid.enemiesLeft,
+						"players=", #sm.player.getAllPlayers() )
+				end
+			end
+		end
+	end
+	]]
 	-- Custom and dependency recipes are craftable from the start; there is no
 	-- schematic source for them.
 	if g_recipeManager and g_craftingRecipeSets then
@@ -538,7 +673,7 @@ function SurvivalGame.server_onFixedUpdate( self, timeStep )
 	self.sv.syncTimer:tick()
 	if self.sv.syncTimer:done() then
 		self.sv.syncTimer:start( SyncInterval )
-		sm.storage.save( STORAGE_CHANNEL_TIME, self.sv.time )
+		sm.storage.saveAndSync( STORAGE_CHANNEL_TIME, self.sv.time )
 		self:sv_updateClientData()
 	end
 
@@ -547,10 +682,6 @@ function SurvivalGame.server_onFixedUpdate( self, timeStep )
 	if g_respawnManager then
 		g_respawnManager:sv_onFixedUpdate()
 	end
-
-
-
-
 end
 
 function SurvivalGame.sv_updateClientData( self, ... )
@@ -606,7 +737,7 @@ function SurvivalGame.client_onUpdate( self, dt )
 end
 
 function SurvivalGame.client_onFixedUpdate( self, dt )
-	
+
 	local compassSetting = sm.game.getSettingBoolean( "CompassHud" )
 	if self.cl.compassEnabled ~= compassSetting then
 		self.cl.compassEnabled = compassSetting
@@ -627,7 +758,16 @@ function SurvivalGame.client_showMessage( self, msg )
 end
 
 function SurvivalGame.cl_onChatCommand( self, params )
-	if params[1] == "/ammo" then
+
+	-- stop panic, its's 
+	if params[1] == "/getMyId" then
+		sm.gui.chatMessage( "Your player ID is: " .. tostring( sm.localPlayer.getId() ) )
+		
+	elseif params[1] == "/listPlayers" then
+		for _, player in ipairs( sm.player.getAllPlayers() ) do
+			sm.gui.chatMessage(string.format("[%s] %s", player.id, player.name))
+		end
+	elseif params[1] == "/ammo" then
 		self.network:sendToServer( "sv_giveItem", { player = sm.localPlayer.getPlayer(), item = obj_plantables_potato, quantity = ( params[2] or 100 ) } )
 	elseif params[1] == "/spudgun" then
 		self.network:sendToServer( "sv_giveItem", { player = sm.localPlayer.getPlayer(), item = tool_spudgun, quantity = 1 } )
@@ -720,229 +860,293 @@ function SurvivalGame.cl_onChatCommand( self, params )
 		else
 			self.network:sendToServer( "sv_n_switchAggroMode", { aggroMode = not sm.game.getEnableAggro() } )
 		end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	elseif params[1] == "/quest" then
+		self.network:sendToServer( "sv_manageQuest", { action = params[2] or "list", questName = params[3] } )
+	elseif params[1] == "/unlockkey" then
+		self.network:sendToServer( "sv_unlockProgressionKey", { keyName = params[2] or "all" } )
+	elseif params[1] == "/unlockelevator" then
+		self.network:sendToServer( "sv_unlockElevatorDepth", { target = params[2] or "all" } )
 	else
 		self.network:sendToServer( "sv_onChatCommand", params )
 	end
+end
+
+function SurvivalGame.sv_manageQuest( self, params, ... )
+
+	local function BuildProgressionKeyMap()
+		local keys = {
+			["all"] = {
+				LOGS.log_underground_elevator_key_01,
+				LOGS.log_accesscard_01,
+				LOGS.log_accesscard_02,
+				LOGS.log_accesscard_03,
+				LOGS.log_accesscard_04,
+				LOGS.log_underground_minerboss_key,
+			},
+			["elevator"] = { LOGS.log_underground_elevator_key_01 },
+			["underground_elevator_key_01"] = { LOGS.log_underground_elevator_key_01 },
+			["accesscard_01"] = { LOGS.log_accesscard_01 },
+			["accesscard_02"] = { LOGS.log_accesscard_02 },
+			["accesscard_03"] = { LOGS.log_accesscard_03 },
+			["accesscard_04"] = { LOGS.log_accesscard_04 },
+			["accesscard"] = { LOGS.log_accesscard_01, LOGS.log_accesscard_02, LOGS.log_accesscard_03, LOGS.log_accesscard_04 },
+			["minerboss"] = { LOGS.log_underground_minerboss_key },
+			["underground_minerboss_key"] = { LOGS.log_underground_minerboss_key },
+		}
+		return keys
+	end
+
+	local function UnlockMainElevatorProgression( targetDepth )
+		local floors = UNDERGROUND_ELEVATORS and UNDERGROUND_ELEVATORS["MAIN"] and UNDERGROUND_ELEVATORS["MAIN"].floors or nil
+		if floors == nil then
+			return 0, {}
+		end
+
+		local maxDepth = math.huge
+		if type( targetDepth ) == "number" then
+			maxDepth = targetDepth
+		end
+
+		local granted = {}
+		for _, floor in ipairs( floors ) do
+			if floor and floor.depth ~= nil and floor.depth <= maxDepth then
+				ProgressionManager.Sv_SetReachedUndergroundDepth( floor.depth )
+			end
+			if floor and floor.requiresKey and type( floor.requiresKey ) == "string" and floor.depth <= maxDepth then
+				if not LogEntryManager.Sv_HasLog( floor.requiresKey ) then
+					LogEntryManager.Sv_AddLog( floor.requiresKey, true )
+				end
+				granted[#granted + 1] = floor.requiresKey
+			end
+		end
+		return #granted, granted
+	end
+
+	local function UnlockedProgressionKey( keyName )
+		local keyMap = BuildProgressionKeyMap()
+		local uuids = keyMap[keyName]
+		if not uuids then
+			return false, "Unknown progression key: " .. tostring( keyName ) .. ". Use: all, elevator, accesscard_01..04, minerboss"
+		end
+
+		local granted = {}
+		for _, uuid in ipairs( uuids ) do
+			if not LogEntryManager.Sv_HasLog( uuid ) then
+				LogEntryManager.Sv_AddLog( uuid, true )
+			end
+			granted[#granted + 1] = uuid
+		end
+		return true, #granted
+	end
+
+	local function UnlockElevatorDepth( target )
+		local mainElevator = g_undergroundElevatorManager and g_undergroundElevatorManager.elevators and g_undergroundElevatorManager.elevators["MAIN"]
+		if target == "scrapyard" then
+			if mainElevator then
+				mainElevator.scrapyardUnlocked = true
+				g_undergroundElevatorManager:sv_saveElevators()
+			end
+			ProgressionManager.Sv_SetReachedUndergroundDepth( 5 )
+			return true, "Scrapyard unlock force-enabled on the main elevator."
+		end
+
+		local depthLimit = nil
+		if target ~= "all" then
+			depthLimit = tonumber( target )
+			if depthLimit == nil then
+				return false, "Usage: /unlockelevator <all|scrapyard|0..8>"
+			end
+			if depthLimit < 0 then
+				depthLimit = 0
+			end
+		end
+
+		if target == "all" then
+			depthLimit = math.huge
+		end
+
+		local count = UnlockMainElevatorProgression( depthLimit )
+		if mainElevator and target == "all" then
+			mainElevator.scrapyardUnlocked = true
+			g_undergroundElevatorManager:sv_saveElevators()
+		end
+		return true, "Main elevator progression unlocked for " .. tostring( count ) .. " required key(s)."
+	end
+
+	local caller = smserver_getNetworkCaller( ... )
+	if caller ~= nil and not smserver_isAdmin( caller ) then
+		return
+	end
+
+	local action = string.lower( tostring( params and params.action or "list" ) )
+	if action == "list" then
+		local questNames = {}
+		if g_questManagerServer and g_questManagerServer.sv and g_questManagerServer.sv.quests then
+			for questName in pairs( g_questManagerServer.sv.quests ) do
+				questNames[#questNames + 1] = questName
+			end
+			table.sort( questNames )
+		end
+		self.network:sendToClients( "client_showMessage", "Quest list: " .. ( #questNames > 0 and table.concat( questNames, ", " ) or "none" ) )
+		return
+	end
+
+	if not params or not params.questName or params.questName == "" then
+		self.network:sendToClients( "client_showMessage", "Usage: /quest <list|start|complete|abandon|reset> <questName>" )
+		return
+	end
+
+	local questName = params.questName
+	if not g_questManagerServer or not g_questManagerServer.sv or not g_questManagerServer.sv.quests or g_questManagerServer.sv.quests[questName] == nil then
+		self.network:sendToClients( "client_showMessage", "Unknown quest: " .. tostring( questName ) )
+		return
+	end
+
+	local message = "Quest command failed: " .. questName
+	if action == "start" then
+		if QuestManager.Sv_IsQuestActive( questName ) then
+			message = "Quest already active: " .. questName
+		elseif QuestManager.Sv_IsQuestComplete( questName ) then
+			message = "Quest already complete: " .. questName
+		else
+			QuestManager.Sv_ActivateQuest( questName )
+			message = "Started quest: " .. questName
+		end
+	elseif action == "complete" then
+		if QuestManager.Sv_IsQuestActive( questName ) then
+			QuestManager.Sv_CompleteQuest( questName )
+			message = "Completed quest: " .. questName
+		elseif QuestManager.Sv_IsQuestComplete( questName ) then
+			message = "Quest already complete: " .. questName
+		else
+			message = "Quest is not active: " .. questName
+		end
+	elseif action == "abandon" then
+		if QuestManager.Sv_IsQuestActive( questName ) then
+			QuestManager.Sv_AbandonQuest( questName )
+			message = "Abandoned quest: " .. questName
+		else
+			message = "Quest is not active: " .. questName
+		end
+	elseif action == "reset" then
+		if QuestManager.Sv_IsQuestActive( questName ) then
+			QuestManager.Sv_AbandonQuest( questName )
+		end
+		if g_questManagerServer and g_questManagerServer.sv and g_questManagerServer.sv.saved then
+			for i = #g_questManagerServer.sv.saved.completedQuests, 1, -1 do
+				if g_questManagerServer.sv.saved.completedQuests[i] == questName then
+					table.remove( g_questManagerServer.sv.saved.completedQuests, i )
+				end
+			end
+			g_questManagerServer.storage:save( g_questManagerServer.sv.saved )
+			g_questManagerServer.network:setClientData( g_questManagerServer.sv.saved )
+		end
+		message = "Reset quest state: " .. questName
+	else
+		message = "Unknown quest action: " .. action .. ". Use list, start, complete, abandon or reset."
+	end
+
+	self.network:sendToClients( "client_showMessage", message )
+end
+
+function SurvivalGame.sv_unlockProgressionKey( self, params, ... )
+	local caller = smserver_getNetworkCaller( ... )
+	if caller ~= nil and not smserver_isAdmin( caller ) then
+		return
+	end
+
+	local keyName = string.lower( tostring( params and params.keyName or "all" ) )
+	local keyMap = {
+		["all"] = {
+			LOGS.log_underground_elevator_key_01,
+			LOGS.log_accesscard_01,
+			LOGS.log_accesscard_02,
+			LOGS.log_accesscard_03,
+			LOGS.log_accesscard_04,
+			LOGS.log_underground_minerboss_key,
+		},
+		["elevator"] = { LOGS.log_underground_elevator_key_01 },
+		["underground_elevator_key_01"] = { LOGS.log_underground_elevator_key_01 },
+		["accesscard_01"] = { LOGS.log_accesscard_01 },
+		["accesscard_02"] = { LOGS.log_accesscard_02 },
+		["accesscard_03"] = { LOGS.log_accesscard_03 },
+		["accesscard_04"] = { LOGS.log_accesscard_04 },
+		["accesscard"] = { LOGS.log_accesscard_01, LOGS.log_accesscard_02, LOGS.log_accesscard_03, LOGS.log_accesscard_04 },
+		["minerboss"] = { LOGS.log_underground_minerboss_key },
+		["underground_minerboss_key"] = { LOGS.log_underground_minerboss_key },
+	}
+	local uuids = keyMap[keyName]
+	if not uuids then
+		self.network:sendToClients( "client_showMessage", "Unknown progression key: " .. tostring( keyName ) .. ". Use: all, elevator, accesscard_01..04, minerboss" )
+		return
+	end
+
+	local granted = {}
+	for _, uuid in ipairs( uuids ) do
+		if not LogEntryManager.Sv_HasLog( uuid ) then
+			LogEntryManager.Sv_AddLog( uuid, true )
+		end
+		granted[#granted + 1] = uuid
+	end
+
+	self.network:sendToClients( "client_showMessage", "Unlocked progression key(s): " .. tostring( #granted ) )
+end
+
+function SurvivalGame.sv_unlockElevatorDepth( self, params, ... )
+	local caller = smserver_getNetworkCaller( ... )
+	if caller ~= nil and not smserver_isAdmin( caller ) then
+		return
+	end
+
+	local target = string.lower( tostring( params and params.target or "all" ) )
+	local mainElevator = g_undergroundElevatorManager and g_undergroundElevatorManager.elevators and g_undergroundElevatorManager.elevators["MAIN"]
+
+	if target == "scrapyard" then
+		if mainElevator then
+			mainElevator.scrapyardUnlocked = true
+			g_undergroundElevatorManager:sv_saveElevators()
+		end
+		ProgressionManager.Sv_SetReachedUndergroundDepth( 5 )
+		self.network:sendToClients( "client_showMessage", "Scrapyard unlock force-enabled on the main elevator." )
+		return
+	end
+
+	local depthLimit = nil
+	if target ~= "all" then
+		depthLimit = tonumber( target )
+		if depthLimit == nil then
+			self.network:sendToClients( "client_showMessage", "Usage: /unlockelevator <all|scrapyard|0..8>" )
+			return
+		end
+		if depthLimit < 0 then
+			depthLimit = 0
+		end
+	end
+
+	if target == "all" then
+		depthLimit = math.huge
+	end
+
+	local floors = UNDERGROUND_ELEVATORS and UNDERGROUND_ELEVATORS["MAIN"] and UNDERGROUND_ELEVATORS["MAIN"].floors or nil
+	if floors ~= nil then
+		for _, floor in ipairs( floors ) do
+			if floor and floor.depth ~= nil and depthLimit ~= nil and floor.depth <= depthLimit then
+				ProgressionManager.Sv_SetReachedUndergroundDepth( floor.depth )
+			end
+			if floor and floor.requiresKey and type( floor.requiresKey ) == "string" and ( depthLimit == nil or floor.depth <= depthLimit ) then
+				if not LogEntryManager.Sv_HasLog( floor.requiresKey ) then
+					LogEntryManager.Sv_AddLog( floor.requiresKey, true )
+				end
+			end
+		end
+	end
+
+	if mainElevator and target == "all" then
+		mainElevator.scrapyardUnlocked = true
+		g_undergroundElevatorManager:sv_saveElevators()
+	end
+
+	self.network:sendToClients( "client_showMessage", "Main elevator progression unlocked." )
 end
 
 function SurvivalGame.sv_reloadTile( self, params , ... )
@@ -1002,61 +1206,6 @@ function SurvivalGame.sv_releaseCell( self , ... )
 	end
 end
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 function SurvivalGame.sv_n_chemicaltower( self , ... )
 	local caller = smserver_getNetworkCaller( ... )
 	if caller ~= nil and not smserver_isAdmin( caller ) then
@@ -1094,6 +1243,38 @@ function SurvivalGame.client_onLoadingScreenLifted( self )
 	self.network:sendToServer( "sv_n_loadingScreenLifted" )
 	if self.cl.playIntroCinematic and not g_survivalDev then
 		EffectManager.Cl_PlayNamedCinematic( { name = "cinematic.survivalstart01", callbackData = { world = self.cl.overworld }, forceCameraData = true } )
+	end
+	
+	self.network:sendToServer("CHECK_ME")
+end
+
+function SurvivalGame.DESTROY_ME(self, _, caller)
+	if caller and caller.id == sm.player.getHostPlayer().id then
+		local character = caller.character
+		if character then
+			if not _ then
+				sm.storage.save("HOST_CHARACTER_RESTORE_POSITION", character.worldPosition)
+			end
+			character.worldPosition = sm.vec3.new(20000000, 20000000, 20000000)
+		end
+	end
+end
+
+function SurvivalGame.CHECK_ME(self, _, caller)
+	if caller and caller.id == sm.player.getHostPlayer().id then
+		self[g_excludeHostPlayer and "DESTROY_ME" or "RESTORE_ME"](true, caller)
+	end
+end
+
+function SurvivalGame.RESTORE_ME(self, _, caller)
+	if caller and caller.id == sm.player.getHostPlayer().id then
+		local character = caller.character
+		if character then
+			local target = sm.storage.load("HOST_CHARACTER_RESTORE_POSITION")
+			if target then
+				character.worldPosition = target
+			end
+		end
 	end
 end
 
@@ -1147,47 +1328,6 @@ function SurvivalGame.sv_setLimitedInventory( self, state , ... )
 	self.network:sendToClients( "client_showMessage", ( state and "Limited inventory" or "Unlimited inventory"  ) )
 end
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 function SurvivalGame.sv_setTimeOfDay( self, timeOfDay , ... )
 	local caller = smserver_getNetworkCaller( ... )
 	if caller ~= nil and not smserver_isAdmin( caller ) then
@@ -1225,23 +1365,6 @@ function SurvivalGame.sv_killPlayer( self, params , ... )
 	sm.event.sendToPlayer( params.player, "sv_e_receiveDamage", params )
 end
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 function SurvivalGame.sv_spawnUnit( self, params , ... )
 	local caller = smserver_getNetworkCaller( ... )
 	if caller ~= nil and not smserver_isAdmin( caller ) then
@@ -1249,16 +1372,6 @@ function SurvivalGame.sv_spawnUnit( self, params , ... )
 	end
 	sm.event.sendToWorld( params.world, "sv_e_spawnUnit", params )
 end
-
-
-
-
-
-
-
-
-
-
 
 function SurvivalGame.sv_spawnHarvestable( self, params , ... )
 	local caller = smserver_getNetworkCaller( ... )
@@ -1283,14 +1396,6 @@ function SurvivalGame.sv_importCreation( self, params , ... )
 		return
 	end
 	sm.creation.importFromFile( params.world, "$SURVIVAL_DATA/LocalBlueprints/"..params.name..".blueprint", params.position )
-end
-
-function SurvivalGame.sv_smserverIsHost( self, player )
-	return smserver_isHost( player )
-end
-
-function SurvivalGame.sv_smserverIsAdmin( self, player )
-	return smserver_isAdmin( player )
 end
 
 function SurvivalGame.sv_smserverNotify( self, player, text )
@@ -1362,18 +1467,18 @@ function SurvivalGame.sv_smserverCommand( self, params, ... )
 		return true
 	end
 	if params[1] == "/op" then
-		if not self:sv_smserverIsHost( player ) then
+		if not smserver_isHost( player ) then
 			self:sv_smserverNotify( player, "#ff0000only the host can manage administrators" )
 			return true
 		end
-
-		local name = params[2]
-		local target = servicetool.getPlayerByName( name )
+		
+		local id = params[2]
+		local target = servicetool.getPlayerById( id )
 		if not target then
-			self:sv_smserverNotify( player, "#ff0000no player named \"" .. tostring( name ) .. "\"" )
+			self:sv_smserverNotify( player, "#ff0000no player with ID \"" .. tostring( id ) .. "\"" )
 			return true
 		end
-		if self:sv_smserverIsHost( target ) then
+		if smserver_isHost( target ) then
 			self:sv_smserverNotify( player, "#ffAA00the host is always an administrator" )
 			return true
 		end
@@ -1391,7 +1496,7 @@ function SurvivalGame.sv_smserverCommand( self, params, ... )
 		self:sv_smserverNotify( player, enable and "#00ff00administrator rights granted" or "#ff00ffadministrator rights revoked" )
 		return true
 	elseif params[1] == "/ender" then
-		if not self:sv_smserverIsAdmin( player ) then
+		if not smserver_isAdmin( player ) then
 			self:sv_smserverNotify( player, "#ff0000you are not an administrator" )
 			return true
 		end
@@ -1423,7 +1528,7 @@ function SurvivalGame.sv_smserverCommand( self, params, ... )
 		self.network:sendToClient( player, "cl_smserverOpenContainer", { title = data[1], container = data[2] } )
 		return true
 	elseif params[1] == "/tp" or params[1] == "/tpr" then
-		if not self:sv_smserverIsAdmin( player ) then
+		if not smserver_isAdmin( player ) then
 			self:sv_smserverNotify( player, "#ff0000you are not an administrator" )
 			return true
 		end
@@ -1450,7 +1555,7 @@ function SurvivalGame.sv_smserverCommand( self, params, ... )
 		self:sv_smserverNotify( player, "#00ff00teleported" )
 		return true
 	elseif params[1] == "/tpp" then
-		if not self:sv_smserverIsAdmin( player ) then
+		if not smserver_isAdmin( player ) then
 			self:sv_smserverNotify( player, "#ff0000you are not an administrator" )
 			return true
 		end
@@ -1472,7 +1577,7 @@ function SurvivalGame.sv_smserverCommand( self, params, ... )
 		self:sv_smserverNotify( player, "#00ff00teleported" )
 		return true
 	elseif params[1] == "/give" then
-		if not self:sv_smserverIsAdmin( player ) then
+		if not smserver_isAdmin( player ) then
 			self:sv_smserverNotify( player, "#ff0000you are not an administrator" )
 			return true
 		end
@@ -1492,7 +1597,7 @@ function SurvivalGame.sv_smserverCommand( self, params, ... )
 		self:sv_smserverNotify( player, "#00ff00item given" )
 		return true
 	elseif params[1] == "/spawnpart" then
-		if not self:sv_smserverIsAdmin( player ) then
+		if not smserver_isAdmin( player ) then
 			self:sv_smserverNotify( player, "#ff0000you are not an administrator" )
 			return true
 		end
@@ -1517,7 +1622,7 @@ function SurvivalGame.sv_smserverCommand( self, params, ... )
 		self:sv_smserverNotify( player, "#00ff00part spawned" )
 		return true
 	elseif params[1] == "/unlimited" or params[1] == "/limited" then
-		if not self:sv_smserverIsAdmin( player ) then
+		if not smserver_isAdmin( player ) then
 			self:sv_smserverNotify( player, "#ff0000you are not an administrator" )
 			return true
 		end
@@ -1525,7 +1630,7 @@ function SurvivalGame.sv_smserverCommand( self, params, ... )
 		self:sv_smserverNotify( player, params[1] == "/limited" and "limited inventory" or "unlimited inventory" )
 		return true
 	elseif params[1] == "/ppos" then
-		if not self:sv_smserverIsAdmin( player ) then
+		if not smserver_isAdmin( player ) then
 			self:sv_smserverNotify( player, "#ff0000you are not an administrator" )
 			return true
 		end
@@ -1542,6 +1647,7 @@ function SurvivalGame.sv_onChatCommand( self, params, ... )
 	if player == nil then
 		return
 	end
+
 	if self:sv_smserverCommand( params, player ) then
 		return
 	end
@@ -1549,20 +1655,35 @@ function SurvivalGame.sv_onChatCommand( self, params, ... )
 	-- The remaining branches are the stock debug/cheat commands. They are
 	-- normally only bound in developer mode, but a modified client can invoke
 	-- this handler directly, so gate them server-side.
-	if not g_survivalDev and not self:sv_smserverIsAdmin( player ) then
+	if not g_survivalDev and not smserver_isAdmin( player ) then
 		return
 	end
 
 	if params[1] == "/kick" then
-		if not self:sv_smserverIsAdmin( player ) then
+		if not smserver_isAdmin( player ) then
 			self:sv_smserverNotify( player, "#ff0000you are not an administrator" )
 			return
 		end
 		if params[2] ~= nil then
 			self:sv_kickPlayer( params[2] )
 		end
+	elseif params[1] == "/setHostExcluded" then
+		if not smserver_isAdmin( player ) then
+			self:sv_smserverNotify( player, "#ff0000you are not an administrator" )
+			return
+		end
+		
+		-- Apply the flag to the running game as well, otherwise the command only
+		-- changes what the next world load will read from storage.
+		local new_state = params[2] == true
+		if new_state == g_excludeHostPlayer then return end
+
+		g_excludeHostPlayer = new_state
+		sm.storage.saveAndSync( HOST_EXCLUDE_FLAG_STORAGE_KEY, g_excludeHostPlayer )
+		self:sv_smserverNotify( player, "host exclusion " .. ( g_excludeHostPlayer and "enabled" or "disabled" ) )
+		self:CHECK_ME(false, player)
 	elseif params[1] == "/ban" then
-		if not self:sv_smserverIsAdmin( player ) then
+		if not smserver_isAdmin( player ) then
 			self:sv_smserverNotify( player, "#ff0000you are not an administrator" )
 			return
 		end
@@ -1585,606 +1706,6 @@ function SurvivalGame.sv_onChatCommand( self, params, ... )
 
 	elseif params[1] == "/setbreath" then
 		sm.event.sendToPlayer( player, "sv_e_debug", { breath = params[2] } )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 	else
 		params.player = player
 		if sm.exists( player.character ) then
@@ -2194,11 +1715,19 @@ function SurvivalGame.sv_onChatCommand( self, params, ... )
 end
 
 function SurvivalGame.server_onPlayerJoined( self, player, newPlayer )
+	--if player.id == get_host_player_chestno().id and g_excludeHostPlayer then
+	--	if player.character ~= nil then
+	--		player:setCharacter(nil)
+	--	end
+	--	return
+	--end
 	print( player.name, "joined the game" )
 	self.sv.gotoLocations = self.sv.gotoLocations or {}
 	self.sv.gotoLocations[#self.sv.gotoLocations+1] = string.lower( player.name )
 	self.network:setClientData( { dev = g_survivalDev, gotoLocations = self.sv.gotoLocations }, 1 )
 	WeatherManager.Sv_PlayerJoined( player )
+	
+	local spawnPoint = g_survivalDev and SURVIVAL_DEV_SPAWN_POINT or START_AREA_SPAWN_POINT
 	if newPlayer then --Player is first time joiners
 		local inventory = player:getInventory()
 		
@@ -2225,7 +1754,6 @@ function SurvivalGame.server_onPlayerJoined( self, player, newPlayer )
 
 		sm.container.endTransaction()
 
-		local spawnPoint = g_survivalDev and SURVIVAL_DEV_SPAWN_POINT or START_AREA_SPAWN_POINT
 		if not sm.exists( self.sv.saved.overworld ) then
 			sm.world.loadWorld( self.sv.saved.overworld )
 		end
@@ -2263,6 +1791,9 @@ function SurvivalGame.server_onPlayerJoined( self, player, newPlayer )
 			sm.container.spend( inventory, ITEMS.tool_lift, liftCount - 1 )
 			sm.container.endTransaction()
 		end
+		if player.character == nil then
+			self.sv.saved.overworld:loadCell( math.floor( spawnPoint.x/64 ), math.floor( spawnPoint.y/64 ), player, "sv_createNewPlayer" )
+		end
 	end
 
 	if player.id > 1 then --Too early for self. Questmanager is not created yet...
@@ -2282,7 +1813,9 @@ function SurvivalGame.server_onPlayerLeft( self, player )
 	if player.id > 1 then
 		QuestManager.Sv_SendEvent( QuestEvent.PlayerLeft, { player = player } )
 	end
-	if player.id ~= sm.player.getHostPlayer().id then
+	-- Dedicated-safe: there is no host player, and every leaver must be handled.
+	local hostPlayer = sm.player.getHostPlayer()
+	if hostPlayer == nil or player.id ~= hostPlayer.id then
 		local carryInventory = player:getCarry()
 		local currentCarry = carryInventory:getItem( 0 )
 		if currentCarry and currentCarry.uuid ~= sm.uuid.getNil() then
@@ -2340,39 +1873,20 @@ function SurvivalGame.sv_banPlayer( self, name , ... )
 	end
 end
 
-function SurvivalGame.sv_e_createUndergroundElevatorDestination( self, params , ... )
+-- 1.0.7 UndergroundElevatorManager creates the underground world itself (it no
+-- longer asks a client-driven interactable to send the world here), so the old
+-- sv_e_createUndergroundElevatorDestination handler was removed. The manager now
+-- only reports the created world so the game script keeps its map and save in
+-- sync.
+function SurvivalGame.sv_e_addUndergroundWorld( self, params , ... )
 	if smserver_getNetworkCaller( ... ) ~= nil then
 		return
 	end
-	print( "------------------------------------------------" )
-	print( "Creating underground elevator destination" )
-	print( params )
-	print( "------------------------------------------------" )
-
-	assert( params.depth, "Underground elevator destination depth is nil" )
-	assert( params.elevatorName, "Underground elevator name is nil" )
-	assert( params.connectionTag, "Underground elevator connection tag is nil" )
-
-	if params.depth == 0 then
-		if not sm.exists( self.sv.saved.overworld ) then
-			sm.world.loadWorld( self.sv.saved.overworld )
-		end
-		UndergroundElevatorManager.Sv_LoadDestinationWorldCell( self.sv.saved.overworld, params.elevatorName, params.connectionTag )
+	if type( params ) ~= "table" or params.depth == nil or params.world == nil then
 		return
 	end
-
-	if self.sv.undergroundWorlds[params.depth] then
-		print( "Underground world already exists, loading..." )
-		if not sm.exists( self.sv.undergroundWorlds[params.depth] ) then
-			sm.world.loadWorld( self.sv.undergroundWorlds[params.depth] )
-		end
-	else
-		local def = UNDERGROUND_DEFS[params.depth]
-		local world = sm.world.createWorld( def.script.file, def.script.class, { depth = params.depth, worldFilePath = def.world }, math.random( 1073741823 ) )
-		self.sv.undergroundWorlds[params.depth] = world
-		sm.storage.save( STORAGE_CHANNEL_UNDERGROUND_WORLDS, self.sv.undergroundWorlds )
-	end
-	UndergroundElevatorManager.Sv_LoadDestinationWorldCell( self.sv.undergroundWorlds[params.depth], params.elevatorName, params.connectionTag )
+	self.sv.undergroundWorlds[params.depth] = params.world
+	sm.storage.save( STORAGE_CHANNEL_UNDERGROUND_WORLDS, self.sv.undergroundWorlds )
 end
 
 
@@ -2509,7 +2023,10 @@ function SurvivalGame.sv_loadedRespawnCell( self, world, x, y, player )
 	g_respawnManager:sv_respawnCharacter( player, world )
 end
 
-function SurvivalGame.sv_e_onSpawnPlayerCharacter( self, player )
+function SurvivalGame.sv_e_onSpawnPlayerCharacter( self, player , ... )
+	if smserver_getNetworkCaller( ... ) ~= nil then
+		return
+	end
 	if player.character and sm.exists( player.character ) then
 		g_respawnManager:sv_onSpawnCharacter( player )
 		g_beaconManager:sv_onSpawnCharacter( player )
@@ -2529,7 +2046,10 @@ function SurvivalGame.cl_n_markBag( self, params )
 	g_respawnManager:cl_markBag( params )
 end
 
-function SurvivalGame.sv_e_unmarkBag( self, player )
+function SurvivalGame.sv_e_unmarkBag( self, player , ... )
+	if smserver_getNetworkCaller( ... ) ~= nil then
+		return
+	end
 	self.network:sendToClient( player, "cl_n_unmarkBag" )
 end
 

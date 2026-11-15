@@ -1,11 +1,11 @@
-dofile "$SURVIVAL_DATA/Scripts/game/units/unit_util.lua"
-dofile "$SURVIVAL_DATA/Scripts/util.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/util/Timer.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_shapes.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_units.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/PathingState.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_constants.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/BaseTotebotUnit.lua" 
+dofile "$CONTENT_DATA/Scripts/game/units/unit_util.lua"
+dofile "$CONTENT_DATA/Scripts/util.lua"
+dofile "$CONTENT_DATA/Scripts/game/util/Timer.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_shapes.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_units.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/PathingState.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_constants.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/BaseTotebotUnit.lua" 
 
 LootbotUnit = class( BaseTotebotUnit )
 
@@ -17,7 +17,6 @@ local MinFleeDeviationDegree = 50.0
 local MaxFleeDeviationDegree = 80.0
 
 local PlayerFleeDistance = 2.5
-local RaidFleeTickTime = 40 * 10
 local DamageCooldownTickTime = 40.0
 
 function LootbotUnit.server_onCreate( self )
@@ -72,13 +71,6 @@ function LootbotUnit.server_onCreate( self )
 	self.fleeState.maxDeviation = 45 * math.pi / 180
 	self.fleeState.headingDeviation = 0.0
 	self.fleeState.debugName = "fleeState"
-
-	-- Flee (raid end)
-	self.raidFlee = self.unit:createState( "flee" )
-	self.raidFlee.movementAngleThreshold = math.rad( 180 )
-	self.raidFlee.maxFleeTime = 0.0
-	self.raidFlee.maxDeviation = 45 * math.pi / 180
-	self.raidFlee.debugName = "raidFlee"
 
 	-- Tumble
 	initTumble( self )
@@ -147,10 +139,6 @@ function LootbotUnit.server_onUnitUpdate( self, dt )
 		if self.currentState.customData and self.currentState.customData.onUnitUpdateOnly then
 			self.currentState:onFixedUpdate( dt )
 		end
-	end
-
-	if CheckFleeFromRaid( self ) then
-		return
 	end
 
 	if self.unit.character:isTumbling() then

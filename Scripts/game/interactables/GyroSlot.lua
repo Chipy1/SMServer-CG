@@ -1,6 +1,6 @@
 -- GyroSlot.lua --
-dofile("$SURVIVAL_DATA/Scripts/game/survival_shapes.lua")
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/TutorialManager.lua" )
+dofile("$CONTENT_DATA/Scripts/game/survival_shapes.lua")
+dofile( "$CONTENT_DATA/Scripts/game/managers/TutorialManager.lua" )
 
 GyroSlot = class( nil )
 

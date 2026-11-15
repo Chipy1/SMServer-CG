@@ -1,5 +1,5 @@
-dofile("$SURVIVAL_DATA/Scripts/util.lua")
-dofile( "$SURVIVAL_DATA/Scripts/game/interactables/BlendPoseButtonBase.lua" )
+dofile("$CONTENT_DATA/Scripts/util.lua")
+dofile( "$CONTENT_DATA/Scripts/game/interactables/BlendPoseButtonBase.lua" )
 
 BuilderGuideQuestStarter = class( BlendPoseButtonBase )
 

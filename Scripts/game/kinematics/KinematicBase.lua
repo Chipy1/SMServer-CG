@@ -1,4 +1,4 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/scriptableObjects/AttachedLootManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/scriptableObjects/AttachedLootManager.lua" )
 
 KinematicBase = class( nil )
 

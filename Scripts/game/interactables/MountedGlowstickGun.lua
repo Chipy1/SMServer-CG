@@ -1,4 +1,4 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_projectiles.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_projectiles.lua" )
 
 MountedGlowstickGun = class()
 MountedGlowstickGun.maxParentCount = 1
@@ -6,7 +6,7 @@ MountedGlowstickGun.maxChildCount = 0
 MountedGlowstickGun.connectionInput = bit.bor( sm.interactable.connectionType.logic )
 MountedGlowstickGun.connectionOutput = sm.interactable.connectionType.none
 MountedGlowstickGun.colorNormal = sm.color.new( 0xf8eb96ff )
-MountedGlowstickGun.colorHighlight = sm.color.new( 0xf8eb96ff )
+MountedGlowstickGun.colorHighlight = sm.color.new( 0xfff8c9ff )
 MountedGlowstickGun.poseWeightCount = 1
 
 local FireDelay = 8 --ticks

@@ -1,5 +1,5 @@
-dofile "$SURVIVAL_DATA/Scripts/util.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_constants.lua"
+dofile "$CONTENT_DATA/Scripts/util.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_constants.lua"
 
 -- obj_resource_crudestone = sm.uuid.new( "4732ba60-67c7-44a3-ba69-89c6e8467756" ),
 -- obj_resource_crudesilver = sm.uuid.new( "25af71d6-523c-45d2-99fd-41f8345e3909" ),

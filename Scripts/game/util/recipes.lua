@@ -13,7 +13,7 @@ function LoadCraftingRecipes( recipePaths )
 	}
 	local function createSchematicBanList()
 		local plasmadrill = tostring( ITEMS.obj_interactive_plasmadrill_lvl1 )
-		local quests =sm.json.open( "$SURVIVAL_DATA/ScriptableObjects/scriptableObjectSets/sob_quests.sobset" ) 
+		local quests = sm.json.open( "$CONTENT_DATA/ScriptableObjects/ScriptableObjectSets/sob_quests.sobset" ) 
 		local traderTradegroups = sm.json.open("$SURVIVAL_DATA/ScriptJsonFiles/Trader/trader.tradegroup")
 		
 		local hideoutTrader = sm.json.open( "$SURVIVAL_DATA/CraftingRecipes/hideout.json" )

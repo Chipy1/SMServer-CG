@@ -1,5 +1,5 @@
 -- PowerCoreSocket.lua --
-dofile("$SURVIVAL_DATA/Scripts/game/survival_shapes.lua")
+dofile("$CONTENT_DATA/Scripts/game/survival_shapes.lua")
 
 PowerCoreSocket = class( nil )
 PowerCoreSocket.maxParentCount = 0
@@ -71,6 +71,16 @@ function PowerCoreSocket.server_onCreate( self )
 
 	self.sv.playShipEffect = self.sv.saved.noteterminalInteractables and #self.sv.saved.noteterminalInteractables > 0
 	self.network:setClientData( { playShipEffect = self.sv.playShipEffect, area = self.sv.area } )
+	if self.sv.area == "mechanicstation" and self.interactable.active then
+		self:sv_sendPowerRestored()
+	end
+end
+
+function PowerCoreSocket.sv_sendPowerRestored( self )
+	local poiType = GetPoiTypeAtPosition( self.shape.body:getWorld(), self.shape.worldPosition )
+	if poiType == POI_MECHANICSTATION_QUEST_MEDIUM then
+		QuestManager.Sv_SendEvent( "event.quest_mechanicstation.power_restored" )
+	end
 end
 
 function PowerCoreSocket.sv_e_unlock( self, params )
@@ -106,17 +116,7 @@ function PowerCoreSocket.sv_e_unlock( self, params )
 					if self.sv.saved.noteterminalInteractables and #self.sv.saved.noteterminalInteractables > 0 then
 						QuestManager.Sv_SendEvent( "event.quest_tutorial.power_restored" )
 					end
-					if self.sv.saved.dispenserbotInteractables and #self.sv.saved.dispenserbotInteractables > 0 then
-						local terrainData = GetTerrainData( self.shape.body:getWorld().id )
-						local x = math.floor( self.shape.worldPosition.x / 64 )
-						local y = math.floor( self.shape.worldPosition.y / 64 )
-						local tileUuid = terrainData.uid[y][x]
-						local tileData = GetTileData( self.shape.body:getWorld().id )
-						local poiType = tileData[tostring( tileUuid )].poiType
-						if poiType == 124 then
-							QuestManager.Sv_SendEvent( "event.quest_mechanicstation.power_restored" )
-						end
-					end
+					self:sv_sendPowerRestored()
 				end
 			end
 		end

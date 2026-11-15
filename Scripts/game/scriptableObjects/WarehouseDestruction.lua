@@ -1,9 +1,9 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_constants.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_units.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_constants.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_units.lua" )
 dofile( "$CHALLENGE_DATA/Scripts/challenge/world_util.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/WarehouseManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/HudManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/WorldManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/WarehouseManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/HudManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/WorldManager.lua" )
 
 WarehouseDestruction = class( nil )
 WarehouseDestruction.isSaveObject = true
@@ -105,7 +105,6 @@ function WarehouseDestruction.sv_e_blowUpWarehouseFloor( self, params, callbackD
 	local zeroCell = warehouse.zeroCell
 
 	TileStorageManager.Sv_SyncedSetValueInSubTable( warehouse.tileStorageKey, TILESTORAGE_FLAGS_TABLE, params.explosion, true )
-	TileStorageManager.Sv_Save()
 
 	local xMin, xMax, yMin, yMax = GetTileRangesFromCell( zeroCell.x, zeroCell.y, world.id )
 	self.network:sendToClients( "cl_n_reloadTile", { xMin = xMin, xMax = xMax, yMin = yMin, yMax = yMax, world = world, explosion = params.explosion } )

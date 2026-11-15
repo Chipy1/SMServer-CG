@@ -1,14 +1,14 @@
 -- DriverSeat.lua --
-dofile("$SURVIVAL_DATA/Scripts/game/survival_constants.lua")
-dofile("$SURVIVAL_DATA/Scripts/game/survival_shapes.lua")
-dofile("$SURVIVAL_DATA/Scripts/game/interactables/Seat.lua")
-dofile("$SURVIVAL_DATA/Scripts/util.lua")
+dofile("$CONTENT_DATA/Scripts/game/survival_constants.lua")
+dofile("$CONTENT_DATA/Scripts/game/survival_shapes.lua")
+dofile("$CONTENT_DATA/Scripts/game/interactables/Seat.lua")
+dofile("$CONTENT_DATA/Scripts/util.lua")
 
 DriverSeat = class( Seat )
 DriverSeat.maxChildCount = 20
 DriverSeat.connectionOutput = sm.interactable.connectionType.seated + sm.interactable.connectionType.power + sm.interactable.connectionType.bearing
 DriverSeat.colorNormal = sm.color.new( 0x80ff00ff )
-DriverSeat.colorHighlight = sm.color.new( 0x80ff00ff )
+DriverSeat.colorHighlight = sm.color.new( 0xc8ff6aff )
 DriverSeat.connectIcon = "driverSeat"
 DriverSeat.connectIconScale = 1.0
 DriverSeat.bearingGuiTitle = "#{DRIVERS_SEAT_UPGRADE_TITLE}"

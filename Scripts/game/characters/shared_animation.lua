@@ -1,4 +1,4 @@
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
 
 -- Shared animation initialization. Make a table for some .rend of animations, and then call INIT_ANIMATION_REND to initialize them all at once. Used for animation shared between characters.
 

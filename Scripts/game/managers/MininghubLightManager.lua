@@ -1,5 +1,5 @@
-dofile( "$GAME_DATA/Scripts/game/managers/EffectManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/QuestManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/EffectManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/QuestManager.lua" )
 
 MininghubLightManager = class( nil )
 MininghubLightManager.isSaveObject = true
@@ -31,8 +31,6 @@ function MininghubLightManager.server_onCreate( self )
     
     -- Persistently activate the light kinematics (auto-activate when their cells load)
     if sm.game.getCurrentTick() == self.sv.saved.activationTick then
-        KinematicManager.Sv_Activate( self.sv.tileKey, "mininghub.pylon" )
-        KinematicManager.Sv_Activate( self.sv.tileKey, "activateLights", { persistent = true } )
         EffectManager.Sv_ActivateEventEffect( world, "effectEvent.lightActivation", position )
     end
 

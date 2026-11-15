@@ -1,0 +1,267 @@
+{
+	"characters": [
+		{
+			"capsule": {
+				"height": 1.65,
+				"radius": 0.8
+			},
+			"character": {
+				"data": {},
+				"scriptClass": "WocCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/WocCharacter.lua"
+			},
+			"hit": {
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Cow/char_cow_hit_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.84799999
+					]
+				}
+			},
+			"mass": 1000.0,
+			"material": "RagdollAnimal",
+			"movement": {
+				"canSwim": true,
+				"crouchSpeed": 3.0,
+				"facingRotationSpeed": 3.1415,
+				"headingRotationSpeed": 3.1415,
+				"moveSpeed": 1.4575,
+				"slowDownSpeed": 2.5,
+				"sprintSpeed": 8.0
+			},
+			"name": "Woc",
+			"ragdoll": "$SURVIVAL_DATA/Character/Char_Cow/char_cow_ragdoll.json",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_Cow/char_cow.rend"
+			],
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_Cow/char_cow_tumble_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					0.824999988
+				]
+			},
+			"unit": {
+				"data": {},
+				"scriptClass": "WocUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/WocUnit.lua"
+			},
+			"uuid": "264a563a-e304-430f-a462-9963c77624e9"
+		},
+		{
+			"capsule": {
+				"height": 0.45,
+				"radius": 0.2
+			},
+			"character": {
+				"data": {},
+				"scriptClass": "GlobCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/GlobCharacter.lua"
+			},
+			"characterShapeUuid": "f2aa1e44-aea8-4431-9b7e-f7e35163dd7c",
+			"hit": {
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Glowgorp/char_glowgorp_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.0
+					]
+				}
+			},
+			"mass": 60.0,
+			"material": "RagdollAnimal",
+			"movement": {
+				"canSwim": false,
+				"crouchSpeed": 0.1,
+				"facingRotationSpeed": 3.1415,
+				"headingRotationSpeed": 3.1415,
+				"moveSpeed": 0.2,
+				"slowDownSpeed": 0.1,
+				"sprintSpeed": 1.8
+			},
+			"name": "GlowWorm",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_Glowgorp/char_glowgorp.rend"
+			],
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_Glowgorp/char_glowgorp_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					0.0
+				]
+			},
+			"unit": {
+				"data": {},
+				"scriptClass": "GlobUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/GlobUnit.lua"
+			},
+			"uuid": "48c03f69-3ec8-454c-8d1a-fa09083363b1"
+		},
+		{
+			"capsule": {
+				"height": 0.8,
+				"radius": 0.35
+			},
+			"character": {
+				"data": {},
+				"scriptClass": "BabyWocCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/BabyWocCharacter.lua"
+			},
+			"hit": {
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_babywoc/char_babywoc_hit_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.25
+					]
+				}
+			},
+			"mass": 900.0,
+			"material": "RagdollAnimal",
+			"movement": {
+				"canSwim": true,
+				"crouchSpeed": 3.0,
+				"facingRotationSpeed": 3.1415,
+				"headingRotationSpeed": 3.1415,
+				"moveSpeed": 1.65,
+				"slowDownSpeed": 2.5,
+				"sprintSpeed": 9.0
+			},
+			"name": "BabyWoc",
+			"paint": {
+				"defaultColor": "ef937fff",
+				"effect": "",
+				"enable": false
+			},
+			"ragdoll": "$SURVIVAL_DATA/Character/Char_babywoc/char_babywoc_ragdoll.json",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_babywoc/char_babywoc_tp.rend",
+				"$SURVIVAL_DATA/Character/Char_babywoc/char_babywoc.rend"
+			],
+			"showInEditor": true,
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_babywoc/char_babywoc_tumble_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					0.6
+				]
+			},
+			"unit": {
+				"data": {},
+				"scriptClass": "BabyWocUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/BabyWocUnit.lua"
+			},
+			"uuid": "4895b33a-ce8f-43d0-8c59-e406d37d8d6b"
+		},
+		{
+			"capsule": {
+				"height": 0.45,
+				"radius": 0.2
+			},
+			"character": {
+				"data": {},
+				"scriptClass": "GenericBuilderQuestCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/GenericBuilderQuestCharacter.lua"
+			},
+			"hit": {
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Glowgorp/char_glowgorp_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.0
+					]
+				}
+			},
+			"mass": 60.0,
+			"material": "RagdollAnimal",
+			"movement": {
+				"canSwim": false,
+				"crouchSpeed": 0.1,
+				"facingRotationSpeed": 3.1415,
+				"headingRotationSpeed": 3.1415,
+				"moveSpeed": 0.2,
+				"slowDownSpeed": 0.1,
+				"sprintSpeed": 1.8,
+				"static": true
+			},
+			"name": "BuilderguideGlowWorm",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_Glowgorp/char_glowgorp_builder.rend"
+			],
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_Glowgorp/char_glowgorp_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					0.0
+				]
+			},
+			"unit": {
+				"data": {},
+				"scriptClass": "GenericBuilderQuestUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/GenericBuilderQuestUnit.lua"
+			},
+			"uuid": "9944611a-7673-4aff-9b87-8072e0d175fc"
+		},
+		{
+			"capsule": {
+				"height": 1.65,
+				"radius": 0.8
+			},
+			"character": {
+				"data": {},
+				"scriptClass": "GenericBuilderQuestCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/GenericBuilderQuestCharacter.lua"
+			},
+			"hit": {
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Cow/char_cow_hit_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.84799999
+					]
+				}
+			},
+			"mass": 1000.0,
+			"material": "RagdollAnimal",
+			"movement": {
+				"canSwim": true,
+				"crouchSpeed": 3.0,
+				"facingRotationSpeed": 3.1415,
+				"headingRotationSpeed": 3.1415,
+				"moveSpeed": 1.4575,
+				"slowDownSpeed": 2.5,
+				"sprintSpeed": 8.0,
+				"static": true
+			},
+			"name": "BuilderguideWoc",
+			"ragdoll": "$SURVIVAL_DATA/Character/Char_Cow/char_cow_ragdoll.json",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_Cow/char_builderwoc.rend"
+			],
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_Cow/char_cow_tumble_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					0.824999988
+				]
+			},
+			"unit": {
+				"data": {},
+				"scriptClass": "GenericBuilderQuestUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/GenericBuilderQuestUnit.lua"
+			},
+			"uuid": "39ec787c-880f-4526-8cf5-904869d107fa"
+		}
+	]
+}

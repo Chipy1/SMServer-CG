@@ -1,13 +1,13 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/SurvivalGame.lua")
-dofile( "$SURVIVAL_DATA/Scripts/game/worlds/BaseWorld.lua")
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_units.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_shapes.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_constants.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_loot.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/SurvivalGame.lua")
+dofile( "$CONTENT_DATA/Scripts/game/worlds/BaseWorld.lua")
+dofile( "$CONTENT_DATA/Scripts/game/survival_units.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_shapes.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_constants.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_loot.lua" )
 
 DungeonWorld = class( BaseWorld )
-DungeonWorld.terrainScript = "$SURVIVAL_DATA/Scripts/terrain/terrain_dungeon.lua"
+DungeonWorld.terrainScript = "$CONTENT_DATA/Scripts/terrain/terrain_dungeon.lua"
 DungeonWorld.enableSurface = false
 DungeonWorld.enableAssets = true
 DungeonWorld.enableClutter = false
@@ -50,7 +50,7 @@ function DungeonWorld.server_onTerrainCreated( self )
 
 	for index, node in ipairs( storage[self.world.id] ) do
 		if node.tags and isAnyOf( "GROWLAB_ELEVATOR", node.tags ) then
-			MinidungeonElevatorManager.Sv_WorldReady( {
+			sm.pcall( "MinidungeonElevatorManager.Sv_WorldReady", MinidungeonElevatorManager.Sv_WorldReady, {
 				portalId = self.data.portalId,
 				world = self.world,
 				x = math.floor( node.pos.x / 64 ),
@@ -169,14 +169,10 @@ function DungeonWorld.trigger_onEnterKillBox( self, trigger, results )
 	end
 end
 
-function DungeonWorld.client_onUpdate( self, deltaTime )
-	BaseWorld.client_onUpdate( self, deltaTime )
-end
-
 function DungeonWorld.server_onCellCreated( self, x, y )
-    BaseWorld.server_onCellCreated( self, x, y )
+	BaseWorld.server_onCellCreated( self, x, y )
 end
 
 function DungeonWorld.server_onCellLoaded( self, x, y )
-    BaseWorld.server_onCellLoaded( self, x, y )
+	BaseWorld.server_onCellLoaded( self, x, y )
 end

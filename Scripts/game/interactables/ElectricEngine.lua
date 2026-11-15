@@ -1,7 +1,7 @@
 -- ElectricEngine.lua --
-dofile("$SURVIVAL_DATA/Scripts/game/survival_constants.lua")
-dofile("$SURVIVAL_DATA/Scripts/game/survival_items.lua")
-dofile("$SURVIVAL_DATA/Scripts/util.lua")
+dofile("$CONTENT_DATA/Scripts/game/survival_constants.lua")
+dofile("$CONTENT_DATA/Scripts/game/survival_items.lua")
+dofile("$CONTENT_DATA/Scripts/util.lua")
 
 ElectricEngine = class()
 ElectricEngine.maxParentCount = 2
@@ -9,7 +9,7 @@ ElectricEngine.maxChildCount = 255
 ElectricEngine.connectionInput = sm.interactable.connectionType.logic + sm.interactable.connectionType.power + sm.interactable.connectionType.electricity
 ElectricEngine.connectionOutput = sm.interactable.connectionType.bearing
 ElectricEngine.colorNormal = sm.color.new( 0xffca1aff )
-ElectricEngine.colorHighlight = sm.color.new( 0xffca1aff )
+ElectricEngine.colorHighlight = sm.color.new( 0xfbd967ff )
 ElectricEngine.connectIcon = "electrical"
 ElectricEngine.connectIconScale = 0.75
 
@@ -51,7 +51,7 @@ local EngineLevels = {
 		cost = 4,
 		title = "#{LEVEL} 1",
 		gearCount = 5,
-		bearingCount = 2,
+		bearingCount = 4,
 		pointsPerBattery = 4000,
 		allowAdjustingJoints = true
 	},
@@ -62,7 +62,7 @@ local EngineLevels = {
 		cost = 6,
 		title = "#{LEVEL} 2",
 		gearCount = 7,
-		bearingCount = 4,
+		bearingCount = 6,
 		pointsPerBattery = 6000,
 		allowAdjustingJoints = true
 	},
@@ -73,7 +73,7 @@ local EngineLevels = {
 		cost = 8,
 		title = "#{LEVEL} 3",
 		gearCount = 9,
-		bearingCount = 6,
+		bearingCount = 8,
 		pointsPerBattery = 9000,
 		allowAdjustingJoints = true
 	},
@@ -84,7 +84,7 @@ local EngineLevels = {
 		cost = 10,
 		title = "#{LEVEL} 4",
 		gearCount = 11,
-		bearingCount = 8,
+		bearingCount = 10,
 		pointsPerBattery = 13500,
 		allowAdjustingJoints = true
 	},
@@ -93,7 +93,7 @@ local EngineLevels = {
 		effect = "ElectricEngine - Level 5",
 		title = "#{LEVEL} 5",
 		gearCount = #Gears,
-		bearingCount = 10,
+		bearingCount = 12,
 		pointsPerBattery = 20250,
 		allowAdjustingJoints = true
 	},
@@ -102,7 +102,7 @@ local EngineLevels = {
 		effect = "ElectricEngine - Level 5",
 		title = "#{LEVEL} 5",
 		gearCount = #Gears,
-		bearingCount = 10,
+		bearingCount = 12,
 		pointsPerBattery = 20250,
 		allowAdjustingJoints = false,
 		creativeBattery = true

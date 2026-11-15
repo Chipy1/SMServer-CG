@@ -1,6 +1,6 @@
 --camera_util.lua
 
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_constants.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_constants.lua" )
 
 
 function SetWantedCameraData( wantedCameraData )

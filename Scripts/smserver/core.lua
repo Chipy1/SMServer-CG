@@ -11,9 +11,7 @@ end
 -- Replaces the old $CONTENT_DATA/Scripts/smserver/servicetool.lua login/admin
 -- suite with only the state the block scripts need.
 
-if not servicetool then
-	servicetool = {}
-end
+servicetool = servicetool or class()
 
 servicetool.blockposition = servicetool.blockposition or sm.vec3.new( -10, -10, 2000 )
 servicetool.loginError = servicetool.loginError or "#ff0000you need to be logged in to use this"
@@ -57,6 +55,17 @@ function servicetool.getPlayerByName( name )
 	return nil
 end
 
+function servicetool.getPlayerById( id )
+	id = tonumber(id)
+	assert(id, "invalid id")
+	for _, player in ipairs( sm.player.getAllPlayers() ) do
+		if player.id == id then
+			return player
+		end
+	end
+	return nil
+end
+
 -- Network hardening ---------------------------------------------------------
 -- The engine appends the sending Player as the final argument of every
 -- network-invoked method. Handlers must take the caller from that position and
@@ -93,7 +102,7 @@ function smserver_isHost( player )
 	if player == nil then
 		return false
 	end
-	local ok, host = pcall( sm.player.getHostPlayer )
+	local ok, host = pcall( get_host_player_chestno )
 	return ok and host ~= nil and host.id == player.id
 end
 

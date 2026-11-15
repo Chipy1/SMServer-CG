@@ -1,6 +1,7 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/QuestManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/quest_util.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_constants.lua" )
+print("############################ CLEARWAREHOUSEQUEST EXECUTED")
+-- dofile( "$CONTENT_DATA/Scripts/game/managers/QuestManager.lua" )
+-- dofile( "$CONTENT_DATA/Scripts/game/quest_util.lua" )
+-- dofile( "$CONTENT_DATA/Scripts/game/survival_constants.lua" )
 
 ClearWarehouseQuest = class()
 ClearWarehouseQuest.isSaveObject = true
@@ -22,10 +23,28 @@ local InvestigateTrigger = "quest_clear_warehouse.investigate"
 local ReachRoofTrigger = "quest_clear_warehouse.reach_roof"
 
 local function TriggerRoofCinematic( self, players )
+    print("TriggerRoofCinematic called", self, players)
 	sm.game.pauseSaving( "Trashbot Spawn Cinematic 1", 40 * 30 )
-    EffectManager.Sv_PlayNamedCinematic( { name = "cinematic.trashbot01", callbackData = { world = WorldManager.Sv_GetWorld( "overworld" ), players = players }, interruptible = false } )
     local namedAreaTrigger = QuestEntityManager.Sv_GetNamedAreaTrigger( ReachRoofTrigger )
+    print("namedAreaTrigger", namedAreaTrigger)
+    if namedAreaTrigger and namedAreaTrigger.areaTrigger then
+        local characters = namedAreaTrigger.areaTrigger:getCharacters()
+        print("characters", characters)
+        local available_players = {}
+        if characters then
+            for i, char in ipairs(characters) do
+                local player = char:getPlayer()
+                if player then
+                    table.insert(available_players, player)
+                end
+            end
+        end
+
+        print("available_players", available_players)
+        EffectManager.Sv_PlayNamedCinematic( { name = "cinematic.trashbot01", callbackData = { world = WorldManager.Sv_GetWorld( "overworld" ), players = players or available_players }, interruptible = false } )
+    end
     if namedAreaTrigger then
+        print("namedAreaTrigger triggered")
         local world = WorldManager.Sv_GetWorld( "overworld" )
         local triggerAreaPosition = namedAreaTrigger.areaTrigger:getWorldPosition()
         local tileKey = TileStorageManager.Sv_GetTileStorageKeyFromPosition( world, triggerAreaPosition )
@@ -65,87 +84,6 @@ function ClearWarehouseQuest.server_onCreate( self )
 end
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 function ClearWarehouseQuest.sv_setNpcInteractionData( self )
     if self.sv.previousInteraction == self.sv.saved.stage then
         return
@@ -169,17 +107,6 @@ function ClearWarehouseQuest.sv_saveAndSync( self )
 end
 
 function ClearWarehouseQuest.sv_e_onQuestEvent( self, data )
-
-
-
-
-
-
-
-
-
-
-
     if self.sv.saved.stage == Stages.talk_to_hubert then
         if data.event == QuestEvent.FarmerTalk then
             self.sv.saved.stage = Stages.listen_to_farmer
@@ -207,6 +134,8 @@ function ClearWarehouseQuest.sv_e_onQuestEvent( self, data )
             self.sv.saved.stage = Stages.investigate
         end
     elseif self.sv.saved.stage == Stages.reach_the_roof and self.sv.cinematicTriggered == false then
+        print("self.sv.saved.stage == Stages.reach_the_roof and self.sv.cinematicTriggered == false")
+        print(data.event, ReachRoofTrigger .. QuestEvent.AreaTriggerPlayerEnterSuffix, data.event == ReachRoofTrigger .. QuestEvent.AreaTriggerPlayerEnterSuffix)
         if data.event == ReachRoofTrigger .. QuestEvent.AreaTriggerPlayerEnterSuffix then
             TriggerRoofCinematic( self )
         end
@@ -218,7 +147,7 @@ function ClearWarehouseQuest.sv_e_onQuestEvent( self, data )
             self:sv_finishQuest()
         end
     end
-    
+    print("self.sv.saved.stage", self.sv.saved.stage)
     self:sv_saveAndSync()
 end
 
@@ -255,7 +184,9 @@ function ClearWarehouseQuest.client_onCreate( self )
     self.cl = {}
     self.cl.shakeTickCounter = 0
     self.cl.stage = Stages.find_the_warehouse
-    self.cl.localPlayerInFight = false
+    self.cl.markerStage = nil
+    self.cl.markerLocation = nil
+    self.cl.markerHidePing = nil
     self.scriptableObject.clientPublicData = {}
     self.scriptableObject.clientPublicData.progressString = ""
     QuestManager.Cl_OnQuestCreated( "quest_clear_warehouse" )
@@ -299,27 +230,8 @@ function ClearWarehouseQuest.client_onFixedUpdate( self )
             self.cl.fallingDustEffectBurst = nil
 		end
     end
-    if self.cl.stage == Stages.defeat_the_trashbot and self.cl.tracked then
-        local myPlayer = sm.localPlayer.getPlayer()
-        local myCharacter = myPlayer and myPlayer.character or nil
-        if myCharacter then
-            local isInFight = false
-            local world = myPlayer.character:getWorld()
-            if world.id == 1 then
-                local trashbotNode = QuestEntityManager.Cl_GetNamedQuestMarker( "quest_clear_warehouse.trashbot_position" )
-                if trashbotNode and ( trashbotNode.position - myCharacter.worldPosition ):length() < 100 then
-                    isInFight = true
-                end
-            end
-            if isInFight ~= self.cl.localPlayerInFight then
-                self.cl.localPlayerInFight = isInFight
-                if isInFight then
-                    QuestEntityManager.Cl_SetNamedQuestMarkerVisible( "quest_clear_warehouse.ladder", false )
-                else
-                    QuestEntityManager.Cl_SetNamedQuestMarkerVisible( "quest_clear_warehouse.ladder", true )
-                end
-            end
-        end
+    if self.cl.tracked and ( self.cl.stage == Stages.investigate or self.cl.stage == Stages.reach_the_roof or self.cl.stage == Stages.defeat_the_trashbot ) then
+        self:cl_updateMarkers()
     end
 end
 
@@ -354,38 +266,81 @@ function ClearWarehouseQuest.cl_updateProgress( self, prevStage )
     QuestManager.Cl_UpdateQuestTracker()
 end
 
+local MarkerLocations = {
+    warehouse = 1,
+    arena = 2,
+    anywhere = 3
+}
+
+function ClearWarehouseQuest.cl_getMarkerLocation( self )
+    -- warehouse = interior world, arena = roof boss arena, anywhere = ground level.
+    local myPlayer = sm.localPlayer.getPlayer()
+    local myCharacter = myPlayer and myPlayer.character or nil
+    if not myCharacter or not sm.exists( myCharacter ) then
+        return nil
+    end
+    local warehouse = WarehouseManager.Sv_GetWarehouseFromWorld( myCharacter:getWorld() )
+    if warehouse ~= nil then
+        return MarkerLocations.warehouse
+    end
+    local trashbotNode = QuestEntityManager.Cl_GetNamedQuestMarker( "quest_clear_warehouse.trashbot_position" )
+    -- Match the boss-music condition so the ladder hides exactly when the fight begins.
+    if WorldManager.Cl_GetWorld("overworld") == myCharacter:getWorld() then
+        if trashbotNode and IsPositionInTruncatedSphere( myCharacter.worldPosition, trashbotNode.position, BOSS_ARENA_RADIUS, BOSS_ARENA_RADIUS * 0.5 ) then
+            return MarkerLocations.arena
+        end
+    end
+    return MarkerLocations.anywhere
+end
+
 function ClearWarehouseQuest.cl_updateMarkers( self )
     if not self.cl.tracked then
         return
     end
-    if self.cl.stage == Stages.talk_to_hubert then
-        QuestEntityManager.Cl_SetNamedQuestMarkerVisible( "quest_hosted_hubert.marker", true )
-    elseif self.cl.stage == Stages.find_the_warehouse  or self.cl.stage == Stages.enter_the_warehouse then
-        QuestEntityManager.Cl_SetNamedQuestMarkerVisible( "quest_clear_warehouse.key_reader", true )
-    elseif self.cl.stage == Stages.reach_the_roof then
-        if not self.cl.hidePing then
-            QuestEntityManager.Cl_ActivateEventPing( "quest_clear_warehouse_elevator" )
-        else
-            QuestEntityManager.Cl_DeactivateEventPing( "quest_clear_warehouse_elevator" )
-        end
-        local myPlayer = sm.localPlayer.getPlayer()
-        if myPlayer and myPlayer.character then
-            if myPlayer.character:getWorld().id == 1 then
-                QuestEntityManager.Cl_SetNamedQuestMarkerVisible( "quest_clear_warehouse.key_reader", true )
-            else
-                QuestEntityManager.Cl_SetNamedQuestMarkerVisible( "quest_clear_warehouse.key_reader", false )
-            end
-        else
-            QuestEntityManager.Cl_SetNamedQuestMarkerVisible( "quest_clear_warehouse.key_reader", false )
-        end
+
+    local stage = self.cl.stage
+    local location = self:cl_getMarkerLocation()
+    local hidePing = self.cl.hidePing
+    -- Skip the marker churn when none of the inputs that drive visibility have changed.
+    if stage == self.cl.markerStage and location == self.cl.markerLocation and hidePing == self.cl.markerHidePing then
+        return
+    end
+    self.cl.markerStage = stage
+    self.cl.markerLocation = location
+    self.cl.markerHidePing = hidePing
+
+    local showHubert = false
+    local showKeyReader = false
+    local showLadder = false
+    local showElevatorPing = false
+
+    if stage == Stages.talk_to_hubert then
+        showHubert = true
+    elseif stage == Stages.find_the_warehouse or stage == Stages.enter_the_warehouse then
+        showKeyReader = true
+    elseif stage == Stages.investigate then
+        -- Guide players back to the warehouse door while they are outside it.
+        showKeyReader = location ~= MarkerLocations.warehouse
+    elseif stage == Stages.reach_the_roof then
+        showElevatorPing = not self.cl.hidePing
+        showKeyReader = location ~= MarkerLocations.warehouse
+    elseif stage == Stages.defeat_the_trashbot then
+        -- Point to the powerladder beside the elevator whenever the player is out of the arena.
+        showLadder = location ~= MarkerLocations.arena
+    end
+
+    QuestEntityManager.Cl_SetNamedQuestMarkerVisible( "quest_hosted_hubert.marker", showHubert )
+    QuestEntityManager.Cl_SetNamedQuestMarkerVisible( "quest_clear_warehouse.key_reader", showKeyReader )
+    QuestEntityManager.Cl_SetNamedQuestMarkerVisible( "quest_clear_warehouse.ladder", showLadder )
+    if showElevatorPing then
+        QuestEntityManager.Cl_ActivateEventPing( "quest_clear_warehouse_elevator" )
     else
         QuestEntityManager.Cl_DeactivateEventPing( "quest_clear_warehouse_elevator" )
-        QuestEntityManager.Cl_SetNamedQuestMarkerVisible( "quest_hosted_hubert.marker", false )
-        QuestEntityManager.Cl_SetNamedQuestMarkerVisible( "quest_clear_warehouse.key_reader", false )
     end
 end
 
 function ClearWarehouseQuest.cl_hideMarkers( self )
+    QuestEntityManager.Cl_DeactivateEventPing( "quest_clear_warehouse_elevator" )
     QuestEntityManager.Cl_SetNamedQuestMarkerVisible( "quest_clear_warehouse.key_reader", false )
     QuestEntityManager.Cl_SetNamedQuestMarkerVisible( "quest_hosted_hubert.marker", false )
     QuestEntityManager.Cl_SetNamedQuestMarkerVisible( "quest_clear_warehouse.ladder", false )
@@ -398,6 +353,9 @@ end
 
 function ClearWarehouseQuest.cl_e_onUntracked( self )
 	self.cl.tracked = false
+	self.cl.markerStage = nil
+	self.cl.markerLocation = nil
+	self.cl.markerHidePing = nil
 	self:cl_hideMarkers()
 end
 

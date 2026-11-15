@@ -1,5 +1,5 @@
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_items.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_items.lua" )
 
 Encryptor = class()
 Encryptor.maxChildCount = 0
@@ -7,7 +7,7 @@ Encryptor.maxParentCount = 1
 Encryptor.connectionInput = sm.interactable.connectionType.logic
 Encryptor.connectionOutput = sm.interactable.connectionType.none
 Encryptor.colorNormal = sm.color.new( 0x808080ff )
-Encryptor.colorHighlight = sm.color.new( 0x808080ff )
+Encryptor.colorHighlight = sm.color.new( 0xa0a0a0ff )
 
 function Encryptor.server_onCreate( self )
 	local startActive = self.interactable.active

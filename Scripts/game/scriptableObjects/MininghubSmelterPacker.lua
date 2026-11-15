@@ -1,4 +1,4 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/util/PackerPumpArea.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/util/PackerPumpArea.lua" )
 
 MininghubSmelterPacker = class( nil )
 MininghubSmelterPacker.isSaveObject = true

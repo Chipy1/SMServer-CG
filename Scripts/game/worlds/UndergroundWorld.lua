@@ -1,14 +1,14 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/SurvivalGame.lua")
-dofile( "$SURVIVAL_DATA/Scripts/game/worlds/BaseWorld.lua")
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_units.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_shapes.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_items.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_constants.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_loot.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/SurvivalGame.lua")
+dofile( "$CONTENT_DATA/Scripts/game/worlds/BaseWorld.lua")
+dofile( "$CONTENT_DATA/Scripts/game/survival_units.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_shapes.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_items.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_constants.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_loot.lua" )
 
 UndergroundWorld = class( BaseWorld )
-UndergroundWorld.terrainScript = "$SURVIVAL_DATA/Scripts/terrain/terrain_underground.lua"
+UndergroundWorld.terrainScript = "$CONTENT_DATA/Scripts/terrain/terrain_underground.lua"
 UndergroundWorld.groundMaterialSet = "$SURVIVAL_DATA/Terrain/Materials/gnd_cave_materialset.json"
 UndergroundWorld.voxelMaterialSet = "$SURVIVAL_DATA/Terrain/Materials/voxel_materialset_drill1.voxelmaterialset"
 UndergroundWorld.enableSurface = true
@@ -138,23 +138,6 @@ end
 
 function UndergroundWorld.server_onFixedUpdate( self )
 	BaseWorld.server_onFixedUpdate( self )
-end
-
-function UndergroundWorld.sv_e_spawnRaiders( self, params )
-	local incomingUnits = {}
-	for k, v in pairs( params.raiders ) do
-		for i = 1, v do
-			table.insert( incomingUnits, k )
-		end
-	end
-
-	local randomOffset = sm.vec3.new( 0, math.random() * 6, 0 )
-	randomOffset = randomOffset:rotateZ( math.rad( math.random() * 360 ) )
-	local spawnPosition = params.attackPos + sm.vec3.new( 0, 0, -10 ) + randomOffset
-	local spawnRotation = sm.quat.fromEuler( sm.vec3.new( 90, 0, 0 ) )
-	local destination = params.attackPos + sm.vec3.new( 0, 0, 1.5 )
-	local spawnParams = { world = self.world, uuid = kin_drillspawner, position = spawnPosition, quat = spawnRotation, harvestableParams = { destination = destination, raiders = incomingUnits } }
-	self:sv_spawnHarvestable( spawnParams )
 end
 
 UndergroundWorldMiningHub = class( UndergroundWorld )

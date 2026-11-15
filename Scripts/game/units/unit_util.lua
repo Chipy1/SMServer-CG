@@ -1,28 +1,21 @@
-dofile( "$GAME_DATA/Scripts/game/managers/TileStorageManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/RaidManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/PatrolManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_projectiles.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/TileStorageManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/RaidManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/PatrolManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_projectiles.lua" )
 
 local ShareTargetTime = 3.0
 local DefaultAlertRange = 20
 
 local RaidFleeStuckDistanceSqr = 16.0
 local RaidFleeStuckTickDuration = 40 * 8 -- if enemies have not moved a certain distance in 8 seconds, they are considered stuck and will swap to idle state
+local RaidLeftoverTickDuration = 40 * 60 * 3 -- earliest a raider that stopped fleeing right away may despawn
+local RaidLeftoverMinTickDuration = 40 * 10 -- the same for a raider that fled for the whole RAIDER_FLEE_TICK_DURATION
+local RaidLeftoverMinPlayerDistance = 50.0 -- and only while it is idle and at least this far from every player
 
 local MaxWocAggroDistance = 20.0
-
-function getClosestCharacter( position, characters )
-	local closestDistance2
-	local closestCharacter
-	for _,character in ipairs( characters ) do
-		local distance2 = ( position - character.worldPosition ):length2()
-		if closestDistance2 == nil or distance2 < closestDistance2 then
-			closestCharacter = character
-		end
-	end
-	return closestCharacter, math.sqrt( closestDistance2 )
-end
+-- 1: master (saved.raider is a flag next to raidKey, raidCenter, ...). 2: saved.raider is a table with a phase.
+local RaiderVersion = 2
 
 function ListenForPlayerNoise( listeningCharacter, noiseScale )
 	if not sm.game.getEnableAggro() then
@@ -50,6 +43,29 @@ function ListenForPlayerNoise( listeningCharacter, noiseScale )
 		end
 	end
 	return nil
+end
+
+local UnderTerrainRaycastDistance = 64.0
+
+-- Water volumes keep units that clipped under the terrain from falling out of the world, so detect it from the swim start.
+function UpdateSwimUnderTerrainRecovery( self )
+	local character = self.unit.character
+	local isSwimming = character:isSwimming()
+	local startedSwimming = isSwimming and not self.wasSwimming
+	self.wasSwimming = isSwimming
+	if not startedSwimming then
+		return false
+	end
+
+	local start = character.worldPosition
+	local direction = sm.vec3.new( 0, 0, UnderTerrainRaycastDistance )
+	local success, result = sm.physics.raycast( start, start + direction, character, sm.physics.filter.terrainSurface, nil, nil, true )
+	-- With unflipped normals, a surface normal along the ray means the surface was hit from behind.
+	if success and result.type == "terrainSurface" and result.normalWorld:dot( direction ) > 0 then
+		character:setWorldPosition( result.pointWorld + sm.vec3.new( 0, 0, character:getHeight() * 0.5 ) )
+		return true
+	end
+	return false
 end
 
 function initTumble( self )
@@ -141,6 +157,46 @@ function updateCrushing( self )
 	end
 end
 
+function IsRaiding( self )
+	return self.saved.raider ~= nil and self.saved.raider.phase == RaiderPhases.Raiding
+end
+
+function GetRaidCenter( self )
+	local raider = self.raider
+	if raider == nil then
+		return nil
+	end
+	if raider.center == nil then
+		raider.center = RaidManager.Sv_GetRaidCenter( self.unit.character:getWorld().id, self.saved.raider.raidKey )
+	end
+	return raider.center
+end
+
+-- The raid center is ground level; movement and distance checks need the character centre.
+function GetRaidPoint( self )
+	local center = GetRaidCenter( self )
+	return center and center + sm.vec3.new( 0, 0, self.unit.character:getHeight() * 0.5 )
+end
+
+-- Call after RobotSelectTarget. A unit with nothing to chase attacks a shape it can breach near itself (raiders, and units with the destroyShapes spawn param),
+-- and a raider without such a shape walks to the raid point. breachLevel is unit specific; nil means the unit does not attack shapes.
+function SeekFallbackTarget( self, breachLevel )
+	if self.target or self.lastTargetPosition then
+		return
+	end
+	local raiding = IsRaiding( self )
+	if breachLevel and ( raiding or self.saved.destroyShapes ) then
+		local attackableShape, attackPosition = FindAttackableShape( self.unit.character.worldPosition, RAIDER_TARGETING_RADIUS, breachLevel )
+		if attackableShape and attackPosition then
+			self.lastTargetPosition = attackPosition
+			return
+		end
+	end
+	if raiding then
+		self.lastTargetPosition = GetRaidPoint( self )
+	end
+end
+
 function selectRaidTarget( self, targetCharacter, closestVisibleCrop )
 	
 	local prioritizeCharacterDistance = 5.0
@@ -153,8 +209,12 @@ function selectRaidTarget( self, targetCharacter, closestVisibleCrop )
 	local overDeaggroDistance = true
 	if targetCharacter then
 		closeToCharacter = ( targetCharacter and ( targetCharacter.worldPosition - self.unit.character.worldPosition ):length() <= prioritizeCharacterDistance )
-		inAggroDistance = ( targetCharacter and ( targetCharacter.worldPosition - self.homePosition ):length() <= aggroDistance )
-		overDeaggroDistance = ( targetCharacter and ( targetCharacter.worldPosition - self.homePosition ):length() >= deaggroDistance )
+		local raidPoint = GetRaidPoint( self )
+		if raidPoint then
+			local distanceToRaid = ( targetCharacter.worldPosition - raidPoint ):length()
+			inAggroDistance = distanceToRaid <= aggroDistance
+			overDeaggroDistance = distanceToRaid >= deaggroDistance
+		end
 	end
 	local characterIsWithinAggroRange = inAggroDistance or ( self.target == targetCharacter and not overDeaggroDistance )
 
@@ -285,13 +345,12 @@ end
 	self.saved.lootType
 	self.saved.deathEvent
 	self.saved.raider
-	self.saved.raidKey
+	self.raider
 	self.saved.patrolling
 	self.saved.deathTickTimestamp
 	self.saved.color
 	self.saved.groupKey
 	self.saved.patrolKey
-	self.saved.raidPosition
 	self.saved.stationary
 	self.saved.ambusher
 	self.saved.aggressive
@@ -305,8 +364,28 @@ end
 	self.target
 	self.lastTargetPosition
 ]]
+-- Raider state used to be flat fields on saved; fold them into the saved.raider table.
+local function MigrateLegacyRaiderState( saved )
+	if ( saved.raiderVersion or 1 ) >= RaiderVersion then
+		return
+	end
+	if saved.raider == true then
+		-- Master gave a raider a death tick when its raid ended and it started fleeing
+		saved.raider = { raidKey = saved.raidKey, phase = saved.deathTickTimestamp and RaiderPhases.Fleeing or RaiderPhases.Raiding }
+		saved.tetherPoint = nil
+	elseif saved.raider == false then
+		saved.raider = nil
+	end
+	saved.raidKey = nil
+	saved.raidCenter = nil
+	saved.raidPosition = nil
+	saved.randomPlotTarget = nil
+	saved.raiderVersion = RaiderVersion
+end
+
 function InitRobotParams( self )
 	-- server_onCreate: Init after loading, before saving
+	MigrateLegacyRaiderState( self.saved )
 	if g_tileStorageManager then
 		self.tileStorageKey = TileStorageManager.Sv_GetTileStorageKeyFromObject( self.unit.character )
 	end
@@ -324,11 +403,9 @@ function InitRobotParams( self )
 		if self.params.targetPlayerOnly ~= nil then
 			self.saved.targetPlayerOnly = self.params.targetPlayerOnly
 		end
-		if self.params.raider then
-			self.saved.raider = true
-		end
-		if self.params.raidKey then
-			self.saved.raidKey = self.params.raidKey
+		-- A unit that was in a raid keeps its saved.raider, so reloading never recruits it again
+		if self.params.raidKey and self.saved.raider == nil then
+			self.saved.raider = { raidKey = self.params.raidKey, phase = RaiderPhases.Raiding }
 		end
 		if self.params.isPatrolling ~= nil then
 			self.saved.patrolling = self.params.isPatrolling
@@ -372,14 +449,18 @@ function InitRobotParams( self )
 		if self.params.marked then
 			self.saved.marked = true
 		end
-		if self.params.raidCenter then
-			self.saved.raidCenter = self.params.raidCenter
-		end
 	end
-	self.markerPlaced = false
 
-	if self.saved.raidKey then
-		RaidManager.Sv_AddRaider( self.saved.raidKey, self.unit )
+	local savedRaider = self.saved.raider
+	if savedRaider then
+		self.raider = {}
+		self.raidFlee = self:sv_createRaidFlee()
+		self.raidFlee:sv_setRaid( savedRaider.raidKey )
+	end
+	local raiding = savedRaider and savedRaider.phase == RaiderPhases.Raiding
+	if raiding or ( self.saved.marked and not savedRaider ) then
+		-- Blind: the character script does not exist yet when its unit is created
+		sm.event.sendToCharacter( self.unit.character, "sv_e_markEnemy", { raidKey = raiding and savedRaider.raidKey or nil }, sm.event.types.blind )
 	end
 	if self.saved.patrolKey then
 		PatrolManager.Sv_AddUnit( self.saved.patrolKey, self.unit )
@@ -391,9 +472,6 @@ function InitRobotParams( self )
 
 	if self.saved.tetherPoint then
 		self.homePosition = self.saved.tetherPoint + sm.vec3.new( 0, 0, self.unit.character:getHeight() * 0.5 )
-		if self.saved.raider then
-			self.saved.raidPosition = self.homePosition
-		end
 		if self.saved.aggressive then
 			self.ambushPosition = self.homePosition
 		end
@@ -401,7 +479,7 @@ function InitRobotParams( self )
 		self.homePosition = self.unit.character.worldPosition
 	end
 
-	self.unit.publicData = { groupKey = self.saved.groupKey, raider = self.saved.raider }
+	self.unit.publicData = { groupKey = self.saved.groupKey, raider = savedRaider and savedRaider.phase == RaiderPhases.Raiding }
 	self.allyUnits = {}
 	self.shareTargetCounter = 0.0
 	self.ignoreAnimalsInWater = true
@@ -409,8 +487,8 @@ end
 
 function RobotOnDestroy( self )
 	if SurvivalGame then
-		if self.saved.raidKey then
-			RaidManager.Sv_RemoveRaider( self.saved.raidKey, self.unit )
+		if self.saved.raider and ( self.saved.raider.phase == RaiderPhases.Raiding or self.saved.raider.phase == RaiderPhases.Fleeing ) then
+			RaidManager.Sv_RemoveRaider( self.saved.raider.raidKey, self.unit )
 		end
 	end
 	if self.target ~= nil or self.eventTarget ~= nil then
@@ -441,6 +519,7 @@ function RobotSelectTarget( self, allyRange, dt )
 	if self.saved.friendly then
 		return
 	end
+	local raiding = IsRaiding( self )
 	local targetCharacter
 	local closestVisiblePlayerCharacter
 	local closestHeardPlayerCharacter
@@ -464,8 +543,8 @@ function RobotSelectTarget( self, allyRange, dt )
 				closestVisiblePlayerCharacter = nil
 			end
 		end
-		if not closestVisiblePlayerCharacter and self.saved.raidKey and self.raidTargetNonVisiblePlayer then
-			closestVisiblePlayerCharacter = RaidManager.Sv_GetClosestPlayerInRaid( self.unit.character:getWorld().id, self.saved.raidKey, self.unit.character.worldPosition )
+		if not closestVisiblePlayerCharacter and raiding and self.raidTargetNonVisiblePlayer then
+			closestVisiblePlayerCharacter = RaidManager.Sv_GetClosestPlayerInRaid( self.unit.character:getWorld().id, self.saved.raider.raidKey, self.unit.character.worldPosition )
 		end
 		if not closestVisiblePlayerCharacter then
 			closestHeardPlayerCharacter = ListenForPlayerNoise( self.unit.character, self.noiseScale )
@@ -475,7 +554,7 @@ function RobotSelectTarget( self, allyRange, dt )
 				end
 			end
 		end
-		if not self.saved.targetPlayerOnly and not self.saved.raider and not self.ignoreAnimals then
+		if not self.saved.targetPlayerOnly and not raiding and not self.ignoreAnimals then
 			if not closestVisiblePlayerCharacter and not closestHeardPlayerCharacter then
 				if SurvivalGame then
 					if not LogEntryManager.Sv_HasLog( LOGS.log_babywoc ) then
@@ -516,8 +595,10 @@ function RobotSelectTarget( self, allyRange, dt )
 				end
 			end
 		end
-		if self.saved.raider then
-			closestVisibleCrop = sm.ai.getClosestCrop( self.unit )
+		if raiding then
+			-- getClosestCrop is world wide; bound it to the area around the raid's crops
+			local areaCenter, areaRadius = RaidManager.Sv_GetCropArea( self.unit.character:getWorld().id, self.saved.raider.raidKey )
+			closestVisibleCrop = sm.ai.getClosestCrop( self.unit, areaCenter, areaRadius )
 		elseif not closestVisibleWormCharacter and not closestVisibleWocCharacter and not closestVisiblePlayerCharacter and not closestHeardPlayerCharacter then
 			if not self.griefTimer or self.griefTimer:done() then
 				closestVisibleCrop = sm.ai.getClosestVisibleCrop( self.unit )
@@ -566,7 +647,7 @@ function RobotSelectTarget( self, allyRange, dt )
 	end
 	self.eventTarget = nil
 
-	if self.saved.raider then
+	if raiding then
 		selectRaidTarget( self, targetCharacter, closestVisibleCrop )
 	else
 		if targetCharacter then
@@ -622,47 +703,109 @@ function ShareTarget( self, allies, target )
 	end
 end
 
-function CheckFleeFromRaid( self )
-	if self.saved.raider and self.saved.deathTickTimestamp then
-		
-		if self.lastFleeCheckData then
-			local currentPosition = self.unit.character.worldPosition
-			if ( currentPosition - self.lastFleeCheckData.position ):length2() > RaidFleeStuckDistanceSqr then
-				self.lastFleeCheckData = { tick = sm.game.getCurrentTick(), position = currentPosition }
-			else
-				if ( sm.game.getCurrentTick() - self.lastFleeCheckData.tick ) > RaidFleeStuckTickDuration then
-					self.lastFleeCheckData = nil
-					self.saved.deathTickTimestamp = nil
-					self.saved.raider = false
-					self.currentState:stop()
-					self.currentState = self.idleState
-					self.currentState:start()
-					self.isDirty = true
-					return false
-				end
-			end
-		end
-
-		if self.currentState == self.raidFlee then
-			if not self.lastFleeCheckData then
-				self.lastFleeCheckData = { tick = sm.game.getCurrentTick(), position = self.unit.character.worldPosition }
-			end
-			return true
-		end
-		if self.currentState ~= self.raidFlee and self.saved.deathTickTimestamp then
-			local prevState = self.currentState
-			prevState:stop()
-			self.currentState = self.raidFlee
-			self.currentState:start()
-			self.unit:sendCharacterEvent( "raidFlee" )
+-- Used once a raid leftover has reached its deathTickTimestamp: it has to be idle and far from every player.
+function CanDespawnRaidLeftover( self )
+	local now = sm.game.getCurrentTick()
+	if ( now + self.unit.id ) % 40 == 0 then
+		local character = self.unit.character
+		if sm.exists( character ) and not self.isInCombat and self.target == nil then
+			local closestPlayerCharacter = GetClosestPlayerCharacter( character.worldPosition, character:getWorld() )
+			return closestPlayerCharacter == nil or ( closestPlayerCharacter.worldPosition - character.worldPosition ):length2() > RaidLeftoverMinPlayerDistance * RaidLeftoverMinPlayerDistance
 		end
 	end
 	return false
 end
 
--- Voxel Breach Detection
-local DEBUG_DRAW_VOXEL_BREACH  = true
+-- Raider transition: a fleeing raider becomes a regular enemy that despawns once deathTickTimestamp passes.
+-- fleeTicks is how long it fled without getting stuck; the further it got, the sooner it despawns.
+local function EndRaiderFlee( self, fleeTicks )
+	local fleeFraction = clamp( fleeTicks / RAIDER_FLEE_TICK_DURATION, 0, 1 )
+	local leftoverTicks = lerp( RaidLeftoverTickDuration, RaidLeftoverMinTickDuration, fleeFraction )
+	RaidManager.Sv_RemoveRaider( self.saved.raider.raidKey, self.unit )
+	self.saved.raider.phase = RaiderPhases.Leftover
+	self.saved.deathTickTimestamp = sm.game.getCurrentTick() + math.floor( leftoverTicks )
+	local raidCenter = GetRaidCenter( self )
+	
+	local tetherPosition = self.unit.character.worldPosition + ( ( raidCenter - self.unit.character.worldPosition ):safeNormalize( sm.vec3.new( 0, 0, 0 ) ) * 5 )
+	self.saved.tetherPoint = tetherPosition - sm.vec3.new( 0, 0, self.unit.character:getHeight() * 0.5 )
+	self.homePosition = tetherPosition
+	if self.roamState then
+		self.roamState.tetherPosition = tetherPosition
+	end
+	if self.idleRoamState then
+		self.idleRoamState.homePosition = tetherPosition
+		self.idleRoamState.roamState.tetherPosition = tetherPosition
+	end
+	if self.jumpRoamingState then
+		self.jumpRoamingState.homePosition = tetherPosition
+		self.jumpRoamingState.roamState.tetherPosition = tetherPosition
+	end
+	if self.idleRoamSwimState then
+		self.idleRoamSwimState.homePosition = tetherPosition
+	end
 
+	self.currentState:stop()
+	self.currentState = self.idleState
+	self.currentState:start()
+	self.isDirty = true
+end
+
+function CheckFleeFromRaid( self )
+	local savedRaider = self.saved.raider
+	if savedRaider == nil or savedRaider.phase == RaiderPhases.Leftover then
+		return false
+	end
+
+	if savedRaider.phase == RaiderPhases.Raiding then
+		if not RaidManager.Sv_IsRaidOver( self.unit.character:getWorld().id, savedRaider.raidKey ) then
+			return false
+		end
+		savedRaider.phase = RaiderPhases.Fleeing
+	end
+
+	-- Fleeing
+	local raider = self.raider
+	local now = sm.game.getCurrentTick()
+	if raider.fleeStartTick and now - raider.fleeStartTick > RAIDER_FLEE_TICK_DURATION then
+		EndRaiderFlee( self, RAIDER_FLEE_TICK_DURATION )
+		return false
+	end
+
+	if raider.lastFleeCheck then
+		local currentPosition = self.unit.character.worldPosition
+		if ( currentPosition - raider.lastFleeCheck.position ):length2() > RaidFleeStuckDistanceSqr then
+			raider.lastFleeCheck = { tick = now, position = currentPosition }
+		elseif now - raider.lastFleeCheck.tick > RaidFleeStuckTickDuration then
+			-- A stuck raider stops fleeing and fights as a regular enemy until it is killed or unloaded
+			EndRaiderFlee( self, raider.lastFleeCheck.tick - ( raider.fleeStartTick or raider.lastFleeCheck.tick ) )
+			return false
+		end
+	end
+
+	if self.currentState == self.raidFlee then
+		raider.lastFleeCheck = raider.lastFleeCheck or { tick = now, position = self.unit.character.worldPosition }
+		return true
+	end
+
+	self.currentState:stop()
+	-- A unit whose own pathing wades through water flees through it too
+	if self.pathingState and self.pathingState.waterAvoidance == false then
+		self.raidFlee:sv_setSwims( true )
+	end
+	self.currentState = self.raidFlee
+	self.currentState:start()
+	raider.fleeStartTick = raider.fleeStartTick or now
+	self.target = nil
+	self.lastTargetPosition = nil
+	self.eventTarget = nil
+	self.saved.markedForRemoval = true
+	self.isDirty = true
+	self.unit.publicData.raider = false
+	self.unit:sendCharacterEvent( "raidFlee" )
+	return true
+end
+
+-- Voxel Breach Detection
 local DefaultVoxelBreachCheckDistance = 1.5
 local BreachZOffset = 0.5
 
@@ -685,23 +828,23 @@ function GetVoxelBreachPosition( character, targetPosition )
 		local hitPos = rayStart + ( rayEnd - rayStart ) * result.fraction
 		local material, density, position = character.world:getDominantMaterialInCapsule( hitPos, castRadius + 1.0, castHeight )
 		if material == 0 and density > 15 then
-			if DEBUG_DRAW_VOXEL_BREACH then
-				sm.debugDraw.flashSphere( hitPos, castRadius, sm.color.new( 1, 1, 0, 0.3 ), 0.1 )
-				sm.debugDraw.flashArrow( hitPos - sm.vec3.new( 0, 0, fullHeight * 0.5 ), hitPos + sm.vec3.new( 0, 0, fullHeight * 0.5 ), sm.color.new( 1, 1, 0, 0.3 ), 0.1 )
-			end
+
+
+
+
 			return true, position
 		else
-			if DEBUG_DRAW_VOXEL_BREACH then
-				sm.debugDraw.flashSphere( hitPos, castRadius, sm.color.new( 0, 1, 1, 0.3 ), 0.1 )
-				sm.debugDraw.flashArrow( hitPos - sm.vec3.new( 0, 0, fullHeight * 0.5 ), hitPos + sm.vec3.new( 0, 0, fullHeight * 0.5 ), sm.color.new( 0, 1, 1, 0.3 ), 0.1 )
-			end
+
+
+
+
 			return false, nil
 		end
 	end
-	if DEBUG_DRAW_VOXEL_BREACH then
-		sm.debugDraw.flashSphere( rayEnd, castRadius, sm.color.new( 0, 1, 0, 0.3 ), 0.1 )
-		sm.debugDraw.flashArrow( rayEnd - sm.vec3.new( 0, 0, fullHeight * 0.5 ), rayEnd + sm.vec3.new( 0, 0, fullHeight * 0.5 ), sm.color.new( 0, 1, 0, 0.3 ), 0.1 )
-	end
+
+
+
+
 	return false, nil
 end
 

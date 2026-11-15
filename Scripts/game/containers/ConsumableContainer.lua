@@ -1,5 +1,5 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_items.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_projectiles.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_items.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_projectiles.lua" )
 
 ConsumableContainer = class( nil )
 ConsumableContainer.maxChildCount = 255
@@ -132,7 +132,7 @@ end
 WaterContainer = class( ConsumableContainer )
 WaterContainer.connectionOutput = sm.interactable.connectionType.water
 WaterContainer.colorNormal = sm.color.new( 0x00acfcff )
-WaterContainer.colorHighlight = sm.color.new( 0x00acfcff )
+WaterContainer.colorHighlight = sm.color.new( 0x51c8ffff )
 WaterContainer.connectIcon = "water"
 WaterContainer.connectIconScale = 0.75
 
@@ -151,28 +151,28 @@ WaterContainer.connectIconScale = 0.75
 ChemicalContainer = class( ConsumableContainer )
 ChemicalContainer.connectionOutput = sm.interactable.connectionType.chemical
 ChemicalContainer.colorNormal = sm.color.new( 0xd962d8ff )
-ChemicalContainer.colorHighlight = sm.color.new( 0xd962d8ff )
+ChemicalContainer.colorHighlight = sm.color.new( 0xff8dfeff )
 ChemicalContainer.connectIcon = "chemical"
 ChemicalContainer.connectIconScale = 0.75
 
 BatteryContainer = class( ConsumableContainer )
 BatteryContainer.connectionOutput = sm.interactable.connectionType.electricity
 BatteryContainer.colorNormal = sm.color.new( 0xffca1aff )
-BatteryContainer.colorHighlight = sm.color.new( 0xffca1aff )
+BatteryContainer.colorHighlight = sm.color.new( 0xfbd967ff )
 BatteryContainer.connectIcon = "electrical"
 BatteryContainer.connectIconScale = 0.75
 
 GasolineContainer = class( ConsumableContainer )
 GasolineContainer.connectionOutput = sm.interactable.connectionType.gasoline
 GasolineContainer.colorNormal = sm.color.new( 0xff8000ff )
-GasolineContainer.colorHighlight = sm.color.new( 0xff8000ff )
+GasolineContainer.colorHighlight = sm.color.new( 0xffc45aff )
 GasolineContainer.connectIcon = "gas"
 GasolineContainer.connectIconScale = 0.75
 
 AmmoContainer = class( ConsumableContainer )
 AmmoContainer.connectionOutput = sm.interactable.connectionType.ammo
 AmmoContainer.colorNormal = sm.color.new( 0xcb0a00ff )
-AmmoContainer.colorHighlight = sm.color.new( 0xcb0a00ff )
+AmmoContainer.colorHighlight = sm.color.new( 0xe2291fff )
 AmmoContainer.connectIcon = "ammo"
 AmmoContainer.connectIconScale = 0.75
 

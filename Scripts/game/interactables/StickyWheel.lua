@@ -6,7 +6,7 @@ StickyWheel.maxChildCount = 0
 StickyWheel.connectionInput = bit.bor( sm.interactable.connectionType.logic, sm.interactable.connectionType.chemical )
 StickyWheel.connectionOutput = sm.interactable.connectionType.none
 StickyWheel.colorNormal = sm.color.new( 0xd962d8ff )
-StickyWheel.colorHighlight = sm.color.new( 0xd962d8ff )
+StickyWheel.colorHighlight = sm.color.new( 0xff8dfeff )
 StickyWheel.connectIcon = "chemical"
 StickyWheel.connectIconScale = 0.75
 
@@ -49,6 +49,8 @@ local StickyRaycastsPerTick = 9
 local StickyPoseSpeedOn = 3
 local StickyPoseSpeedOff = 1
 local StickyDotCheckDistance = 0.05 -- Disregard the dot angle of the sticky when within this distance
+local StickyRollingMinSpeed = 0.1 -- Rim speed (m/s) below which the rolling sound is silent
+local StickyEffectRadiusInset = 0.09375 -- Move the visual attachment points inward
 
 local LineMaxThicknessX = 0.2175
 local LineMaxThicknessY = 0.4175
@@ -76,6 +78,33 @@ local function StickyPowerCurve( p )
 		return 2.0 * p * p;
 	end
 	return ( -2.0 * p * p ) + ( 4.0 * p) - 1.0
+end
+
+local function GetStickyLineRotation( direction, referenceUp, fallbackUp )
+	-- Align the forward axis with the sticky line
+	local directionalRotation = sm.vec3.getRotation( sm.vec3.new( 0, 0, 1 ), direction )
+
+	-- Project the wheel axes onto the plane perpendicular to the line to for a stable roll
+	local targetUp = referenceUp - direction * referenceUp:dot( direction )
+	if targetUp:length2() <= FLT_EPSILON then
+		targetUp = fallbackUp - direction * fallbackUp:dot( direction )
+	end
+	if targetUp:length2() <= FLT_EPSILON then
+		return directionalRotation
+	end
+	targetUp = targetUp:normalize()
+
+	-- Calculate the current up vector projected onto the plane perpendicular to the line
+	local currentUp = directionalRotation * sm.vec3.new( 0, 1, 0 )
+	currentUp = currentUp - direction * currentUp:dot( direction )
+	if currentUp:length2() <= FLT_EPSILON then
+		return directionalRotation
+	end
+	currentUp = currentUp:normalize()
+
+	-- Apply only the signed twist around the line needed to align the two up vectors.
+	local rollAngle = math.atan2( direction:dot( currentUp:cross( targetUp ) ), currentUp:dot( targetUp ) )
+	return sm.quat.angleAxis( rollAngle, direction ) * directionalRotation
 end
 
 function StickyWheel.getInputs( self )
@@ -165,11 +194,11 @@ function StickyWheel.server_onFixedUpdate( self )
 	local active, chemicalContainer = self:getInputs()
 	if not self.sv.active and active then
 		self.shape:setPhysicsMaterial( sm.shape.material.sticky )
-		self.shape:setCollisionSoundEnabled( false )
+		self.shape:setCollisionEffectsEnabled( false )
 		self.sv.active = active
 	elseif self.sv.active and not active then
 		self.shape:setPhysicsMaterial( sm.shape.material.rubber )
-		self.shape:setCollisionSoundEnabled( true )
+		self.shape:setCollisionEffectsEnabled( true )
 		self.sv.active = active
 	end
 
@@ -220,6 +249,8 @@ function StickyWheel.client_onCreate( self )
 	self.cl.stickyRaycastIdx = 0
 	self.cl.stickyEffectsArray = {}
 	self.cl.currentSettingsLevel = 3
+	self.cl.rollingEffect = sm.effect.createEffect( "Collision - RollingA", self.interactable )
+	self.cl.rollingEffect:setParameter( "Material", sm.shape.material.sticky )
 end
 
 function StickyWheel.client_onDestroy( self )
@@ -227,6 +258,7 @@ function StickyWheel.client_onDestroy( self )
 		self.gui:destroy()
 		self.gui = nil
 	end
+	self.cl.rollingEffect:destroy()
 end
 
 function StickyWheel.cl_cleanUpEffects( self, newLevel )
@@ -260,6 +292,24 @@ function StickyWheel.client_onUpdate( self, dt )
 	self:cl_updateEffects()
 end
 
+function StickyWheel.cl_updateRollingEffect( self, stickyConnectionCount )
+	local radius = sm.item.getShapeOffset( self.shape.uuid ).y -- 0.625
+	-- Max tangential speed of any connection point around the rim, for rotation about any axis
+	local rotationSpeed = self.shape:getBody():getAngularVelocity():length() * radius
+	-- Connections can also be dragged/slid without any rotation at all
+	local slideSpeed = self.shape:getVelocity():length()
+	local rimSpeed = math.max( rotationSpeed, slideSpeed )
+	if stickyConnectionCount > 0 and rimSpeed > StickyRollingMinSpeed then
+		self.cl.rollingEffect:setParameter( "Size", math.min( self.shape.mass / AUDIO_MASS_DIVIDE_RATIO, 1.0 ) )
+		self.cl.rollingEffect:setParameter( "Velocity_max_50", rimSpeed )
+		if not self.cl.rollingEffect:isPlaying() then
+			self.cl.rollingEffect:start()
+		end
+	elseif self.cl.rollingEffect:isPlaying() then
+		self.cl.rollingEffect:stop()
+	end
+end
+
 function StickyWheel.cl_updateEffects( self )
 
 	if self.interactable.active and self.cl.wasActive == false then
@@ -272,7 +322,7 @@ function StickyWheel.cl_updateEffects( self )
 	self.cl.wasActive = self.interactable.active
 
 	for i = 1, StickyLevelSettings[self.cl.currentSettingsLevel].maxStickyConnections do
-		local radius = sm.item.getShapeOffset( self.shape.uuid ).y -- 0.625
+		local radius = sm.item.getShapeOffset( self.shape.uuid ).y - StickyEffectRadiusInset
 		local spokesDirection = self.shape.up
 		local wheelDirection = self.shape.at
 		local degrees = ( 360 / StickyLevelSettings[self.cl.currentSettingsLevel].maxStickyConnections ) * i
@@ -281,7 +331,6 @@ function StickyWheel.cl_updateEffects( self )
 
 		local slimeLineUuid = sm.uuid.new( "70673852-7f5e-4731-8c75-c1b9fdf0008b" )
 		local slimeBlobUuid = sm.uuid.new( "f7744922-3b4d-4deb-a593-129c449acd09" )
-		local slimeLeftoverUuid = sm.uuid.new( "a6c6ce30-dd47-4587-b475-085d55c6a3b4" )
 
 		local stickyColor = sm.color.new( 0.6, 0.8, 0.25 )
 
@@ -298,7 +347,7 @@ function StickyWheel.cl_updateEffects( self )
 					local stickyLineDirection = stickyLineFromTo:safeNormalize( stickyDirection )
 					stickyLineLength = math.max( stickyLineLength, FLT_EPSILON )
 					local stickyScale = 1.0 - math.max( math.min( stickyLineLength / StickyLevelSettings[self.cl.currentSettingsLevel].maxPointDistance, 1.0 ), 0.0 )
-					local stickyLineRotation = sm.vec3.getRotation( sm.vec3.new( 0, 0, 1 ), stickyLineDirection )
+					local stickyLineRotation = GetStickyLineRotation( stickyLineDirection, spokesDirection, wheelDirection ) * stickyEffects.stickyRollRotation
 
 					stickyEffects.halfwayPosition = halfwayPosition
 					stickyEffects.stickyPosition = stickyPosition
@@ -313,7 +362,6 @@ function StickyWheel.cl_updateEffects( self )
 					end
 					if stickyEffects.blobEffect and sm.exists( stickyEffects.blobEffect ) then
 						stickyEffects.blobEffect:setPosition( stickyPosition )
-						stickyEffects.blobEffect:setRotation( stickyLineRotation )
 						local blobScaleX = lerp( BlobMinThicknessX, BlobMaxThicknessX, stickyScale )
 						local blobScaleY = lerp( BlobMinThicknessY, BlobMaxThicknessY, stickyScale )
 						local blobScaleZ = lerp( BlobMinThicknessZ, BlobMaxThicknessZ, stickyScale )
@@ -355,7 +403,9 @@ function StickyWheel.cl_updateEffects( self )
 					local stickyLineDirection = stickyLineFromTo:safeNormalize( stickyDirection )
 					stickyLineLength = math.max( stickyLineLength, FLT_EPSILON )
 					local stickyScale = 1.0 - math.max( math.min( stickyLineLength / StickyLevelSettings[self.cl.currentSettingsLevel].maxPointDistance, 1.0 ), 0.0 )
-					local stickyLineRotation = sm.vec3.getRotation( sm.vec3.new( 0, 0, 1 ), stickyLineDirection )
+					-- randomized roll effect around local Z
+					stickyEffects.stickyRollRotation = sm.quat.angleAxis( math.random() * 2 * math.pi, sm.vec3.new( 0, 0, 1 ) )
+					local stickyLineRotation = GetStickyLineRotation( stickyLineDirection, spokesDirection, wheelDirection ) * stickyEffects.stickyRollRotation
 
 					stickyEffects.halfwayPosition = halfwayPosition
 					stickyEffects.stickyPosition = stickyPosition
@@ -392,8 +442,7 @@ function StickyWheel.cl_updateEffects( self )
 							puddleRotation = sm.vec3.getRotation( sm.vec3.new( 0, 0, 1 ), stickyEffects.normalWorld )
 						end
 						if math.random(1,2)==2 then
-							-- sm.effect.playEffect( "Stickywheels - Puddle" , stickyEffects.stickyPosition, nil, puddleRotation, sm.vec3.one() * (math.random(1,2)*0.001) , { uuid = slimeLeftoverUuid, color = stickyColor } )
-							sm.effect.playEffect( "Stickywheels - Puddle" , stickyEffects.stickyPosition, nil, puddleRotation, sm.vec3.one() * 100, { uuid = slimeLeftoverUuid, color = stickyColor } )
+							sm.effect.playEffect( "Stickywheels - Puddle", stickyEffects.stickyPosition, nil, puddleRotation )
 						end
 					end
 				end
@@ -408,6 +457,7 @@ function StickyWheel.client_onFixedUpdate( self )
 	if not self.interactable.active then
 		self.cl.stickyConnections = {}
 		self.cl.stickyRaycastIdx = 0
+		self:cl_updateRollingEffect( 0 )
 		return
 	end
 
@@ -474,6 +524,7 @@ function StickyWheel.client_onFixedUpdate( self )
 
 	-- Check stress on sticky and apply impulse
 	local stickyConnections = {}
+	local numActiveConnections = 0
 	for i = 1, StickyLevelSettings[self.cl.currentSettingsLevel].maxStickyConnections do
 		local degrees = ( 360 / StickyLevelSettings[self.cl.currentSettingsLevel].maxStickyConnections ) * i
 		local stickyDirection = wheelDirection:rotate( math.rad( degrees ), spokesDirection )
@@ -489,6 +540,7 @@ function StickyWheel.client_onFixedUpdate( self )
 				local dotAngleOk = stickyDot >= -0.5 or distanceToPoint <= StickyDotCheckDistance
 				if distanceOk and dotAngleOk then
 					stickyConnections[i] = stickyConnection
+					numActiveConnections = numActiveConnections + 1
 					if stickyVector:length() > FLT_EPSILON then
 						stickyDirection = stickyVector:normalize()
 						local stickyPower = math.max( math.min( distanceToPoint / StickyLevelSettings[self.cl.currentSettingsLevel].maxPointDistance, 1.0 ), 0.0 )
@@ -509,6 +561,7 @@ function StickyWheel.client_onFixedUpdate( self )
 		end
 	end
 	self.cl.stickyConnections = stickyConnections
+	self:cl_updateRollingEffect( numActiveConnections )
 end
 
 function StickyWheel.cl_createUpdateSticky( self, result, compareIndex )

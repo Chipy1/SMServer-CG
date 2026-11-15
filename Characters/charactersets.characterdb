@@ -1,0 +1,10 @@
+{
+	"characterSetList": [
+		"$CONTENT_DATA/Characters/CharacterSets/default.characterset",
+		"$CONTENT_DATA/Characters/CharacterSets/robots.characterset",
+		"$CONTENT_DATA/Characters/CharacterSets/animals.characterset",
+		"$CONTENT_DATA/Characters/CharacterSets/people.characterset",
+		"$CONTENT_DATA/Characters/CharacterSets/npc_farmers.characterset",
+		"$CONTENT_DATA/Characters/CharacterSets/npc_mechanics.characterset"
+	]
+}

@@ -1,6 +1,7 @@
-dofile "$SURVIVAL_DATA/Scripts/game/units/unit_util.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/managers/PatrolManager.lua"
-dofile "$SURVIVAL_DATA/Scripts/achievement_common.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/unit_util.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/RaidFleeState.lua"
+dofile "$CONTENT_DATA/Scripts/game/managers/PatrolManager.lua"
+dofile "$CONTENT_DATA/Scripts/achievement_common.lua"
 
 BaseUnit = class( nil )
 
@@ -24,21 +25,27 @@ function BaseUnit.server_onDestroy( self )
 	end
 end
 
+-- Removes the unit once its deathTickTimestamp is reached; returns true when it did.
+-- A raider leftover is only destroyed when CanDespawnRaidLeftover allows it, any other unit is marked for removal.
 function BaseUnit.server_onFixedUpdate( self )
 	if sm.exists( self.unit ) and not self.destroyed then
-		if self.saved.deathTickTimestamp and sm.game.getCurrentTick() >= self.saved.deathTickTimestamp then
-			RobotOnDestroy( self )
+		local deathTick = self.saved.deathTickTimestamp
+		local reached = deathTick ~= nil and sm.game.getCurrentTick() >= deathTick
+		local removing = reached and ( not self.saved.raider or CanDespawnRaidLeftover( self ) )
+		if removing then
 			if self.saved.raider then
+				RaidManager.Sv_RemoveRaider( self.saved.raider.raidKey, self.unit )
 				self.unit:destroy()
+				return
 			else
+				self.isDirty = self.isDirty or not self.saved.markedForRemoval
 				self.saved.markedForRemoval = true
-				self.isDirty = true
 			end
-			return
 		end
 
 		local character = self.unit.character
 		if sm.exists( character ) then
+			UpdateSwimUnderTerrainRecovery( self )
 			if self.velocityBufferIndex == nil then
 				self.velocityBuffer = {}
 				self.velocityBufferIndex = 1
@@ -48,12 +55,6 @@ function BaseUnit.server_onFixedUpdate( self )
 				self.velocityBufferIndex = 1
 			end
 			self.velocityBuffer[self.velocityBufferIndex] = character:getVelocity()
-		end
-	end
-	if self.saved.marked and not self.markerPlaced then
-		if sm.exists( self.unit.character ) then
-			self.markerPlaced = true
-			sm.event.sendToCharacter( self.unit.character, "sv_e_markEnemy", { raider = self.saved.raider, raidKey = self.saved.raidKey } )
 		end
 	end
 end
@@ -92,12 +93,17 @@ function BaseUnit.sv_onDeath( self )
 
 		local sqrdAchievementRange = 192 * 192 -- 3*64 == 192 (aprox 3 tiles)
 
+		-- sm-raid-fix: a player without a character (joining/leaving or on a dedicated
+		-- server) has no world; indexing it crashed the death handler.
 		for _, player in ipairs(sm.player.getAllPlayers()) do
-			local playerWorld = player:getCharacter():getWorld()
-			if unitWorld == playerWorld then
-				local distSqrd = (player:getCharacter():getWorldPosition() - deathPos):length2()
-				if distSqrd < sqrdAchievementRange then
-					table.insert(playersInRange, player.id)
+			local playerCharacter = player:getCharacter()
+			if playerCharacter then
+				local playerWorld = playerCharacter:getWorld()
+				if unitWorld == playerWorld then
+					local distSqrd = (playerCharacter:getWorldPosition() - deathPos):length2()
+					if distSqrd < sqrdAchievementRange then
+						table.insert(playersInRange, player.id)
+					end
 				end
 			end
 		end
@@ -132,17 +138,28 @@ function BaseUnit.sv_e_tumble( self, params )
 	end
 end
 
+function BaseUnit.sv_createRaidFlee( self )
+	local flee = self.unit:createState( "flee" )
+	flee.movementAngleThreshold = math.rad( 180 )
+	flee.maxFleeTime = 0.0
+	flee.maxDeviation = 45 * math.pi / 180
+	flee.debugName = "raidFleeRun"
+
+	local pathingState = PathingState()
+	pathingState:sv_onCreate( self.unit )
+	pathingState:sv_setMovementType( "sprint" )
+	pathingState:sv_setWaterAvoidance( true )
+	pathingState.debugName = "raidFleePathing"
+
+	local raidFlee = RaidFleeState()
+	raidFlee:sv_onCreate( self.unit, pathingState, flee )
+	raidFlee.debugName = "raidFlee"
+	return raidFlee
+end
+
 function BaseUnit.sv_e_markForRemoval( self )
 	self.saved.markedForRemoval = true
 	self.isDirty = true
-end
-
-function BaseUnit.sv_e_raidOver( self )
-	if self.saved and self.saved.raider then
-		self.saved.deathTickTimestamp = sm.game.getCurrentTick() + 30.0 * 40.0
-		self.saved.markedForRemoval = true
-		self.isDirty = true
-	end
 end
 
 function BaseUnit.sv_m_projectileHit( self, params )
@@ -180,6 +197,26 @@ function BaseUnit.sv_m_projectileFire( self, params )
 				if self.eventNoisePosition == nil then
 					self.eventNoisePosition = params.position
 				end
+			end
+		end
+	end
+end
+
+function BaseUnit.sv_m_projectileBounce( self, params )
+	if self.isInCombat == false and sm.exists( self.unit ) and InSameWorld( params.world, self.unit ) then
+		local distanceToBounceSqr = ( self.unit.character.worldPosition - params.position ):length2()
+		if distanceToBounceSqr <= 16.0 then
+			local type = type( params.attacker )
+			local attackerExists = sm.exists( params.attacker )
+			if type == "Player" or ( type == "Unit" and attackerExists and not InSameTeam( self.unit, params.attacker ) ) then
+				if self.eventTarget == nil then
+					self.eventTarget = attackerExists and params.attacker:getCharacter() or nil
+					if self.eventTarget == nil then
+						self.eventNoisePosition = params.position
+					end
+				end
+			elseif type == "Shape" and self.eventNoisePosition == nil then
+				self.eventNoisePosition = params.position
 			end
 		end
 	end

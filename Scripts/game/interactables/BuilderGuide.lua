@@ -1,5 +1,5 @@
-dofile("$SURVIVAL_DATA/Scripts/blueprint_util.lua")
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/TutorialManager.lua" )
+dofile("$CONTENT_DATA/Scripts/blueprint_util.lua")
+dofile( "$CONTENT_DATA/Scripts/game/managers/TutorialManager.lua" )
 
 BuilderGuide = class( nil )
 

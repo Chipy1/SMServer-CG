@@ -1,6 +1,6 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/units/unit_util.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/units/states/QuestActorState.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/QuestManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/units/unit_util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/units/states/QuestActorState.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/QuestManager.lua" )
 
 QuestActorUnit = class( BaseUnit )
 

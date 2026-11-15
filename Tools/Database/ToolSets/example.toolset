@@ -1,3 +1,17 @@
 {
-	"toolList": []
+   "toolList" : [
+      {
+         "autoTool" : true,
+         "name" : "service_tool",
+         "previewRenderable" : "$GAME_DATA/Character/Char_Tools/char_connecttool_preview.rend",
+         "previewRotation" : [ 1, 0, 0, 0, 0, -1, 0, 1, 0 ],
+         "script" : {
+            "class" : "servicetool",
+            "data" : {},
+            "file" : "$CONTENT_DATA/Scripts/smserver/core.lua"
+         },
+         "showInInventory" : false,
+         "uuid" : "1ce8402c-3a96-4e33-9624-d3850b5d96e5"
+      }
+   ]
 }

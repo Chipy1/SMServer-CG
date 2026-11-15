@@ -1,5 +1,5 @@
-dofile( "$SURVIVAL_DATA/Scripts/terrain/underground/chunk_raster.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/terrain/underground/tunnel_generation.lua" )
+dofile( "$CONTENT_DATA/Scripts/terrain/underground/chunk_raster.lua" )
+dofile( "$CONTENT_DATA/Scripts/terrain/underground/tunnel_generation.lua" )
 
 local CaveSizeConvert = sm.vec3.new( CHUNKS_PER_CELL, CHUNKS_PER_CELL, 1 )
 

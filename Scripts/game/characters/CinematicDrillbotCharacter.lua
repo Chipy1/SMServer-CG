@@ -1,10 +1,13 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/characters/BaseCharacter.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/characters/shared_animation.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/DrillbotManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/characters/BaseCharacter.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/characters/shared_animation.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/DrillbotManager.lua" )
 
 CinematicDrillbotCharacter = class( BaseCharacter )
 
 local DrillbotCinematicAnimation = "drillbot_introcinematic"
+-- Custom game: the client animation table does not exist on a dedicated server,
+-- so the intro animation is cleared after the known clip length instead.
+local DrillbotCinematicAnimationDurationTicks = math.ceil( 48.666667 * 40 )
 
 function CinematicDrillbotCharacter.server_onCreate( self )
 	BaseCharacter.server_onCreate( self )
@@ -53,22 +56,30 @@ function CinematicDrillbotCharacter.sv_e_setAnimationState( self, params )
 end
 
 function CinematicDrillbotCharacter.server_onFixedUpdate( self, dt )
-    -- checking host-client animation duration
-    if not self.cl.graphicsLoaded then
-        return
-    end
+	local animationState = self.sv.animationState
+	if not animationState.currentEvent or not animationState.startTick then
+		return
+	end
 
-	-- Auto-clear animation state after the animation duration has elapsed
-	if self.sv.animationState.currentEvent and self.sv.animationState.startTick then
-		local animation = self.cl.animations[DrillbotCinematicAnimation]
-		if animation and animation.info then
-			local elapsedTicks = sm.game.getCurrentTick() - self.sv.animationState.startTick
-			local durationTicks = math.ceil( animation.info.duration * 40.0 )
-			if elapsedTicks >= durationTicks then
-				self.sv.animationState = {}
-				self.network:setClientData( self.sv.animationState )
-			end
+	local durationTicks
+	if self.cl == nil or g_isDedicatedServer == true then
+		-- Dedicated server: no client animation data, use the fixed clip length.
+		durationTicks = DrillbotCinematicAnimationDurationTicks
+	else
+		-- Host/client: the animation table tells how long the clip actually is.
+		if not self.cl.graphicsLoaded then
+			return
 		end
+		local animation = self.cl.animations[DrillbotCinematicAnimation]
+		if not ( animation and animation.info ) then
+			return
+		end
+		durationTicks = math.ceil( animation.info.duration * 40.0 )
+	end
+
+	if sm.game.getCurrentTick() - animationState.startTick >= durationTicks then
+		self.sv.animationState = {}
+		self.network:setClientData( self.sv.animationState )
 	end
 end
 

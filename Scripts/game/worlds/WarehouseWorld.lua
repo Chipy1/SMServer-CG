@@ -1,14 +1,14 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/SurvivalGame.lua")
-dofile( "$SURVIVAL_DATA/Scripts/game/worlds/BaseWorld.lua")
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_units.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_shapes.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_constants.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_loot.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/WarehouseManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/SurvivalGame.lua")
+dofile( "$CONTENT_DATA/Scripts/game/worlds/BaseWorld.lua")
+dofile( "$CONTENT_DATA/Scripts/game/survival_units.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_shapes.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_constants.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_loot.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/WarehouseManager.lua" )
 
 WarehouseWorld = class( BaseWorld )
-WarehouseWorld.terrainScript = "$SURVIVAL_DATA/Scripts/terrain/terrain_warehouse.lua"
+WarehouseWorld.terrainScript = "$CONTENT_DATA/Scripts/terrain/terrain_warehouse.lua"
 WarehouseWorld.enableSurface = false
 WarehouseWorld.enableAssets = true
 WarehouseWorld.enableClutter = false
@@ -210,7 +210,7 @@ end
 function WarehouseWorld.server_onCellCreated( self, x, y )
 	BaseWorld.server_onCellCreated( self, x, y )
 
-	ElevatorManager.Sv_LoadElevatorsOnWarehouseCell( x, y, self.data.warehouseIndex, self.data.level )
+	sm.pcall( "ElevatorManager.Sv_LoadElevatorsOnWarehouseCell", ElevatorManager.Sv_LoadElevatorsOnWarehouseCell, x, y, self.data.warehouseIndex, self.data.level )
 
 	-- Warehouse reward chest
 	local chests = sm.cell.getInteractablesByUuid( x, y, obj_container_smallchest )
@@ -305,7 +305,7 @@ function WarehouseWorld.server_onCellLoaded( self, x, y )
 	BaseWorld.server_onCellLoaded( self, x, y )
 
 	if x == 0 and y == 0 then
-		WarehouseManager.Sv_TryUpdateDestructionState( self.data.warehouseIndex, self.world )
+		sm.pcall( "WarehouseManager.Sv_TryUpdateDestructionState", WarehouseManager.Sv_TryUpdateDestructionState, self.data.warehouseIndex, self.world )
 	end
 end
 

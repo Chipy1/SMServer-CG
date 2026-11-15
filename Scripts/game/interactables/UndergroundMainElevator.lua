@@ -1,9 +1,9 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/UndergroundElevatorManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/QuestManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/DialogManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/LogEntryManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_dialogs.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/quests/BosstrainQuest.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/UndergroundElevatorManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/QuestManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/DialogManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/LogEntryManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_dialogs.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/quests/BosstrainQuest.lua" )
 
 UndergroundMainElevator = class()
 UndergroundMainElevator.poseWeightCount = 3
@@ -35,31 +35,18 @@ local ButtonPoseSpeed = 15.0
 local LightOffDelay = 0.1
 
 function UndergroundMainElevator.server_onCreate( self )
-    self.sv = {}
-    self.sv.saved = self.storage:load()
+	self.sv = {}
+	self.sv.connectionTag = UndergroundElevatorManager.Sv_FindUndergroundConnectionTag( self.tags )
 
-    if not self.sv.saved then
-        self.sv.saved = {}
-        self.sv.saved.connectionTag = UndergroundElevatorManager.Sv_FindUndergroundConnectionTag( self.tags )
-        self.storage:save( self.sv.saved )
+	self.sv.elevatorName = CONNECTION_TO_ELEVATOR_NAME[self.sv.connectionTag]
 
-    	local storageKey = TileStorageManager.Sv_GetTileStorageKeyFromObject( self.interactable )
-		local tileData = TileStorageManager.Sv_GetValueInSubTable( storageKey, UNDERGROUND_ELEVATOR_TABLE, self.sv.saved.connectionTag ) or {}
-		tileData.elevator = self.interactable
-		tileData.locked = true
-		tileData.lockUuid = UNDERGROUND_CONNECTION_TO_KEY_UUID[self.sv.saved.connectionTag]
-		TileStorageManager.Sv_SetValueInSubTable( storageKey, UNDERGROUND_ELEVATOR_TABLE, self.sv.saved.connectionTag, tileData )
-    end
-
-	self.sv.elevatorName = CONNECTION_TO_ELEVATOR_NAME[self.sv.saved.connectionTag]
-
-	self.sv.elevatorFloorIndex = UndergroundElevatorManager.Sv_FindElevatorFloor( sm.world.getCurrentWorld(), self.sv.saved.connectionTag )
+	self.sv.elevatorFloorIndex = UndergroundElevatorManager.Sv_FindElevatorFloor( sm.world.getCurrentWorld(), self.sv.connectionTag )
 	assert( self.sv.elevatorFloorIndex, "Elevator floor not found" )
 	self.sv.targetFloor = self.sv.elevatorFloorIndex
 
-	local transportArea = FindFirstNearbyNode( self.shape.worldPosition, { "UNDERGROUND_ELEVATOR_AREA", self.sv.saved.connectionTag } )
+	local transportArea = FindFirstNearbyNode( self.harvestable.worldPosition, { "UNDERGROUND_ELEVATOR_AREA", self.sv.connectionTag } )
 	if transportArea then
-		UndergroundElevatorManager.Sv_RegisterElevatorFloor( self.sv.elevatorName, self.sv.elevatorFloorIndex, sm.world.getCurrentWorld(), self.shape.worldPosition, self.sv.saved.connectionTag, transportArea )
+		UndergroundElevatorManager.Sv_RegisterElevatorFloor( self.sv.elevatorName, self.sv.elevatorFloorIndex, sm.world.getCurrentWorld(), self.harvestable.worldPosition, self.sv.connectionTag, transportArea, self.harvestable )
 	end
 	self:sv_updateClientData()
 
@@ -155,14 +142,6 @@ end
 -- Pushes the full display state to every depthbot on this floor. Returns true once at least
 -- one existing depthbot has been notified, so the caller knows the display has been updated.
 function UndergroundMainElevator.sv_notifyDepthBots( self )
-	local storageKey = TileStorageManager.Sv_GetTileStorageKeyFromObject( self.interactable )
-	if not storageKey then
-		return false
-	end
-	local tileData = TileStorageManager.Sv_GetValueInSubTable( storageKey, UNDERGROUND_ELEVATOR_TABLE, self.sv.saved.connectionTag ) or {}
-	if not tileData.depthbots then
-		return false
-	end
 	local data = {
 		selectedFloor = self.sv.targetFloor,
 		numLocked = self:sv_getNumLocked(),
@@ -170,23 +149,12 @@ function UndergroundMainElevator.sv_notifyDepthBots( self )
 		displayDepth = UNDERGROUND_ELEVATORS[self.sv.elevatorName].floors[self.sv.elevatorFloorIndex].displayDepth
 	}
 	local markerLocked = not UndergroundElevatorManager.Sv_CanGo( self.sv.elevatorName, nil )
-	local notified = false
-	for _, depthbot in ipairs( tileData.depthbots ) do
-		if sm.exists( depthbot ) then
-			sm.event.sendToInteractable( depthbot, "sv_e_updateFloorDisplay", data, sm.event.types.instant )
-			sm.event.sendToInteractable( depthbot, "sv_e_setMarkerLocked", { markerLocked = markerLocked }, sm.event.types.instant )
-			notified = true
-		end
-	end
-	return notified
+	return UndergroundElevatorManager.Sv_NotifyDepthBots( self.harvestable, self.sv.connectionTag, data, markerLocked )
 end
 
 function UndergroundMainElevator.sv_activateElevator( self, destinationFloor )
 	destinationFloor = destinationFloor or self.sv.targetFloor
-    if UndergroundElevatorManager.Sv_Go( self.sv.elevatorName, self.sv.elevatorFloorIndex, destinationFloor ) then
-		local floor = UNDERGROUND_ELEVATORS[self.sv.elevatorName].floors[destinationFloor]
-		sm.event.sendToGame( "sv_e_createUndergroundElevatorDestination", { depth = floor.depth, elevatorName = self.sv.elevatorName, connectionTag = floor.connectionTag } )
-    end
+	UndergroundElevatorManager.Sv_Go( self.sv.elevatorName, self.sv.elevatorFloorIndex, destinationFloor )
 end
 
 function UndergroundMainElevator.sv_e_callButtonPressed( self )
@@ -276,7 +244,7 @@ function UndergroundMainElevator.sv_isScrapyardExitBlocked( self )
 	local currentTick = sm.game.getCurrentTick()
 	if not self.sv.scrapyardWarningTick or currentTick >= self.sv.scrapyardWarningTick + ScrapyardWarningCooldownTicks then
 		self.sv.scrapyardWarningTick = currentTick
-		EffectManager.Sv_ActivateEventEffect( sm.world.getCurrentWorld(), "scrapyard_elevator_blockage", self.shape.worldPosition )
+		EffectManager.Sv_ActivateEventEffect( sm.world.getCurrentWorld(), "scrapyard_elevator_blockage", self.harvestable.worldPosition )
 	end
 	return true
 end
@@ -302,7 +270,7 @@ end
 function UndergroundMainElevator.cl_updateButtonPoseWeights( self )
 	local poseWeight = self.cl.buttonPoseWeight or 0.0
 	for button, data in pairs( buttons ) do
-		self.interactable:setPoseWeight( data.poseIndex, self.cl.pressedButton == button and poseWeight or 0.0 )
+		self.harvestable:setPoseWeight( data.poseIndex, self.cl.pressedButton == button and poseWeight or 0.0 )
 	end
 end
 
@@ -322,21 +290,21 @@ function UndergroundMainElevator.cl_n_playButtonEffect( self, button )
 	local effectName = buttonData and buttonData.effectName
 	if effectName then
 		local effectOffset = buttonData.effectOffset or sm.vec3.zero()
-		local effectPosition = self.shape.worldPosition + self.shape.worldRotation * effectOffset
+		local effectPosition = self.harvestable.worldPosition + self.harvestable.worldRotation * effectOffset
 		sm.effect.playEffect( effectName, effectPosition, nil, nil )
 	end
 end
 
 function UndergroundMainElevator.cl_getButton( self )
-	local planeNormal = self.shape.worldRotation * sm.vec3.new( 0, 0.573462, 0.819232 )
+	local planeNormal = self.harvestable.worldRotation * sm.vec3.new( 0, 0.573462, 0.819232 )
 	local rayDir = sm.localPlayer.getDirection()
 	local rayDotNormal = rayDir:dot( planeNormal )
 	if rayDotNormal < 0 then
-		local planePoint = self.shape.worldPosition + planeNormal * 0.5
+		local planePoint = self.harvestable.worldPosition + planeNormal * 0.5
 		local rayStart = sm.localPlayer.getRaycastStart()
 		local distance = ( planePoint - rayStart ):dot( planeNormal ) / rayDotNormal
 		local intersection = rayStart + rayDir * distance - planePoint;
-		local rightAxis = self.shape.worldRotation * sm.vec3.new( 1, 0, 0 )
+		local rightAxis = self.harvestable.worldRotation * sm.vec3.new( 1, 0, 0 )
 		local upAxis = sm.vec3.cross( planeNormal, rightAxis )
 		local x = sm.vec3.dot( intersection, rightAxis )
 		local y = sm.vec3.dot( intersection, upAxis )
@@ -381,13 +349,17 @@ function UndergroundMainElevator.client_onUpdate( self, dt )
 	end
 
 	self:cl_updateButtonPoseWeights()
+	local glow
 	if self.cl.canGo then
 		self.cl.offTime = 0
-		self.interactable:setGlowMultiplier( 1.0 )
+		glow = 1.0
 	else
 		self.cl.offTime = ( self.cl.offTime or LightOffDelay ) + dt
-		self.interactable:setGlowMultiplier( self.cl.offTime < LightOffDelay and 1.0 or 0.0 )
+		glow = self.cl.offTime < LightOffDelay and 1.0 or 0.0
 	end
+	-- Kinematics have no glow multiplier; the shader reads glow from the color alpha
+	local color = self.harvestable:getColor()
+	self.harvestable:setColor( sm.color.new( color.r, color.g, color.b, glow ) )
 end
 
 function UndergroundMainElevator.client_canInteract( self )

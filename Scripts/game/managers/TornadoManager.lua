@@ -1,4 +1,4 @@
-dofile("$SURVIVAL_DATA/Scripts/game/managers/WorldManager.lua")
+dofile("$CONTENT_DATA/Scripts/game/managers/WorldManager.lua")
 
 TornadoManager = class()
 

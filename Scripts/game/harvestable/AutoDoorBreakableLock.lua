@@ -1,4 +1,4 @@
-dofile( "$SURVIVAL_DATA/Scripts/terrain/overworld/poi_types.lua" )
+dofile( "$CONTENT_DATA/Scripts/terrain/overworld/poi_types.lua" )
 
 AutoDoorBreakableLock = class( nil )
 AutoDoorBreakableLock.poseWeightCount = 1

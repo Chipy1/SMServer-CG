@@ -1,18 +1,18 @@
-dofile "$SURVIVAL_DATA/Scripts/game/units/unit_util.lua"
-dofile "$SURVIVAL_DATA/Scripts/util.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/util/Ticker.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/util/Timer.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_shapes.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_units.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/PathingState.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/BreachState.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/VoxelBreachState.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/CombatAttackState.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/CircleFollowState.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_constants.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/BaseUnit.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/managers/PatrolManager.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/PatrolState.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/unit_util.lua"
+dofile "$CONTENT_DATA/Scripts/util.lua"
+dofile "$CONTENT_DATA/Scripts/game/util/Ticker.lua"
+dofile "$CONTENT_DATA/Scripts/game/util/Timer.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_shapes.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_units.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/PathingState.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/BreachState.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/VoxelBreachState.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/CombatAttackState.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/CircleFollowState.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_constants.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/BaseUnit.lua"
+dofile "$CONTENT_DATA/Scripts/game/managers/PatrolManager.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/PatrolState.lua"
 
 HaybotUnit = class( BaseUnit )
 
@@ -50,6 +50,7 @@ function HaybotUnit.server_onCreate( self )
 
 	sm.message.subscribe( MESSAGE_TYPES.GENERAL.ProjectileHit, "sv_m_projectileHit" )
 	sm.message.subscribe( MESSAGE_TYPES.GENERAL.ProjectileFire, "sv_m_projectileFire" )
+	sm.message.subscribe( MESSAGE_TYPES.GENERAL.ProjectileBounce, "sv_m_projectileBounce" )
 	sm.message.subscribe( MESSAGE_TYPES.GENERAL.Collision, "sv_m_collision" )
 
 	self.unit.eyeHeight = self.unit.character:getHeight() * 0.75
@@ -108,7 +109,6 @@ function HaybotUnit.server_onCreate( self )
 	self.pathingState:sv_onCreate( self.unit )
 	self.pathingState:sv_setTolerance( 1.0 )
 	self.pathingState:sv_setMovementType( "sprint" )
-	self.pathingState:sv_setRaider( self.saved.raider )
 	self.pathingState:sv_setWaterAvoidance( true )
 	self.pathingState.debugName = "pathingState"
 	
@@ -248,12 +248,6 @@ function HaybotUnit.server_onCreate( self )
 	-- Crushing
 	initCrushing( self, DEFAULT_CRUSH_TICK_TIME )
 	
-	-- Flee
-	self.raidFlee = self.unit:createState( "flee" )
-	self.raidFlee.movementAngleThreshold = math.rad( 180 )
-	self.raidFlee.maxFleeTime = 0.0
-	self.raidFlee.maxDeviation = 45 * math.pi / 180
-
 	-- Patrol
 	self.patrolState = PatrolState()
 	self.patrolState:sv_onCreate( self.unit, self.saved.patrolKey )
@@ -403,47 +397,20 @@ function HaybotUnit.server_onUnitUpdate( self, dt )
 		return
 	end
 
+	local raiding = IsRaiding( self )
+	local raidPoint = raiding and GetRaidPoint( self )
+
 	local previousTarget = self.target
 	RobotSelectTarget( self, AllyRange, dt )
 	local foundTarget = self.target and self.target ~= previousTarget
 
-	-- Raiders without a target search for shapes to destroy
-	if self.saved.raidPosition and not self.target and sm.exists( self.unit.character ) then
-		local raidSpots = RaidManager.Sv_GetPlantLocations( self.unit.character:getWorld().id, self.saved.raidKey )
-		local closestSpot = nil
-		if #raidSpots > 0 and ( self.saved.randomPlotTarget == nil or self.saved.randomPlotTarget > #raidSpots ) then
-			self.saved.randomPlotTarget = math.random( #raidSpots )
-			self.isDirty = true
-			closestSpot = raidSpots[self.saved.randomPlotTarget]
-		end
-		if closestSpot then
-			self.homePosition = closestSpot + sm.vec3.new( 0, 0, self.unit.character:getHeight() * 0.5 )
-			if self.lastTargetPosition == nil or ( ( self.lastTargetPosition - closestSpot ):length2() > ( RAIDER_TARGETING_RADIUS * 1.5 ) ) then
-				local attackableShape, attackPosition = FindAttackableShape( closestSpot, RAIDER_TARGETING_RADIUS, MeleeBreachLevel )
-				if attackableShape and attackPosition then
-					self.lastTargetPosition = attackPosition
-				elseif self.unit.character then
-					self.pathingState:sv_setDestination( closestSpot )
-					self.saved.raidPosition = closestSpot
-					self.lastTargetPosition = closestSpot
-				end
-			end
-		end
-	end
 
 
 
 
 
 
-
-	-- Units with destroyShape spawn param set will attack nearby shapes if they have no player to attack
-	if self.saved.destroyShapes and not self.lastTargetPosition and not self.target then
-		local attackableShape, attackPosition = FindAttackableShape( self.unit.character.worldPosition, RAIDER_TARGETING_RADIUS, MeleeBreachLevel )
-		if attackableShape and attackPosition then
-			self.lastTargetPosition = attackPosition
-		end
-	end
+	SeekFallbackTarget( self, MeleeBreachLevel )
 
 	-- Cooldown after attacking a crop
 	if type( self.target ) == "Harvestable" then
@@ -499,7 +466,7 @@ function HaybotUnit.server_onUnitUpdate( self, dt )
 	
 	-- Find dangerous obstacles
 	local shouldAvoid = false
-	if not self.saved.raider then
+	if not raiding then
 		local closestDangerShape, _ = g_unitManager:sv_getClosestDangers( self.unit.character.worldPosition )
 		if closestDangerShape then
 			local fromToDanger = closestDangerShape.worldPosition - self.unit.character.worldPosition
@@ -521,14 +488,14 @@ function HaybotUnit.server_onUnitUpdate( self, dt )
 		local fromToTarget = self.lastTargetPosition - self.unit.character.worldPosition
 		local distance = fromToTarget:length()
 
-		if self.saved.raider and distance >= RAIDER_BREACH_DISTANCE then
+		if raiding and distance >= RAIDER_BREACH_DISTANCE then
 			local path = sm.pathfinder.getPath( self.unit.character, self.lastTargetPosition, true, { canSwim = not self.waterAvoidance } )
 			if not IsEmptyTable( path ) then
 				if ( path[#path].toNode:getPosition() - self.unit.character.worldPosition ):length() >= RAIDER_TARGETING_RADIUS then
 					directPath = true
 				end
 			end
-		elseif not self.saved.raider then
+		elseif not raiding then
 			if distance <= 3 then
 				directPath = true
 			else
@@ -569,13 +536,9 @@ function HaybotUnit.server_onUnitUpdate( self, dt )
 		elseif self.lastTargetPosition then
 			nextTargetPosition = self.lastTargetPosition
 		end
-		-- Always check for breachable in front of the unit or towards raid point
+		-- Always check for breachable in front of the unit or towards the raid point
 		if nextTargetPosition == nil then
-			if self.saved.raider and self.saved.raidPosition then
-				nextTargetPosition = self.saved.raidPosition
-			else
-				nextTargetPosition = self.unit.character.worldPosition + self.unit.character.direction
-			end
+			nextTargetPosition = raidPoint or ( self.unit.character.worldPosition + self.unit.character.direction )
 		end
 
 	if combatPathing then
@@ -658,8 +621,8 @@ function HaybotUnit.server_onUnitUpdate( self, dt )
 			self.currentState = self.swimState
 		elseif self.currentState == self.staggeredEventState and self.target then
 			self.currentState = self.combatAttackState
-		elseif self.currentState == self.idleState and self.saved.raider then
-			self.pathingState:sv_setDestination( self.saved.raidPosition )
+		elseif self.currentState == self.idleState and raidPoint then
+			self.pathingState:sv_setDestination( raidPoint )
 			self.currentState = self.pathingState
 		elseif shouldAvoid then
 			if self.currentState ~= self.avoidState  then

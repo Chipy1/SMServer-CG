@@ -1,4 +1,4 @@
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
 
 local EncounterList = dofile( "$SURVIVAL_DATA/ScriptJsonFiles/CombatEncounters/main.combatencounters" )
 

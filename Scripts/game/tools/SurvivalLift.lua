@@ -1,4 +1,4 @@
-dofile "$GAME_DATA/Scripts/game/Lift.lua"
+dofile "$CONTENT_DATA/Scriptspts/game/Lift.lua"
 
 SurvivalLift = class( Lift )
 

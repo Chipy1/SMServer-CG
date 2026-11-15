@@ -1,16 +1,16 @@
-dofile "$SURVIVAL_DATA/Scripts/game/units/unit_util.lua"
-dofile "$SURVIVAL_DATA/Scripts/util.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/util/Ticker.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/util/Timer.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_shapes.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_units.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/PathingState.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_constants.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/BaseTotebotUnit.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/IdleRoamState.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/ToteRedIgniteState.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/managers/PatrolManager.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/PatrolState.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/unit_util.lua"
+dofile "$CONTENT_DATA/Scripts/util.lua"
+dofile "$CONTENT_DATA/Scripts/game/util/Ticker.lua"
+dofile "$CONTENT_DATA/Scripts/game/util/Timer.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_shapes.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_units.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/PathingState.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_constants.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/BaseTotebotUnit.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/IdleRoamState.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/ToteRedIgniteState.lua"
+dofile "$CONTENT_DATA/Scripts/game/managers/PatrolManager.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/PatrolState.lua"
 
 TotebotRedUnit = class( BaseTotebotUnit )
 
@@ -20,6 +20,7 @@ local ExplosionRunRange = 3.0 -- Range where there unit will begin speeding up
 local ExplodeTickCountdown = 16 * 40 -- Time until the unit will automatically explode after ignited
 local PreExplodeTime = 2.5
 local ExplosionBreachLevel = 7
+local FallbackShapeBreachLevel = 10 -- shapes a raider with nothing to chase will walk up to and attack
 local ExplosionDestructionRadius = 3.0
 local ExplosionImpulseRadius = 6.0
 local ExplosionImpulseMagnitude = 25
@@ -140,13 +141,6 @@ function TotebotRedUnit.server_onCreate( self )
 	self.lookAtState.avoidance = false
 	self.lookAtState.movementType = "stand"
 
-	-- Flee
-	self.raidFlee = self.unit:createState( "flee" )
-	self.raidFlee.movementAngleThreshold = math.rad( 180 )
-	self.raidFlee.maxFleeTime = 0.0
-	self.raidFlee.maxDeviation = 45 * math.pi / 180
-	self.raidFlee.debugName = "raidFlee"
-
 	-- Patrol
 	self.patrolState = PatrolState()
 	self.patrolState:sv_onCreate( self.unit, self.saved.patrolKey )
@@ -248,30 +242,7 @@ function TotebotRedUnit.server_onUnitUpdate( self, dt )
 	end
 
 	RobotSelectTarget( self, AllyRange, dt )
-
-	if self.saved.raidPosition and not self.target and sm.exists( self.unit.character ) then
-		local raidSpots = RaidManager.Sv_GetPlantLocations( self.unit.character:getWorld().id, self.saved.raidKey )
-		local closestSpot = nil
-		if #raidSpots > 0 and ( self.saved.randomPlotTarget == nil or self.saved.randomPlotTarget > #raidSpots ) then
-			self.saved.randomPlotTarget = math.random( #raidSpots )
-			self.isDirty = true
-			closestSpot = raidSpots[self.saved.randomPlotTarget]
-		end
-		if closestSpot then
-			self.homePosition = closestSpot + sm.vec3.new( 0, 0, self.unit.character:getHeight() * 0.5 )
-			if self.lastTargetPosition == nil or ( ( self.lastTargetPosition - closestSpot ):length2() > ( RAIDER_TARGETING_RADIUS * 1.5 ) ) then
-				local attackableShape, attackPosition = FindAttackableShape( closestSpot, RAIDER_TARGETING_RADIUS, 10 )
-				if attackableShape and attackPosition then
-					sm.debugDraw.flashSphere( attackPosition, 0.5, sm.color.new( 1, 0, 0 ), 10 )
-					self.lastTargetPosition = attackPosition
-				elseif self.unit.character then
-					self.pathingState:sv_setDestination( closestSpot )
-					self.saved.raidPosition = closestSpot
-					self.lastTargetPosition = closestSpot
-				end
-			end
-		end
-	end
+	SeekFallbackTarget( self, FallbackShapeBreachLevel )
 
 	-- Check for positions acquired from noise
 	local noiseShape = g_unitManager:sv_getClosestNoiseShape( self.unit.character.worldPosition, HearRange )

@@ -1,6 +1,6 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/powerladder_util.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/harvestable/PowerLadderRail.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/kinematics/Kinematic.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/powerladder_util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/harvestable/PowerLadderRail.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/kinematics/Kinematic.lua" )
 
 PowerLadderHandle = class( Kinematic )
 

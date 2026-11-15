@@ -1,4 +1,5 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/quest_util.lua" )
+sm.log.info( "SMSERVER: QuestManager class loaded" )
+dofile( "$CONTENT_DATA/Scripts/game/quest_util.lua" )
 
 QuestManager = class( nil )
 QuestManager.isSaveObject = true
@@ -73,6 +74,7 @@ QuestUnits = {
 }
 
 function QuestManager.server_onCreate( self )
+	sm.log.info( "SMSERVER: QuestManager created" )
 	assert( g_questManagerServer == nil )
 
 	g_questManagerServer = self
@@ -102,7 +104,7 @@ function QuestManager.server_onCreate( self )
 	self.sv.questData = {}
 	self.sv.questActivators = {} -- questName -> set of activator scriptableObjects that intend to start it
 
-	local path = "$SURVIVAL_DATA/ScriptableObjects/scriptableObjectSets/sob_quests.sobset"
+	local path = "$CONTENT_DATA/ScriptableObjects/ScriptableObjectSets/sob_quests.sobset"
 
 	g_questNames = {}
 	if sm.json.fileExists( path ) then
@@ -256,7 +258,7 @@ function QuestManager.client_onCreate( self )
 
 
 
-		local path = "$SURVIVAL_DATA/ScriptableObjects/scriptableObjectSets/sob_quests.sobset"
+		local path = "$CONTENT_DATA/ScriptableObjects/ScriptableObjectSets/sob_quests.sobset"
 		if sm.json.fileExists( path ) then
 			local questSet = sm.json.open( path )
 			if questSet and questSet.scriptableObjectList then
@@ -270,22 +272,6 @@ function QuestManager.client_onCreate( self )
 				end
 			end
 		end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 	end
 end
 

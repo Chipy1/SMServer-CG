@@ -1,5 +1,5 @@
-dofile "$SURVIVAL_DATA/Scripts/util.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/characters/BaseEnemyCharacter.lua"
+dofile "$CONTENT_DATA/Scripts/util.lua"
+dofile "$CONTENT_DATA/Scripts/game/characters/BaseEnemyCharacter.lua"
 TapebotCharacter = class( BaseEnemyCharacter )
 
 local alertRenderableTp = "$SURVIVAL_DATA/Character/Char_Tapebot/char_tapebot_alert.rend"
@@ -85,6 +85,7 @@ function TapebotCharacter.cl_initAnimationSwitch( self )
 end
 
 function TapebotCharacter.client_onUpdate( self, deltaTime )
+	BaseEnemyCharacter.client_onUpdate( self, deltaTime )
 	if not self.graphicsLoaded then
 		return
 	end

@@ -1,4 +1,4 @@
-dofile "$SURVIVAL_DATA/Scripts/game/characters/BaseEnemyCharacter.lua"
+dofile "$CONTENT_DATA/Scripts/game/characters/BaseEnemyCharacter.lua"
 MinerbotCharacter = class( BaseEnemyCharacter )
 
 local alertRenderableTp = "$SURVIVAL_DATA/Character/Char_Minerbot/char_minerbot_alert.rend"
@@ -274,6 +274,7 @@ function MinerbotCharacter.client_onFixedUpdate( self )
 end
 
 function MinerbotCharacter.client_onUpdate( self, deltaTime )
+	BaseEnemyCharacter.client_onUpdate( self, deltaTime )
 	if not self.cl.graphicsLoaded then
 		return
 	end

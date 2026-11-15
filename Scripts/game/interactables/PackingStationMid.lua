@@ -1,5 +1,5 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/TutorialManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/util/PackerPumpArea.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/TutorialManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/util/PackerPumpArea.lua" )
 PackingStationMid = class( nil )
 
 PackingStationMid.ProcessingTime = 6.6 -- Matched current animation

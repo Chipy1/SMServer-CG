@@ -1,13 +1,16 @@
 -- Crafter.lua --
+-- Fork of $SURVIVAL_DATA/Scripts/game/interactables/Crafter.lua.
+-- Adds the "craftbot_custom" recipe category used by this custom game.
+-- Keep in sync with the stock script when the game updates.
 
-dofile "$SURVIVAL_DATA/Scripts/game/survival_items.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_survivalobjects.lua"
-dofile ( "$SURVIVAL_DATA/Scripts/game/survival_collections.lua" )
-dofile "$SURVIVAL_DATA/Scripts/game/util/pipes.lua"
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/RecipeManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/TutorialManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/DialogManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/QuestManager.lua" )
+dofile "$CONTENT_DATA/Scripts/game/survival_items.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_survivalobjects.lua"
+dofile ( "$CONTENT_DATA/Scripts/game/survival_collections.lua" )
+dofile "$CONTENT_DATA/Scripts/game/util/pipes.lua"
+dofile( "$CONTENT_DATA/Scripts/game/managers/RecipeManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/TutorialManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/DialogManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/managers/QuestManager.lua" )
 
 Crafter = class( nil )
 Crafter.colorNormal = sm.color.new( 0x84ff32ff )
@@ -17,6 +20,8 @@ local MultiComponentKit = sm.uuid.new("b41de15e-a136-425a-a730-889b58cf4466")
 
 local CraftbotRecipeSets = {
 	{ name = "craftbot_core" },
+	{ name = "craftbot_custom" },
+	{ name = "craftbot_scomputers" },
 	{ name = "craftbot_manmade" },
 	{ name = "craftbot_small_pipes" },
 	{ name = "craftbot_pipes" },
@@ -31,6 +36,35 @@ local CraftbotRecipeSets = {
 	{ name = "craftbot_treasures" },
 	{ name = "craftbot_rewards" }
 }
+
+-- Recipe sets are data driven: any loaded "craftbot_*" set is shown on the
+-- craftbot, including sets registered for dependencies. The order is stable
+-- (static list first, then sorted extras) so client grid indices match the
+-- server when a craft starts.
+local function getActiveRecipeSets( recipeSets )
+	local result = {}
+	local seen = {}
+	if not g_craftingRecipeSets then
+		return result
+	end
+	for _, recipeSet in ipairs( recipeSets or {} ) do
+		if g_craftingRecipeSets[recipeSet.name] then
+			result[#result + 1] = recipeSet
+			seen[recipeSet.name] = true
+		end
+	end
+	local extra = {}
+	for name in pairs( g_craftingRecipeSets ) do
+		if type( name ) == "string" and name:sub( 1, 9 ) == "craftbot_" and not seen[name] then
+			extra[#extra + 1] = name
+		end
+	end
+	table.sort( extra )
+	for _, name in ipairs( extra ) do
+		result[#result + 1] = { name = name }
+	end
+	return result
+end
 
 local SawTablesAscending = {
 	ITEMS.obj_interactive_sawtable1,
@@ -78,6 +112,7 @@ local crafters = {
 		needsPower = false,
 		lookAtSettings = { lookAtRange = 5.0, headUpOffset = 0.3, headForwardOffset = -2.0, headLerpSpeed = 1.0 / 15.0 },
 		inactiveDistance = 6.0,
+		specialIdleCooldownTime = 15.0,
 		slots = 1,
 		speed = 1,
 		recipeSets = {
@@ -749,10 +784,8 @@ function Crafter.cl_updateRecipeGrid( self )
 	self.cl.guiInterface:clearGrid( "RecipeGrid" )
 	local unlockedRecipes = RecipeManager.Cl_GetUnlockedRecipes()
 
-	if g_craftingRecipeSets then
-		for _, recipeSet in ipairs( self.crafter.recipeSets ) do
-			self.cl.guiInterface:addGridItemsFromFile( "RecipeGrid", g_craftingRecipeSets[recipeSet.name].path, { unlockedRecipes = unlockedRecipes, speed = self.crafter.speed or 1, newRecipes = RecipeManager.Cl_GetNewUnlockedRecipes() } )
-		end
+	for _, recipeSet in ipairs( getActiveRecipeSets( self.crafter.recipeSets ) ) do
+		self.cl.guiInterface:addGridItemsFromFile( "RecipeGrid", g_craftingRecipeSets[recipeSet.name].path, { unlockedRecipes = unlockedRecipes, speed = self.crafter.speed or 1, newRecipes = RecipeManager.Cl_GetNewUnlockedRecipes() } )
 	end
 	self.cl.unlockedRecipesRevision = RecipeManager.Cl_GetUnlockedRevision()
 end
@@ -785,9 +818,10 @@ end
 
 function Crafter.getRecipeByUuid( self, stringUuid )
 	local recipe = nil
-	for _, recipeSet in ipairs( self.crafter.recipeSets ) do
-		if g_craftingRecipeSets[recipeSet.name].recipes[stringUuid] ~= nil then
-			recipe = g_craftingRecipeSets[recipeSet.name].recipes[stringUuid]
+	for _, recipeSet in ipairs( getActiveRecipeSets( self.crafter.recipeSets ) ) do
+		local recipeSetData = g_craftingRecipeSets[recipeSet.name]
+		if recipeSetData.recipes[stringUuid] ~= nil then
+			recipe = recipeSetData.recipes[stringUuid]
 			break
 		end
 	end
@@ -800,10 +834,9 @@ function Crafter.getRecipeByIndex( self, index )
 	local recipeName = 0
 	local recipeIndex = 0
 	local offset = 0
-	for _, recipeSet in ipairs( self.crafter.recipeSets ) do
-		assert( g_craftingRecipeSets[recipeSet.name].recipesByIndex )
-		local recipeCount = #g_craftingRecipeSets[recipeSet.name].recipesByIndex
-
+	for _, recipeSet in ipairs( getActiveRecipeSets( self.crafter.recipeSets ) ) do
+		local recipeSetData = g_craftingRecipeSets[recipeSet.name]
+		local recipeCount = #recipeSetData.recipesByIndex
 		if index <= offset + recipeCount then
 			recipeIndex = index - offset
 			recipeName = recipeSet.name
@@ -1067,6 +1100,12 @@ end
 
 function Crafter.client_onUpdate( self, deltaTime )
 	local selfShapeUuid = self.shape:getShapeUuid()
+	if self.cl.specialIdleCooldown then
+		self.cl.specialIdleCooldown = self.cl.specialIdleCooldown - deltaTime
+		if self.cl.specialIdleCooldown <= 0.0 then
+			self.cl.specialIdleCooldown = nil
+		end
+	end
 	if ( IsCraftBot( selfShapeUuid ) or IsSawTable( selfShapeUuid ) ) and self.cl.unlockedRecipesRevision ~= RecipeManager.Cl_GetUnlockedRevision() then
 		self:cl_updateRecipeGrid()
 	end
@@ -1211,16 +1250,22 @@ function Crafter.client_onUpdate( self, deltaTime )
 		self.cl.animName = "offline"
 
 	elseif self.cl.animState == "inactive" then
-		if not isAnyOf( self.cl.animName, { "fold_in", "fold_idle", "fold_out", "fold_idlespecial01" } ) then
-			self.cl.animName = "fold_in"
-		else
+		if self.cl.animName == "fold_in" then
 			if animDone then
-				local rand = math.random( 1, 4 )
-				if rand == 1 then
-					self.cl.animName = "fold_idlespecial01"
-				else
-					self.cl.animName = "fold_idle"
-				end
+				self.cl.animName = "fold_idle"
+			end
+		elseif self.cl.animName == "fold_out" then
+			if animDone then
+				self.cl.animName = "fold_in"
+			end
+		elseif not isAnyOf( self.cl.animName, { "fold_idle", "fold_idlespecial01" } ) then
+			self.cl.animName = "fold_in"
+		elseif animDone then
+			local rand = math.random( 1, 4 )
+			if rand == 1 then
+				self.cl.animName = "fold_idlespecial01"
+			else
+				self.cl.animName = "fold_idle"
 			end
 		end
 	elseif self.cl.animState == "idle" then
@@ -1233,22 +1278,33 @@ function Crafter.client_onUpdate( self, deltaTime )
 				self.cl.animName = "unfold"
 			end
 			animDone = true
-		elseif isAnyOf( self.cl.animName, { "fold_in", "fold_idle", "fold_idlespecial01" } ) then
+		elseif self.cl.animName == "fold_in" then
+			if animDone then
+				self.cl.animName = "fold_out"
+			end
+		elseif isAnyOf( self.cl.animName, { "fold_idle", "fold_idlespecial01" } ) then
 			self.cl.animName = "fold_out"
 			animDone = true
+		elseif self.cl.animName == "fold_out" then
+			if animDone then
+				self.cl.animName = "idle"
+			end
 		elseif self.cl.animName == "turnon" or self.cl.animName == "unfold" or self.cl.animName == "craft_finish" then
 			if animDone then
 				self.cl.animName = "idle"
 			end
 		elseif self.cl.animName == "idle" then
 			if animDone then
-				local rand = math.random( 1, 5 )
-				if rand == 1 then
-					self.cl.animName = "idlespecial01"
-				elseif rand == 2 then
-					self.cl.animName = "idlespecial02"
-				else
-					self.cl.animName = "idle"
+				self.cl.animName = "idle"
+				if self.cl.specialIdleCooldown == nil then
+					local rand = math.random( 1, 5 )
+					if rand == 1 then
+						self.cl.animName = "idlespecial01"
+						self.cl.specialIdleCooldown = self.crafter.specialIdleCooldownTime
+					elseif rand == 2 then
+						self.cl.animName = "idlespecial02"
+						self.cl.specialIdleCooldown = self.crafter.specialIdleCooldownTime
+					end
 				end
 			end
 		elseif self.cl.animName == "idlespecial01" or self.cl.animName == "idlespecial02" then

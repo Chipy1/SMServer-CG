@@ -1,4 +1,4 @@
-dofile( "$GAME_DATA/Scripts/gui/GridScrollView.lua" )
+dofile( "$CONTENT_DATA/Scripts/gui/GridScrollView.lua" )
 GarageConsole = class()
 
 local GarageGui = dofile( "$SURVIVAL_DATA/Gui/JsonGuis/GarageImporter.gui" )
@@ -19,6 +19,24 @@ local ItemQuantityWidget = FindWidget( ItemSlot, "Quantity" )
 local ItemTypeWidget = FindWidget( ItemSlot, "Type" )
 local ItemTypeCheckbox = FindWidget( ItemSlot, "Checkbox" )
 local EffectGroundPosTweak = sm.vec3.new(0,0,11)
+
+-- Custom game: the inert block-container placeholder and every UUID from the
+-- production blacklist may not be assembled from a garage blueprint.
+local BlockedBlueprintShapes = {
+    ["3d127db0-da28-4483-86fd-3eeed20fb85d"] = true,
+}
+
+local function isBlockedShapeUuid( uuid )
+    local key = tostring( uuid )
+    if BlockedBlueprintShapes[key] then
+        return true
+    end
+    if smserver_isBlockedItem then
+        return smserver_isBlockedItem( uuid )
+    end
+    return false
+end
+
 -- Server
 
 function GarageConsole.server_onCreate( self )
@@ -69,7 +87,7 @@ end
 
 function GarageConsole.sv_t_onLogAreaEnter( self, trigger, results )
     for _, result in pairs( results ) do
-        if result:isPlayer() then
+        if sm.exists(result) and result:isPlayer() then
             TutorialManager.Sv_TutorialEvent( TutorialEvent.Garage, result:getPlayer() )
             if not LogEntryManager.Sv_HasLog( LOGS.log_garage ) then
                 LogEntryManager.Sv_AddLog( LOGS.log_garage )
@@ -139,6 +157,12 @@ function GarageConsole.sv_n_assembleBlueprint( self,_, player )
             end
             if shapeData.quantity < 0 then
                 print( "Blueprint contains invalid quantity: " .. tostring( shapeData.quantity ) )
+                return
+            end
+            -- Custom game: blueprints must not smuggle production-blocked parts
+            -- (for example the free component-kit container) into the world.
+            if isBlockedShapeUuid( shapeData.uuid ) then
+                print( "Blueprint contains a blocked part: " .. tostring( shapeData.uuid ) )
                 return
             end
             local available = 0
@@ -461,7 +485,7 @@ function GarageConsole.client_onInteract( self, _, state )
 
     local name, data = self.cl.garage:getTrackedBlueprint()
     if data ~= nil then
-        self:cl_loadData( data, name,garageContainers )
+        self:cl_loadData( data, name, garageContainers )
         return
     end
     if  garageContainers then

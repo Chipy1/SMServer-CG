@@ -1,21 +1,21 @@
-dofile "$SURVIVAL_DATA/Scripts/game/units/unit_util.lua"
-dofile "$SURVIVAL_DATA/Scripts/util.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/util/Ticker.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/util/Timer.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_shapes.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_units.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_constants.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/MinerbotPathingState.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/MinerbotBarrageState.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/MinerbotSelfdestructState.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/MinerbotRoamingState.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/MinerbotDiggingIdleState.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/MinerbotUnstuckState.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/LookAroundState.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/managers/MinerbotWaypointManager.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/managers/PatrolManager.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/PatrolState.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/MinerbotAlertState.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/unit_util.lua"
+dofile "$CONTENT_DATA/Scripts/util.lua"
+dofile "$CONTENT_DATA/Scripts/game/util/Ticker.lua"
+dofile "$CONTENT_DATA/Scripts/game/util/Timer.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_shapes.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_units.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_constants.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/MinerbotPathingState.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/MinerbotBarrageState.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/MinerbotSelfdestructState.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/MinerbotRoamingState.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/MinerbotDiggingIdleState.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/MinerbotUnstuckState.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/LookAroundState.lua"
+dofile "$CONTENT_DATA/Scripts/game/managers/MinerbotWaypointManager.lua"
+dofile "$CONTENT_DATA/Scripts/game/managers/PatrolManager.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/PatrolState.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/MinerbotAlertState.lua"
 
 MinerbotUnit = class( BaseUnit )
 
@@ -63,6 +63,7 @@ function MinerbotUnit.server_onCreate( self )
 
 	sm.message.subscribe( MESSAGE_TYPES.GENERAL.ProjectileHit, "sv_m_projectileHit" )
 	sm.message.subscribe( MESSAGE_TYPES.GENERAL.ProjectileFire, "sv_m_projectileFire" )
+	sm.message.subscribe( MESSAGE_TYPES.GENERAL.ProjectileBounce, "sv_m_projectileBounce" )
 	sm.message.subscribe( MESSAGE_TYPES.GENERAL.Collision, "sv_m_collision" )
 
 	self.unit.eyeHeight = self.unit.character:getHeight() * 0.75
@@ -141,12 +142,6 @@ function MinerbotUnit.server_onCreate( self )
 	self.lookAtTargetState.tolerance = 0.5
 	self.lookAtTargetState.avoidance = false
 	self.lookAtTargetState.movementType = "stand"
-
-	-- Flee
-	self.raidFlee = self.unit:createState( "flee" )
-	self.raidFlee.movementAngleThreshold = math.rad( 180 )
-	self.raidFlee.maxFleeTime = 0.0
-	self.raidFlee.maxDeviation = 45 * math.pi / 180
 
 	-- Extra states for delayed alert animations
 	self.alert = false
@@ -268,10 +263,6 @@ function MinerbotUnit.server_onUnitUpdate( self, dt )
 
 	if self.currentState then
 		self.currentState:onUnitUpdate( dt )
-	end
-
-	if CheckFleeFromRaid( self ) then
-		return
 	end
 
 	-- Only allowed allowed to actively hunt the player once aggroed

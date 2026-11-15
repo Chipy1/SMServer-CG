@@ -11,7 +11,11 @@ local AreaTriggerSize = 6
 function Chest.server_onCreate( self )
 	self.sv = {}
 	local container = self.shape.interactable:getContainer( 0 )
-	if not container then
+	if container then
+		-- Custom game: an existing container keeps the size it was created with,
+		-- so re-apply the size declared in the shape data.
+		container:resize( self.data.slots or 30 )
+	else
 		container = self.shape:getInteractable():addContainer( 0, self.data.slots or 30 )
 	end
 end

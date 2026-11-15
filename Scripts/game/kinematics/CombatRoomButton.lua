@@ -1,6 +1,6 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/kinematics/Kinematic.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/kinematics/ParentedKinematicRoot.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/kinematics/Kinematic.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/kinematics/ParentedKinematicRoot.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
 
 CombatRoomButton = class( ParentedKinematicRoot )
 

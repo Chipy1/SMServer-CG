@@ -164,42 +164,43 @@
 				"filename": "$CONTENT_DATA/Scripts/smserver/privateblock.lua"
 			},
 			"uuid": "e85e06c9-628d-4327-a6dc-10a19e7fbf47"
-		},
-		{
-			"box": {
-				"x": 2,
-				"y": 2,
-				"z": 2
-			},
-			"color": "df7f01",
-			"flammable": false,
-			"name": "obj_interactive_blockstack_disabled",
-			"physicsMaterial": "Glass",
-			"ratings": {
-				"buoyancy": 2,
-				"density": 3,
-				"durability": 1,
-				"friction": 3
-			},
-			"renderable": "$GAME_DATA/Objects/Renderable/invisible/obj_invisible_triangle.rend",
-			"restrictions": {
-				"buildable": false,
-				"connectable": false,
-				"convertibleToDynamic": false,
-				"destructable": false,
-				"erasable": true,
-				"liftable": false,
-				"paintable": false,
-				"usable": false
-			},
-			"rotationSet": "PropY",
-			"showInInventory": false,
-			"stackSize": 1,
-			"uuid": "3d127db0-da28-4483-86fd-3eeed20fb85d",
-			"scripted": {
-				"classname": "blockstack_dummy",
-				"filename": "$CONTENT_DATA/Scripts/smserver/blockstack_dummy.lua"
-			}
 		}
+		//,
+		//{
+		//	"box": {
+		//		"x": 2,
+		//		"y": 2,
+		//		"z": 2
+		//	},
+		//	"color": "df7f01",
+		//	"flammable": false,
+		//	"name": "obj_interactive_blockstack_disabled",
+		//	"physicsMaterial": "Glass",
+		//	"ratings": {
+		//		"buoyancy": 2,
+		//		"density": 3,
+		//		"durability": 1,
+		//		"friction": 3
+		//	},
+		//	"renderable": "$GAME_DATA/Objects/Renderable/invisible/obj_invisible_triangle.rend",
+		//	"restrictions": {
+		//		"buildable": false,
+		//		"connectable": false,
+		//		"convertibleToDynamic": false,
+		//		"destructable": false,
+		//		"erasable": true,
+		//		"liftable": false,
+		//		"paintable": false,
+		//		"usable": false
+		//	},
+		//	"rotationSet": "PropY",
+		//	"showInInventory": false,
+		//	"stackSize": 1,
+		//	"uuid": "3d127db0-da28-4483-86fd-3eeed20fb85d",
+		//	"scripted": {
+		//		"classname": "blockstack_dummy",
+		//		"filename": "$CONTENT_DATA/Scripts/smserver/blockstack_dummy.lua"
+		//	}
+		//}
 	]
 }

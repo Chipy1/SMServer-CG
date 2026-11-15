@@ -1,0 +1,1004 @@
+{
+	"characters": [
+		// Hubert quest character
+		{
+			"capsule": {
+				"crouchHeight": 0.8,
+				"height": 1.4,
+				"radius": 0.3
+			},
+			"character": {
+				"data": {
+					"questMarkerName": "quest_hosted_hubert.marker",
+					"questUnitName": "Hubert"
+				},
+				"scriptClass": "HubertQuestCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/HubertQuestCharacter.lua"
+			},
+			"hit": {
+				"crouch": {
+					"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_hit_crouch_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.4
+					]
+				},
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_hit_stand_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.7
+					]
+				}
+			},
+			"mass": 120.0,
+			"material": "RagdollHuman",
+			"movement": {
+				"canSwim": true,
+				"crouchSpeed": 3.0,
+				"facingRotationSpeed": 3.1415,
+				"headingRotationSpeed": 3.1415,
+				"jumpImpulse": 7.0,
+				"moveSpeed": 4.0,
+				"slowDownSpeed": 2.5,
+				"sprintSpeed": 8.0
+			},
+			"name": "Hubert",
+			"ragdoll": "$SURVIVAL_DATA/Character/Char_Male/char_male_ragdoll.json",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_npc_scoutfarmer/char_npc_scoutfarmer.rend",
+				"$SURVIVAL_DATA/Character/Char_npc_scoutfarmer/char_npc_scoutfarmer_emotes.rend",
+				"$GAME_DATA/Character/Char_Male/Animations/char_male_tp_swim.rend",
+				"$SURVIVAL_DATA/Character/Char_npc_scoutfarmer/char_npc_scoutfarmer.rend"
+			],
+			"showInEditor": true,
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					0.683
+				]
+			},
+			"unit": {
+				"data": {
+					"questUnitName": "Hubert"
+				},
+				"scriptClass": "QuestActorUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/QuestActorUnit.lua"
+			},
+			"uuid": "3788e9f6-d557-42cb-b3c6-293b7fb0c00d"
+		},
+		// Hubert Clone character - Use in Drillbot fight to not despawn "real" Hubert
+		{
+			"capsule": {
+				"crouchHeight": 0.8,
+				"height": 1.4,
+				"radius": 0.3
+			},
+			"character": {
+				"data": {
+					"questMarkerName": "quest_hosted_hubert.marker",
+					"questUnitName": "Hubert_Clone"
+				},
+				"scriptClass": "HubertQuestCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/HubertQuestCharacter.lua"
+			},
+			"hit": {
+				"crouch": {
+					"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_hit_crouch_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.4
+					]
+				},
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_hit_stand_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.7
+					]
+				}
+			},
+			"mass": 120.0,
+			"material": "RagdollHuman",
+			"movement": {
+				"canSwim": true,
+				"crouchSpeed": 3.0,
+				"facingRotationSpeed": 3.1415,
+				"headingRotationSpeed": 3.1415,
+				"jumpImpulse": 7.0,
+				"moveSpeed": 4.0,
+				"slowDownSpeed": 2.5,
+				"sprintSpeed": 8.0
+			},
+			"name": "Hubert_Clone",
+			"ragdoll": "$SURVIVAL_DATA/Character/Char_Male/char_male_ragdoll.json",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_npc_scoutfarmer/char_npc_scoutfarmer.rend",
+				"$SURVIVAL_DATA/Character/Char_npc_scoutfarmer/char_npc_scoutfarmer_emotes.rend",
+				"$GAME_DATA/Character/Char_Male/Animations/char_male_tp_swim.rend",
+				"$SURVIVAL_DATA/Character/Char_npc_scoutfarmer/char_npc_scoutfarmer.rend"
+			],
+			"showInEditor": true,
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					0.683
+				]
+			},
+			"unit": {
+				"data": {
+					"questUnitName": "Hubert_Clone"
+				},
+				"scriptClass": "QuestActorUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/QuestActorUnit.lua"
+			},
+			"uuid": "74bfbebe-0e99-4660-87c2-fed33330db63"
+		},
+		// Farmer builder
+		{
+			"capsule": {
+				"crouchHeight": 0.8,
+				"height": 1.4,
+				"radius": 0.3
+			},
+			"character": {
+				"data": {},
+				"scriptClass": "GenericBuilderQuestCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/GenericBuilderQuestCharacter.lua"
+			},
+			"hit": {
+				"crouch": {
+					"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_hit_crouch_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.4
+					]
+				},
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_hit_stand_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.7
+					]
+				}
+			},
+			"mass": 120.0,
+			"material": "RagdollHuman",
+			"movement": {
+				"canSwim": true,
+				"crouchSpeed": 3.0,
+				"facingRotationSpeed": 3.1415,
+				"headingRotationSpeed": 3.1415,
+				"jumpImpulse": 7.0,
+				"moveSpeed": 4.0,
+				"slowDownSpeed": 2.5,
+				"sprintSpeed": 8.0,
+				"static": true
+			},
+			"name": "Farmer",
+			"ragdoll": "$SURVIVAL_DATA/Character/Char_Male/char_male_ragdoll.json",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_Male/Animations/char_male_tp_npc_builder.rend",
+				"$SURVIVAL_DATA/Character/Char_Farmer/char_farmer.rend"
+			],
+			"showInEditor": true,
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					0.683
+				]
+			},
+			"unit": {
+				"data": {},
+				"scriptClass": "GenericBuilderQuestUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/GenericBuilderQuestUnit.lua"
+			},
+			"uuid": "6ac756cf-7910-4f87-836a-7c0a81dd3e59"
+		},
+		// Warehouse Lorenzo, aka Ship Mechanic
+		{
+			"capsule": {
+				"crouchHeight": 0.8,
+				"height": 1.4,
+				"radius": 0.3
+			},
+			"character": {
+				"data": {
+					"questMarkerName": "quest_hosted_lorenzo.marker",
+					"questUnitName": "Lorenzo"
+				},
+				"scriptClass": "WarehouseLorenzoCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/WarehouseLorenzoCharacter.lua"
+			},
+			"hit": {
+				"crouch": {
+					"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_hit_crouch_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.4
+					]
+				},
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_hit_stand_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.7
+					]
+				}
+			},
+			"mass": 120.0,
+			"material": "RagdollHuman",
+			"movement": {
+				"canSwim": true,
+				"crouchSpeed": 3.0,
+				"facingRotationSpeed": 3.1415,
+				"headingRotationSpeed": 3.1415,
+				"jumpImpulse": 7.0,
+				"moveSpeed": 4.0,
+				"slowDownSpeed": 2.5,
+				"sprintSpeed": 8.0
+			},
+			"name": "ShipMechanic",
+			"ragdoll": "$SURVIVAL_DATA/Character/Char_Male/char_male_ragdoll.json",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_Shipmechanic/char_shipmechanic_tp.rend",
+				"$SURVIVAL_DATA/Character/Char_Shipmechanic/char_shipmechanic_emotes.rend",
+				"$GAME_DATA/Character/Char_Male/Animations/char_male_tp_swim.rend",
+				"$SURVIVAL_DATA/Character/Char_Shipmechanic/char_shipmechanic_head.rend",
+				"$SURVIVAL_DATA/Character/Char_Shipmechanic/char_shipmechanic_jacket.rend",
+				"$SURVIVAL_DATA/Character/Char_Shipmechanic/char_shipmechanic_gloves.rend",
+				"$SURVIVAL_DATA/Character/Char_Shipmechanic/char_shipmechanic_pants.rend",
+				"$SURVIVAL_DATA/Character/Char_Shipmechanic/char_shipmechanic_backpack.rend",
+				"$SURVIVAL_DATA/Character/Char_Male/Outfit/Shoes/Outfit_default_shoes/char_male_outfit_default_shoes.rend"
+			],
+			"showInEditor": true,
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					0.683
+				]
+			},
+			"unit": {
+				"data": {
+					"questUnitName": "Lorenzo"
+				},
+				"scriptClass": "WarehouseLorenzoUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/WarehouseLorenzoUnit.lua"
+			},
+			"uuid": "3ca4b827-a237-4f85-b97c-4298dcc4ad95"
+		},
+		// New Quest Lorenzo.
+		{
+			"capsule": {
+				"crouchHeight": 0.8,
+				"height": 1.4,
+				"radius": 0.3
+			},
+			"character": {
+				"data": {
+					"questMarkerName": "quest_hosted_lorenzo.marker",
+					"questUnitName": "Lorenzo"
+				},
+				"scriptClass": "LorenzoQuestCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/LorenzoQuestCharacter.lua"
+			},
+			"hit": {
+				"crouch": {
+					"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_hit_crouch_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.4
+					]
+				},
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_hit_stand_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.7
+					]
+				}
+			},
+			"mass": 120.0,
+			"material": "RagdollHuman",
+			"movement": {
+				"canSwim": true,
+				"crouchSpeed": 3.0,
+				"facingRotationSpeed": 3.1415,
+				"headingRotationSpeed": 3.1415,
+				"jumpImpulse": 7.0,
+				"moveSpeed": 4.0,
+				"slowDownSpeed": 2.5,
+				"sprintSpeed": 8.0
+			},
+			"name": "Lorenzo",
+			"ragdoll": "$SURVIVAL_DATA/Character/Char_Male/char_male_ragdoll.json",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_Shipmechanic/char_shipmechanic_tp.rend",
+				"$SURVIVAL_DATA/Character/Char_Shipmechanic/char_shipmechanic_emotes.rend",
+				"$GAME_DATA/Character/Char_Male/Animations/char_male_tp_swim.rend",
+				"$SURVIVAL_DATA/Character/Char_Shipmechanic/char_shipmechanic_head.rend",
+				"$SURVIVAL_DATA/Character/Char_Shipmechanic/char_shipmechanic_jacket.rend",
+				"$SURVIVAL_DATA/Character/Char_Shipmechanic/char_shipmechanic_gloves.rend",
+				"$SURVIVAL_DATA/Character/Char_Shipmechanic/char_shipmechanic_pants.rend",
+				"$SURVIVAL_DATA/Character/Char_Shipmechanic/char_shipmechanic_backpack.rend",
+				"$SURVIVAL_DATA/Character/Char_Male/Outfit/Shoes/Outfit_default_shoes/char_male_outfit_default_shoes.rend"
+			],
+			"showInEditor": true,
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					0.683
+				]
+			},
+			"unit": {
+				"data": {
+					"questUnitName": "Lorenzo"
+				},
+				"scriptClass": "QuestActorUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/QuestActorUnit.lua"
+			},
+			"uuid": "55c4c10d-7f56-47c3-a274-32fc2767d298"
+		},
+		// Lorenzo Clone Unit - Use in Drillbot fight to not despawn "real" Lorenzo
+		{
+			"capsule": {
+				"crouchHeight": 0.8,
+				"height": 1.4,
+				"radius": 0.3
+			},
+			"character": {
+				"data": {
+					"questMarkerName": "quest_hosted_lorenzo.marker",
+					"questUnitName": "Lorenzo_Clone"
+				},
+				"scriptClass": "LorenzoQuestCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/LorenzoQuestCharacter.lua"
+			},
+			"hit": {
+				"crouch": {
+					"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_hit_crouch_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.4
+					]
+				},
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_hit_stand_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.7
+					]
+				}
+			},
+			"mass": 120.0,
+			"material": "RagdollHuman",
+			"movement": {
+				"canSwim": true,
+				"crouchSpeed": 3.0,
+				"facingRotationSpeed": 3.1415,
+				"headingRotationSpeed": 3.1415,
+				"jumpImpulse": 7.0,
+				"moveSpeed": 4.0,
+				"slowDownSpeed": 2.5,
+				"sprintSpeed": 8.0
+			},
+			"name": "Lorenzo_Clone",
+			"ragdoll": "$SURVIVAL_DATA/Character/Char_Male/char_male_ragdoll.json",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_Shipmechanic/char_shipmechanic_tp.rend",
+				"$SURVIVAL_DATA/Character/Char_Shipmechanic/char_shipmechanic_emotes.rend",
+				"$GAME_DATA/Character/Char_Male/Animations/char_male_tp_swim.rend",
+				"$SURVIVAL_DATA/Character/Char_Shipmechanic/char_shipmechanic_head.rend",
+				"$SURVIVAL_DATA/Character/Char_Shipmechanic/char_shipmechanic_jacket.rend",
+				"$SURVIVAL_DATA/Character/Char_Shipmechanic/char_shipmechanic_gloves.rend",
+				"$SURVIVAL_DATA/Character/Char_Shipmechanic/char_shipmechanic_pants.rend",
+				"$SURVIVAL_DATA/Character/Char_Shipmechanic/char_shipmechanic_backpack.rend",
+				"$SURVIVAL_DATA/Character/Char_Male/Outfit/Shoes/Outfit_default_shoes/char_male_outfit_default_shoes.rend"
+			],
+			"showInEditor": true,
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					0.683
+				]
+			},
+			"unit": {
+				"data": {
+					"questUnitName": "Lorenzo_Clone"
+				},
+				"scriptClass": "QuestActorUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/QuestActorUnit.lua"
+			},
+			"uuid": "016ea89d-fe57-40d6-8611-f8cafc9dfdec"
+		},
+		// Scrapper builder
+		{
+			"capsule": {
+				"crouchHeight": 0.8,
+				"height": 1.4,
+				"radius": 0.3
+			},
+			"character": {
+				"data": {
+					"isScrapper": true
+				},
+				"scriptClass": "GenericBuilderQuestCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/GenericBuilderQuestCharacter.lua"
+			},
+			"hairGradient": {
+				"begin": [
+					0.0,
+					0.0,
+					0.0,
+					1.0
+				],
+				"end": [
+					0.113725,
+					0.113725,
+					0.113725,
+					1.0
+				]
+			},
+			"hit": {
+				"crouch": {
+					"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_hit_crouch_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.4
+					]
+				},
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_hit_stand_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.7
+					]
+				}
+			},
+			"mass": 120.0,
+			"material": "RagdollHuman",
+			"movement": {
+				"canSwim": true,
+				"crouchSpeed": 3.0,
+				"facingRotationSpeed": 3.1415,
+				"headingRotationSpeed": 3.1415,
+				"jumpImpulse": 7.0,
+				"moveSpeed": 4.0,
+				"slowDownSpeed": 2.5,
+				"sprintSpeed": 8.0,
+				"static": true
+			},
+			"name": "Scrapper",
+			"ragdoll": "$SURVIVAL_DATA/Character/Char_Male/char_male_ragdoll.json",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_Male/Animations/char_male_tp_npc_scrapperbuilder.rend",
+				"$SURVIVAL_DATA/Character/Char_Male/Outfit/Hat/Outfit_scrapper_hat/char_male_outfit_scrapper_hat.rend",
+				"$SURVIVAL_DATA/Character/Char_Male/Outfit/Jacket/Outfit_scrapper_jacket/char_male_outfit_scrapper_jacket.rend",
+				"$SURVIVAL_DATA/Character/Char_Male/Outfit/Gloves/Outfit_scrapper_gloves/char_male_outfit_scrapper_gloves.rend",
+				"$SURVIVAL_DATA/Character/Char_Male/Outfit/Pants/Outfit_scrapper_pants/char_male_outfit_scrapper_pants.rend",
+				"$SURVIVAL_DATA/Character/Char_Male/Outfit/Shoes/Outfit_scrapper_shoes/char_shared_outfit_scrapper_shoes.rend",
+				"$SURVIVAL_DATA/Character/Char_Male/Outfit/Backpack/Outfit_scrapper_backpack/char_shared_outfit_scrapper_backpack.rend"
+			],
+			"showInEditor": true,
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					0.683
+				]
+			},
+			"unit": {
+				"data": {},
+				"scriptClass": "GenericBuilderQuestUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/GenericBuilderQuestUnit.lua"
+			},
+			"uuid": "a16a794a-0159-41a1-9d07-8f051935e9d6"
+		},
+		// KO farmer
+		{
+			"capsule": {
+				"crouchHeight": 0.8,
+				"height": 1.4,
+				"radius": 0.3
+			},
+			"character": {
+				"data": {},
+				"scriptClass": "GenericBuilderQuestCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/GenericBuilderQuestCharacter.lua"
+			},
+			"hairGradient": {
+				"begin": [
+					0.0,
+					0.0,
+					0.0,
+					1.0
+				],
+				"end": [
+					0.113725,
+					0.113725,
+					0.113725,
+					1.0
+				]
+			},
+			"hit": {
+				"crouch": {
+					"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_hit_crouch_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.4
+					]
+				},
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_hit_stand_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.7
+					]
+				}
+			},
+			"mass": 120.0,
+			"material": "RagdollHuman",
+			"movement": {
+				"canSwim": true,
+				"crouchSpeed": 3.0,
+				"facingRotationSpeed": 3.1415,
+				"headingRotationSpeed": 3.1415,
+				"jumpImpulse": 7.0,
+				"moveSpeed": 4.0,
+				"slowDownSpeed": 2.5,
+				"sprintSpeed": 8.0,
+				"static": true
+			},
+			"name": "KoFarmer",
+			"ragdoll": "$SURVIVAL_DATA/Character/Char_Male/char_male_ragdoll.json",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_Male/Animations/char_male_tp_npc_kobuilder.rend",
+				"$SURVIVAL_DATA/Character/Char_Farmer/char_farmer.rend"
+			],
+			"showInEditor": true,
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					0.683
+				]
+			},
+			"unit": {
+				"data": {},
+				"scriptClass": "GenericBuilderQuestUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/GenericBuilderQuestUnit.lua"
+			},
+			"uuid": "356916fe-64e9-4dc0-8930-377d8b7d036a"
+		},
+		// Sleepy builder
+		{
+			"capsule": {
+				"crouchHeight": 0.8,
+				"height": 1.4,
+				"radius": 0.3
+			},
+			"character": {
+				"data": {},
+				"scriptClass": "GenericBuilderQuestCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/GenericBuilderQuestCharacter.lua"
+			},
+			"hairGradient": {
+				"begin": [
+					0.0,
+					0.0,
+					0.0,
+					1.0
+				],
+				"end": [
+					0.113725,
+					0.113725,
+					0.113725,
+					1.0
+				]
+			},
+			"hit": {
+				"crouch": {
+					"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_hit_crouch_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.4
+					]
+				},
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_hit_stand_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.7
+					]
+				}
+			},
+			"mass": 120.0,
+			"material": "RagdollHuman",
+			"movement": {
+				"canSwim": true,
+				"crouchSpeed": 3.0,
+				"facingRotationSpeed": 3.1415,
+				"headingRotationSpeed": 3.1415,
+				"jumpImpulse": 7.0,
+				"moveSpeed": 4.0,
+				"slowDownSpeed": 2.5,
+				"sprintSpeed": 8.0,
+				"static": true
+			},
+			"name": "SleepyFarmer",
+			"ragdoll": "$SURVIVAL_DATA/Character/Char_Male/char_male_ragdoll.json",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_Male/Animations/char_male_tp_npc_sleepybuilder.rend",
+				"$SURVIVAL_DATA/Character/Char_Farmer/char_farmer.rend"
+			],
+			"showInEditor": true,
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					0.683
+				]
+			},
+			"unit": {
+				"data": {},
+				"scriptClass": "GenericBuilderQuestUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/GenericBuilderQuestUnit.lua"
+			},
+			"uuid": "aa9a3398-e3dc-4e96-8bff-4963f35b2d58"
+		},
+		// Phe quest character
+		{
+			"capsule": {
+				"crouchHeight": 0.8,
+				"height": 1.4,
+				"radius": 0.3
+			},
+			"character": {
+				"data": {
+					"questMarkerName": "quest_hosted_phe.marker",
+					"questUnitName": "Phe"
+				},
+				"scriptClass": "PheQuestCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/PheQuestCharacter.lua"
+			},
+			"hairGradient": {
+				"begin": [
+					0.065,
+					0.031772,
+					0.0065,
+					1.0
+				],
+				"end": [
+					0.19,
+					0.096471,
+					0.03515,
+					1.0
+				]
+			},
+			"hit": {
+				"crouch": {
+					"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_hit_crouch_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.4
+					]
+				},
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_hit_stand_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.7
+					]
+				}
+			},
+			"mass": 120.0,
+			"material": "RagdollHuman",
+			"movement": {
+				"canSwim": true,
+				"crouchSpeed": 3.0,
+				"facingRotationSpeed": 3.1415,
+				"headingRotationSpeed": 3.1415,
+				"jumpImpulse": 7.0,
+				"moveSpeed": 4.0,
+				"slowDownSpeed": 2.5,
+				"sprintSpeed": 8.0
+			},
+			"name": "Phe",
+			"ragdoll": "$SURVIVAL_DATA/Character/Char_Male/char_male_ragdoll.json",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_Questmechanic/char_questmechanic_tp.rend",
+				"$SURVIVAL_DATA/Character/Char_Questmechanic/char_questmechanic_emotes.rend",
+				"$GAME_DATA/Character/Char_Male/Animations/char_male_tp_swim.rend",
+				"$SURVIVAL_DATA/Character/Char_Questmechanic/char_questmechanic_head.rend",
+				"$SURVIVAL_DATA/Character/Char_Questmechanic/char_questmechanic.rend",
+				"$SURVIVAL_DATA/Character/Char_Male/Outfit/Jacket/Outfit_default_jacket/char_female_outfit_default_jacket.rend",
+				"$SURVIVAL_DATA/Character/Char_Male/Outfit/Gloves/Outfit_default_gloves/char_shared_outfit_default_gloves.rend",
+				"$SURVIVAL_DATA/Character/Char_Male/Outfit/Pants/Outfit_default_pants/char_female_outfit_default_pants.rend",
+				"$SURVIVAL_DATA/Character/Char_Male/Outfit/Shoes/Outfit_default_shoes/char_female_outfit_default_shoes.rend",
+				"$SURVIVAL_DATA/Character/Char_Male/Outfit/Backpack/Outfit_default_backpack/char_shared_outfit_default_backpack.rend"
+			],
+			"showInEditor": true,
+			"skinColorIndex": 4,
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					0.683
+				]
+			},
+			"unit": {
+				"data": {
+					"questUnitName": "Phe"
+				},
+				"scriptClass": "QuestActorUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/QuestActorUnit.lua"
+			},
+			"uuid": "fd8e1f0c-364b-4522-8ecd-3c7dc582ea06"
+		},
+		// Phe Clone character Use in Drillbot fight to not despawn "real" Phe
+		{
+			"capsule": {
+				"crouchHeight": 0.8,
+				"height": 1.4,
+				"radius": 0.3
+			},
+			"character": {
+				"data": {
+					"questMarkerName": "quest_hosted_phe.marker",
+					"questUnitName": "Phe_Clone"
+				},
+				"scriptClass": "PheQuestCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/PheQuestCharacter.lua"
+			},
+			"hairGradient": {
+				"begin": [
+					0.065,
+					0.031772,
+					0.0065,
+					1.0
+				],
+				"end": [
+					0.19,
+					0.096471,
+					0.03515,
+					1.0
+				]
+			},
+			"hit": {
+				"crouch": {
+					"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_hit_crouch_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.4
+					]
+				},
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_hit_stand_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.7
+					]
+				}
+			},
+			"mass": 120.0,
+			"material": "RagdollHuman",
+			"movement": {
+				"canSwim": true,
+				"crouchSpeed": 3.0,
+				"facingRotationSpeed": 3.1415,
+				"headingRotationSpeed": 3.1415,
+				"jumpImpulse": 7.0,
+				"moveSpeed": 4.0,
+				"slowDownSpeed": 2.5,
+				"sprintSpeed": 8.0
+			},
+			"name": "Phe_Clone",
+			"ragdoll": "$SURVIVAL_DATA/Character/Char_Male/char_male_ragdoll.json",
+			"renderables": [
+				"$SURVIVAL_DATA/Character/Char_Questmechanic/char_questmechanic_tp.rend",
+				"$SURVIVAL_DATA/Character/Char_Questmechanic/char_questmechanic_emotes.rend",
+				"$GAME_DATA/Character/Char_Male/Animations/char_male_tp_swim.rend",
+				"$SURVIVAL_DATA/Character/Char_Questmechanic/char_questmechanic_head.rend",
+				"$SURVIVAL_DATA/Character/Char_Questmechanic/char_questmechanic.rend",
+				"$SURVIVAL_DATA/Character/Char_Male/Outfit/Jacket/Outfit_default_jacket/char_female_outfit_default_jacket.rend",
+				"$SURVIVAL_DATA/Character/Char_Male/Outfit/Gloves/Outfit_default_gloves/char_shared_outfit_default_gloves.rend",
+				"$SURVIVAL_DATA/Character/Char_Male/Outfit/Pants/Outfit_default_pants/char_female_outfit_default_pants.rend",
+				"$SURVIVAL_DATA/Character/Char_Male/Outfit/Shoes/Outfit_default_shoes/char_female_outfit_default_shoes.rend",
+				"$SURVIVAL_DATA/Character/Char_Male/Outfit/Backpack/Outfit_default_backpack/char_shared_outfit_default_backpack.rend"
+			],
+			"showInEditor": true,
+			"skinColorIndex": 4,
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					0.683
+				]
+			},
+			"unit": {
+				"data": {
+					"questUnitName": "Phe_Clone"
+				},
+				"scriptClass": "QuestActorUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/QuestActorUnit.lua"
+			},
+			"uuid": "18e99132-a3d9-4031-9247-d99118e426b4"
+		},
+		{
+			"capsule": {
+				"crouchHeight": 0.8,
+				"height": 1.4,
+				"radius": 0.3
+			},
+			"character": {
+				"data": {},
+				"scriptClass": "MechanicQuestCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/MechanicQuestCharacter.lua"
+			},
+			"hit": {
+				"crouch": {
+					"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_hit_crouch_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.4
+					]
+				},
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_hit_stand_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.7
+					]
+				}
+			},
+			"mass": 120.0,
+			"material": "RagdollHuman",
+			"movement": {
+				"canSwim": true,
+				"crouchSpeed": 3.0,
+				"facingRotationSpeed": 3.1415,
+				"headingRotationSpeed": 3.1415,
+				"jumpImpulse": 7.0,
+				"moveSpeed": 4.0,
+				"slowDownSpeed": 2.5,
+				"sprintSpeed": 8.0
+			},
+			"name": "scrapperactor",
+			"ragdoll": "$SURVIVAL_DATA/Character/Char_Male/char_male_ragdoll.json",
+			"renderables": [
+				"$GAME_DATA/Character/Char_Male/Animations/char_male_tp.rend",
+				"$GAME_DATA/Character/Char_Male/Animations/char_male_tp_swim.rend",
+				"$SURVIVAL_DATA/Character/Char_Male/Animations/char_male_tp_npc_emote.rend",
+				"$SURVIVAL_DATA/Character/Char_Male/Outfit/Hat/Outfit_scrapper_hat/char_male_outfit_scrapper_hat.rend",
+				"$SURVIVAL_DATA/Character/Char_Male/Outfit/Jacket/Outfit_scrapper_jacket/char_male_outfit_scrapper_jacket.rend",
+				"$SURVIVAL_DATA/Character/Char_Male/Outfit/Gloves/Outfit_scrapper_gloves/char_male_outfit_scrapper_gloves.rend",
+				"$SURVIVAL_DATA/Character/Char_Male/Outfit/Pants/Outfit_scrapper_pants/char_male_outfit_scrapper_pants.rend",
+				"$SURVIVAL_DATA/Character/Char_Male/Outfit/Shoes/Outfit_scrapper_shoes/char_shared_outfit_scrapper_shoes.rend",
+				"$SURVIVAL_DATA/Character/Char_Male/Outfit/Backpack/Outfit_scrapper_backpack/char_shared_outfit_scrapper_backpack.rend"
+			],
+			"showInEditor": true,
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					0.683
+				]
+			},
+			"unit": {
+				"data": {},
+				"scriptClass": "QuestActorUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/QuestActorUnit.lua"
+			},
+			// Npc Scrapper Actor
+			"uuid": "5d3d7b06-5176-4d0e-b3f8-260c58600edc"
+		},
+		{
+			"capsule": {
+				"crouchHeight": 0.8,
+				"height": 1.4,
+				"radius": 0.3
+			},
+			"character": {
+				"data": {},
+				"scriptClass": "MechanicQuestCharacter",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/characters/MechanicQuestCharacter.lua"
+			},
+			"hit": {
+				"crouch": {
+					"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_hit_crouch_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.4
+					]
+				},
+				"stand": {
+					"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_hit_stand_col.obj",
+					"offset": [
+						0.0,
+						0.0,
+						0.7
+					]
+				}
+			},
+			"mass": 120.0,
+			"material": "RagdollHuman",
+			"movement": {
+				"canSwim": true,
+				"crouchSpeed": 3.0,
+				"facingRotationSpeed": 3.1415,
+				"headingRotationSpeed": 3.1415,
+				"jumpImpulse": 7.0,
+				"moveSpeed": 4.0,
+				"slowDownSpeed": 2.5,
+				"sprintSpeed": 8.0
+			},
+			"name": "axobotactor",
+			"ragdoll": "$SURVIVAL_DATA/Character/Char_Male/char_male_ragdoll.json",
+			"renderables": [
+				"$GAME_DATA/Character/Char_Male/Animations/char_male_tp.rend",
+				"$GAME_DATA/Character/Char_Male/Animations/char_male_tp_swim.rend",
+				"$SURVIVAL_DATA/Character/Char_Male/Animations/char_male_tp_npc_emote.rend",
+				"$SURVIVAL_DATA/Character/Char_axobot/char_axobot_humanoid.rend"
+			],
+			"showInEditor": true,
+			"tumble": {
+				"col": "$SURVIVAL_DATA/Character/Char_Male/char_male_col.obj",
+				"offset": [
+					0.0,
+					0.0,
+					0.683
+				]
+			},
+			"unit": {
+				"data": {},
+				"scriptClass": "QuestActorUnit",
+				"scriptPath": "$CONTENT_DATA/Scripts/game/units/QuestActorUnit.lua"
+			},
+			// Npc Axobot Actor
+			"uuid": "6f59f58b-be30-4b8f-bb32-727c5a6137bf"
+		}
+	]
+}

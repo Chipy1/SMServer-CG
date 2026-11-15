@@ -1,7 +1,7 @@
-dofile("$SURVIVAL_DATA/Scripts/game/survival_constants.lua")
-dofile "$SURVIVAL_DATA/Scripts/game/survival_shapes.lua"
-dofile( "$SURVIVAL_DATA/Scripts/game/managers/WarehouseManager.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
+dofile("$CONTENT_DATA/Scripts/game/survival_constants.lua")
+dofile "$CONTENT_DATA/Scripts/game/survival_shapes.lua"
+dofile( "$CONTENT_DATA/Scripts/game/managers/WarehouseManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/util.lua" )
 
 -- Server side
 RespawnManager = class( nil )
@@ -283,6 +283,31 @@ function RespawnManager.sv_clearBeds( self, player )
 		self:sv_saveBeds()
 	end
 end
+
+function RespawnManager.Sv_RemoveBedsInWorld( world )
+	if g_respawnManager then
+		g_respawnManager:sv_removeBedsInWorld( world )
+	end
+end
+
+function RespawnManager.sv_removeBedsInWorld( self, world )
+	local updatedPlayerBeds = {}
+	local playersUsingBed = {}
+	for playerBedKey, playerBed in pairs( self.sv.playerBeds ) do
+		if playerBed.world == world then
+			playersUsingBed[#playersUsingBed+1] = playerBed.player
+		else
+			updatedPlayerBeds[playerBedKey] = playerBed
+		end
+	end
+	self.sv.playerBeds = updatedPlayerBeds
+	self:sv_saveBeds()
+
+	for _, player in ipairs( playersUsingBed ) do
+		self:sv_bedNoLongerAvailable( player )
+	end
+end
+
 
 function RespawnManager.sv_updateBed( self, shape )
 	local updatedPlayerBeds = {}

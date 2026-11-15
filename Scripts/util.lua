@@ -1,9 +1,9 @@
 --util.lua
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_shapes.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_constants.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/survival_projectiles.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_shapes.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_constants.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/survival_projectiles.lua" )
 
-dofile( "$SURVIVAL_DATA/Scripts/terrain/underground/chunk_raster.lua" )
+dofile( "$CONTENT_DATA/Scripts/terrain/underground/chunk_raster.lua" )
 
 function printf( s, ... )
 	return print( s:format( ... ) )
@@ -41,6 +41,15 @@ function IsPositionInBox( position, centerPos, halfExtents )
 	return position.x >= centerPos.x - halfExtents.x and position.x <= centerPos.x + halfExtents.x and
 			position.y >= centerPos.y - halfExtents.y and position.y <= centerPos.y + halfExtents.y and
 			position.z >= centerPos.z - halfExtents.z and position.z <= centerPos.z + halfExtents.z
+end
+
+-- Sphere of radius horizontalRadius, sliced flat by horizontal planes at +/- verticalRadius from center.
+function IsPositionInTruncatedSphere( position, centerPos, radius, verticalTruncation )
+	local offset = position - centerPos
+	if math.abs( offset.z ) > verticalTruncation then
+		return false
+	end
+	return offset:length2() <= ( radius * radius )
 end
 
 function Distance2ToAabb( point, aabbMin, aabbMax )
@@ -108,9 +117,9 @@ function orthogonal( vec )
 
 	local other = sm.vec3.new( 0, 0, 1 )
 	if x < y and x < z then
-		sm.vec3.new( 1, 0, 0 )
+		other = sm.vec3.new( 1, 0, 0 )
 	elseif y < x and y < z then
-		sm.vec3.new( 0, 1, 0 )
+		other = sm.vec3.new( 0, 1, 0 )
 	end
 	return vec:cross( other )
 end
@@ -173,6 +182,7 @@ function indexOf( array, predicate )
 			return index
 		end
 	end
+	return nil
 end
 
 function concat( a, b )
@@ -1268,6 +1278,7 @@ local ToolItems = {
 	[tostring( tool_handbook )] = obj_tool_handbook,
 	[tostring( tool_scrap_spudgun )] = obj_tool_scrap_spudgun,
 	[tostring( tool_launcher )] = obj_tool_launcher,
+	[tostring( tool_claygun )] = obj_tool_claygun,
 	["ed185725-ea12-43fc-9cd7-4295d0dbf88b"] = obj_tool_sledgehammer, --Creative sledgehammer
 }
 function GetToolProxyItem( toolUuid )
@@ -1579,22 +1590,10 @@ end
 
 function SendEvent( object, callbackName, params )
 	local t = type( object )
-	if t == "World" then
-		sm.event.sendToWorld( object, callbackName, params )
-	elseif t == "Unit" then
-		sm.event.sendToUnit( object, callbackName, params )
-	elseif t == "Player" then
-		sm.event.sendToPlayer( object, callbackName, params )
-	elseif t == "Character" then
-		sm.event.sendToCharacter( object, callbackName, params )
-	elseif t == "Harvestable" then
-		sm.event.sendToHarvestable( object, callbackName, params )
-	elseif t == "Interactable" then
-		sm.event.sendToInteractable( object, callbackName, params )
-	elseif t == "ScriptableObject" then
-		sm.event.sendToScriptableObject( object, callbackName, params )
-	elseif t == "Tool" then
-		sm.event.sendToTool( object, callbackName, params )
+
+	local event = sm.event["sendTo"..t]
+	if event then
+		event(object, callbackName, params)
 	else
 		sm.log.error( "Tried to send event to non-supported type", t )
 	end
@@ -2090,12 +2089,10 @@ end
 
 function SetTileStorageFlag( tileStorageKey, flag )
 	TileStorageManager.Sv_SyncedSetValueInSubTable( tileStorageKey, TILESTORAGE_FLAGS_TABLE, flag, true )
-	TileStorageManager.Sv_Save()
 end
 
 function UnsetTileStorageFlag( tileStorageKey, flag )
 	TileStorageManager.Sv_SyncedSetValueInSubTable( tileStorageKey, TILESTORAGE_FLAGS_TABLE, flag, nil )
-	TileStorageManager.Sv_Save()
 end
 
 function SetTileStorageFlagAtPosition( world, position, flag )

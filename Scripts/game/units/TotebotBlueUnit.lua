@@ -1,18 +1,18 @@
-dofile "$SURVIVAL_DATA/Scripts/game/units/unit_util.lua"
-dofile "$SURVIVAL_DATA/Scripts/util.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/util/Ticker.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/util/Timer.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_shapes.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_units.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/PathingState.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/survival_constants.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/BaseTotebotUnit.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/IdleRoamState.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/IdleRoamSwimState.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/TorpedoAttackState.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/TotebotBlueChargeState.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/BreachState.lua"
-dofile "$SURVIVAL_DATA/Scripts/game/units/states/VoxelBreachState.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/unit_util.lua"
+dofile "$CONTENT_DATA/Scripts/util.lua"
+dofile "$CONTENT_DATA/Scripts/game/util/Ticker.lua"
+dofile "$CONTENT_DATA/Scripts/game/util/Timer.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_shapes.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_units.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/PathingState.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_constants.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/BaseTotebotUnit.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/IdleRoamState.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/IdleRoamSwimState.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/TorpedoAttackState.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/TotebotBlueChargeState.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/BreachState.lua"
+dofile "$CONTENT_DATA/Scripts/game/units/states/VoxelBreachState.lua"
 
 TotebotBlueUnit = class( BaseTotebotUnit )
 
@@ -173,13 +173,6 @@ function TotebotBlueUnit.server_onCreate( self )
 	self.lookAtState.tolerance = 0.5
 	self.lookAtState.avoidance = false
 	self.lookAtState.movementType = "stand"
-
-	-- Flee
-	self.raidFlee = self.unit:createState( "flee" )
-	self.raidFlee.movementAngleThreshold = math.rad( 180 )
-	self.raidFlee.maxFleeTime = 0.0
-	self.raidFlee.maxDeviation = 45 * math.pi / 180
-	self.raidFlee.debugName = "raidFlee"
 
 	-- Hit stun state
 	self.hitStunState = self.unit:createState( "wait" )
@@ -347,27 +340,7 @@ function TotebotBlueUnit.server_onUnitUpdate( self, dt )
 
 	RobotSelectTarget( self, AllyRange, dt )
 	self:sv_updateWaterTarget()
-
-	-- Raiders without a target search for shapes to destroy
-	if self.saved.raidPosition and not self.target and sm.exists( self.unit.character ) then
-		local raidSpots = RaidManager.Sv_GetPlantLocations( self.unit.character:getWorld().id, self.saved.raidKey )
-		if #raidSpots > 0 and ( self.saved.randomPlotTarget == nil or self.saved.randomPlotTarget > #raidSpots ) then
-			self.saved.randomPlotTarget = math.random( #raidSpots )
-			self.isDirty = true
-			local closestSpot = raidSpots[self.saved.randomPlotTarget]
-			self.homePosition = closestSpot + sm.vec3.new( 0, 0, self.unit.character:getHeight() * 0.5 )
-			if self.lastTargetPosition == nil or ( self.lastTargetPosition - closestSpot ):length2() > ( RAIDER_TARGETING_RADIUS * 1.5 ) then
-				local attackableShape, attackPosition = FindAttackableShape( closestSpot, RAIDER_TARGETING_RADIUS, MeleeBreachLevel )
-				if attackableShape and attackPosition then
-					self.lastTargetPosition = attackPosition
-				elseif self.unit.character then
-					self.pathingState:sv_setDestination( closestSpot )
-					self.saved.raidPosition = closestSpot
-					self.lastTargetPosition = closestSpot
-				end
-			end
-		end
-	end
+	SeekFallbackTarget( self, MeleeBreachLevel )
 
 	-- Check for positions acquired from noise
 	local noiseShape = g_unitManager:sv_getClosestNoiseShape( self.unit.character.worldPosition, HearRange )

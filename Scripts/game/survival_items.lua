@@ -1046,6 +1046,7 @@ ITEMS = {
 	obj_tool_handbook = sm.uuid.new( "1226cfd3-4fc8-4f9e-b21a-0c9576e2ef2f" ),
 	obj_tool_scrap_spudgun = sm.uuid.new( "9c54cf82-d000-4368-99f7-00ba477146fb" ),
 	obj_tool_launcher = sm.uuid.new( "18f9185d-a047-43aa-a3c6-a8f828e04d7a" ),
+	obj_tool_claygun = sm.uuid.new( "41490fed-8853-4797-befb-a14993d8d14b" ),
 	----------------------------------------
 	-- tools.json
 	----------------------------------------

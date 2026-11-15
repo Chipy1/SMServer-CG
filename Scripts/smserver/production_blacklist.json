@@ -1,5 +1,6 @@
 {
 	"items": {
+		"b51ad015-66e9-41b9-916c-277f9c93232d": "game grid block: advertised as indestructible, unremovable griefing block",
 		"c9e34f58-b30d-4ab5-92c5-76f707090c45": "gravity module: FPS-dependent per-creation gravity impulses",
 		"e93ca226-4166-49e3-97cd-bb8df20242d7": "gravity modulator: changes world gravity for the whole server"
 	}

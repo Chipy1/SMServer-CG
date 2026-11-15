@@ -1,7 +1,7 @@
 ---@class RecipeManager : ScriptableObjectClass
 ---@field sv table
 ---@field cl table
-dofile( "$SURVIVAL_DATA/Scripts/game/util/recipes.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/util/recipes.lua" )
 RecipeManager = class( nil )
 
 local CoreRecipes = {}
@@ -130,7 +130,11 @@ local DefaultUnlockedItems = {
 
 
 	ITEMS.obj_industrial_windshieldlarge,
-	ITEMS.obj_industrial_windshield
+	ITEMS.obj_industrial_windshield,
+
+	-- Custom game: the Manipulator recipe (craftbot_manipulator set) is unlocked
+	-- by default and must not depend on a randomly found schematic.
+	sm.uuid.new( "0523efa2-6ec2-4934-8cc1-16b2b951cdb1" )
 }
 
 -- for unlocking recipes the first time you upgrade to a new level of crafter.

@@ -1,4 +1,4 @@
-dofile "$SURVIVAL_DATA/Scripts/game/survival_dialogs.lua"
+dofile "$CONTENT_DATA/Scripts/game/survival_dialogs.lua"
 
 ScoutFarmerCharacter = class( nil )
 

@@ -1,11 +1,13 @@
-dofile( "$SURVIVAL_DATA/Scripts/game/kinematics/ParentedKinematic.lua" )
-dofile( "$SURVIVAL_DATA/Scripts/game/quests/ActivateMininghubQuest.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/kinematics/ParentedKinematic.lua" )
+dofile( "$CONTENT_DATA/Scripts/game/quests/ActivateMininghubQuest.lua" )
 
 ParentedKinematicMininghubLever = class( ParentedKinematic )
 
 local MininghubLightManagerUuid = sm.uuid.new( "53b762b3-f2f9-4faa-beca-750fa99c31c2" )
 
 -- Server
+
+local MininghubCell = { x = -2, y = -1 }
 
 function ParentedKinematicMininghubLever.server_onCreate( self )
 	ParentedKinematic.server_onCreate( self )
@@ -16,7 +18,7 @@ function ParentedKinematicMininghubLever.server_onCreate( self )
 end
 
 function ParentedKinematicMininghubLever.sv_n_activate( self )
-	if self.sv.used then
+	if self.sv.used or KinematicManager.Sv_IsMoving( self.sv.tileStorageKey, "mininghub.pylon" ) then
 		return
 	end
 	self.sv.used = true
@@ -24,6 +26,21 @@ function ParentedKinematicMininghubLever.sv_n_activate( self )
 	self.network:setClientData( { usable = false }, 3 )
 	QuestManager.Sv_SendEvent( "mininghub_lever_pulled", { position = self.harvestable.worldPosition } )
 	sm.scriptableObject.createScriptableObject( MininghubLightManagerUuid, { position = self.harvestable.worldPosition }, self.harvestable:getWorld() )
+	KinematicManager.Sv_Activate( self.sv.tileStorageKey, "mininghub.pylon", { persistent = true }, true )
+	KinematicManager.Sv_Activate( self.sv.tileStorageKey, "activateLights", { persistent = true }, true )
+end
+
+function ParentedKinematicMininghubLever.server_onFixedUpdate( self )
+	ParentedKinematic.server_onFixedUpdate( self )
+
+	if self.sv.used and not self.sv.retractCheck and not KinematicManager.Sv_IsMoving( self.sv.tileStorageKey, "mininghub.pylon" ) then
+        local world = WorldManager.Sv_GetWorld( "undergroundworld1" )
+        if sm.exists( world ) and world:isCellLoadedServer( MininghubCell.x, MininghubCell.y ) then
+            KinematicManager.Sv_ResetTrack( self.sv.tileStorageKey, "mininghub.pylon" )
+            self.sv.retractCheck = true
+        end
+    end
+
 end
 
 -- Client

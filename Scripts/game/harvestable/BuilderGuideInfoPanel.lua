@@ -1,5 +1,5 @@
-dofile("$SURVIVAL_DATA/Scripts/util.lua")
-dofile( "$GAME_DATA/Scripts/gui/GridScrollView.lua" )
+dofile("$CONTENT_DATA/Scripts/util.lua")
+dofile( "$CONTENT_DATA/Scripts/gui/GridScrollView.lua" )
 
 BuilderGuideInfoPanel = class( nil )
 
