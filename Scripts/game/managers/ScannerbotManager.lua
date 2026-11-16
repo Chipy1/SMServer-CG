@@ -73,6 +73,11 @@ function ScannerbotManager.server_onCreate( self )
 		self.sv.saved.huntsPerformed = 0
 		shouldSave = true
 	end
+	-- Scannerbot spawning is disabled. Drop saved state so no unit is recreated.
+	if self.sv.saved.scannerbotData then
+		self.sv.saved.scannerbotData = nil
+		shouldSave = true
+	end
 	if shouldSave then
 		sm.storage.save( STORAGE_CHANNEL_SCANNERBOT_MANAGER, self.sv.saved )
 	end
@@ -779,17 +784,8 @@ function ScannerbotManager.sv_updateRoadDestination( self )
 end
 
 function ScannerbotManager.sv_shouldSpawn( self )
-	local hasSeenIntro = self.sv.saved.firstContactTick ~= nil
-	local hasProgressed = ProgressionManager.Sv_ConditionsFulfilled( { completedQuest = "quest_clear_minidungeon" } )
-	local playerInOverworld = false
-	for _, player in ipairs( sm.player.getAllPlayers() ) do
-		if InSameWorld( player, WorldManager.Sv_GetWorld( "overworld" ) ) then
-			playerInOverworld = true
-			break
-		end
-	end
-
-	return self.sv.isNightTime and hasSeenIntro and hasProgressed and playerInOverworld
+	-- Scannerbot spawning is disabled.
+	return false
 end
 
 function ScannerbotManager.sv_shouldHunt( self, currentTick )
