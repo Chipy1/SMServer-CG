@@ -34,10 +34,14 @@ end
 
 function TileElevator.server_onCreate( self )
 	self.sv = {}
-	self.sv.saved = self.storage:load()
+	local saved = self.storage:load()
+	if saved and not saved.costil0001 then
+		saved = nil
+	end
+	self.sv.saved = saved
 
 	if not self.sv.saved then
-		self.sv.saved = {}
+		self.sv.saved = {costil0001=true}
 
 		if self.params then
 			-- Params set externally (e.g. by a cell-load hook)

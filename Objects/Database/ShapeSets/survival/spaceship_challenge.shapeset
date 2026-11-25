@@ -149,6 +149,15 @@
 				"durability" : 3,
 				"friction" : 5
 			},
+			"scripted" : 
+			{
+				"classname" : "Chest",
+				"data" : 
+				{
+					"slots" : 1
+				},
+				"filename" : "$CONTENT_DATA/Scripts/game/interactables/Chest.lua"
+			},
 			"renderable" : 
 			{
 				"lodList" : 

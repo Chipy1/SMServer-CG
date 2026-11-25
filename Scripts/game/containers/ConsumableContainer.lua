@@ -26,7 +26,7 @@ function ConsumableContainer.server_onCreate( self )
 		end
 	end
 	if not container then
-		container = self.shape:getInteractable():addContainer( 0, ContainerSize, self.data.stackSize )
+		container = self.shape:getInteractable():addContainer( 0, self.data.containerSize or ContainerSize, self.data.stackSize )
 	end
 	if expected then
 		container:setFilters( { expected } )

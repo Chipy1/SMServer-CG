@@ -1,0 +1,56 @@
+{
+	"bodies": [
+		{
+			"childs": [
+                {
+                    "color": "65CCFF",
+                    "controller": {
+                        "active": false,
+                        "containers": null,
+                        "controllers": null,
+                        "id": 1,
+                        "joints": null
+                    },
+                    "pos": {
+                        "x": -3,
+                        "y": -6,
+                        "z": 12
+                    },
+                    "shapeId": "5d2f2d3f-cd6b-4d84-8320-7844b672b192",
+                    "xaxis": 1,
+                    "zaxis": -2
+                },
+                {
+                    "color": "65CCFF",
+                    "controller": {
+                        "active": false,
+                        "containers": null,
+                        "controllers": null,
+                        "id": 2,
+                        "joints": null
+                    },
+                    "pos": {
+                        "x": -3,
+                        "y": -6,
+                        "z": 16
+                    },
+                    "shapeId": "6fbdba46-e87f-4367-8c36-92e52c51227d",
+                    "xaxis": 1,
+                    "zaxis": -2
+                }
+			],
+			"type": 1
+		}
+	],
+	"joints": null,
+	"multiShapes": [
+		{
+			"childs": [
+				0,
+				1
+			],
+			"root": 0
+		}
+	],
+	"version": 4
+}

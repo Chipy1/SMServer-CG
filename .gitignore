@@ -1,5 +1,5 @@
 # Local build artifacts
-Cache/
+# Cache/
 Thumbnails/
 dist/
 *.zip

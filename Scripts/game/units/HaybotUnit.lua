@@ -275,7 +275,7 @@ function HaybotUnit.server_onRefresh( self )
 end
 
 function HaybotUnit.server_onFixedUpdate( self, dt )
-	BaseUnit.server_onFixedUpdate( self )
+	BaseUnit.server_onFixedUpdate( self, dt )
 	
 	self.stateTicker:tick()
 	

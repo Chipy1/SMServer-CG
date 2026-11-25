@@ -222,7 +222,7 @@ end
 
 function TotebotGreenUnit.server_onFixedUpdate( self, dt )
 	-- Remove the unit when the death timestamp is reached
-	BaseUnit.server_onFixedUpdate( self )
+	BaseUnit.server_onFixedUpdate( self, dt )
 
 	if self.unit.character:isSwimming() then
 		self.roamState.cliffAvoidance = false

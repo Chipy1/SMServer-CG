@@ -194,7 +194,7 @@ function MinerbotUnit.server_onDestroy( self )
 end
 
 function MinerbotUnit.server_onFixedUpdate( self, dt )
-	BaseUnit.server_onFixedUpdate( self )
+	BaseUnit.server_onFixedUpdate( self, dt )
 
 	if self.isInCombat then
 		self.combatTimer:tick()

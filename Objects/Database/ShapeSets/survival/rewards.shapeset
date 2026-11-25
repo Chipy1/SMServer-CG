@@ -560,9 +560,14 @@
 				"y" : 4,
 				"z" : 4
 			},
-			"chest" : 
+			"scripted" : 
 			{
-				"slots" : 6
+				"classname" : "Chest",
+				"data" : 
+				{
+					"slots" : 6
+				},
+				"filename" : "$CONTENT_DATA/Scripts/game/interactables/Chest.lua"
 			},
 			"color" : "455552ff",
 			"name" : "obj_rewards_safe",

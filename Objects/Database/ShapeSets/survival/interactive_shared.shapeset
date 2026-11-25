@@ -8,9 +8,14 @@
 				"y" : 3,
 				"z" : 4
 			},
-			"chest" : 
+			"scripted" : 
 			{
-				"slots" : 30
+				"classname" : "Chest",
+				"data" : 
+				{
+					"slots" : 30
+				},
+				"filename" : "$CONTENT_DATA/Scripts/game/interactables/Chest.lua"
 			},
 			"color" : "df7f01",
 			"flammable" : false,
@@ -120,9 +125,14 @@
 				"y" : 6,
 				"z" : 6
 			},
-			"chest" : 
+			"scripted" : 
 			{
-				"slots" : 100
+				"classname" : "Chest",
+				"data" : 
+				{
+					"slots" : 100
+				},
+				"filename" : "$CONTENT_DATA/Scripts/game/interactables/Chest.lua"
 			},
 			"color" : "df7f01",
 			"flammable" : false,
@@ -213,9 +223,14 @@
 				"y" : 2,
 				"z" : 3
 			},
-			"chest" : 
+			"scripted" : 
 			{
-				"slots" : 10
+				"classname" : "Chest",
+				"data" : 
+				{
+					"slots" : 10
+				},
+				"filename" : "$CONTENT_DATA/Scripts/game/interactables/Chest.lua"
 			},
 			"color" : "df7f01",
 			"flammable" : false,
@@ -253,9 +268,14 @@
 				"y" : 7,
 				"z" : 2
 			},
-			"chest" : 
+			"scripted" : 
 			{
-				"slots" : 4
+				"classname" : "Chest",
+				"data" : 
+				{
+					"slots" : 4
+				},
+				"filename" : "$CONTENT_DATA/Scripts/game/interactables/Chest.lua"
 			},
 			"color" : "3e9ffe",
 			"flammable" : false,
@@ -275,9 +295,14 @@
 			"uuid" : "d0afb527-e786-4a22-a907-6da7e7cba8cb"
 		},
 		{
-			"chest" : 
+			"scripted" : 
 			{
-				"slots" : 2
+				"classname" : "Chest",
+				"data" : 
+				{
+					"slots" : 2
+				},
+				"filename" : "$CONTENT_DATA/Scripts/game/interactables/Chest.lua"
 			},
 			"color" : "beb16c",
 			"flammable" : false,
@@ -310,9 +335,14 @@
 				"y" : 2,
 				"z" : 3
 			},
-			"chest" : 
+			"scripted" : 
 			{
-				"slots" : 20
+				"classname" : "Chest",
+				"data" : 
+				{
+					"slots" : 20
+				},
+				"filename" : "$CONTENT_DATA/Scripts/game/interactables/Chest.lua"
 			},
 			"color" : "df7f01",
 			"flammable" : false,
@@ -338,9 +368,14 @@
 				"y" : 2,
 				"z" : 3
 			},
-			"chest" : 
+			"scripted" : 
 			{
-				"slots" : 10
+				"classname" : "Chest",
+				"data" : 
+				{
+					"slots" : 10
+				},
+				"filename" : "$CONTENT_DATA/Scripts/game/interactables/Chest.lua"
 			},
 			"color" : "df7f01ff",
 			"flammable" : false,

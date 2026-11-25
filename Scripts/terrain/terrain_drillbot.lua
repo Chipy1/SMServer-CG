@@ -3,7 +3,7 @@ dofile( "$CONTENT_DATA/Scripts/terrain/terrain_util2.lua" )
 dofile( "$CONTENT_DATA/Scripts/kinematic_util.lua")
 dofile "$CONTENT_DATA/Scripts/terrain/tile_database.lua"
 
-dofile "$CONTENT_DATA/Scriptspts/terrain/terrain_prepare_cell_util.lua"
+dofile "$CONTENT_DATA/Scripts/terrain/terrain_prepare_cell_util.lua"
 
 local CombatLegsSetup = {
 	center = "c_run01",

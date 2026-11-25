@@ -42,6 +42,7 @@ function MechanicCharacter.server_onCreate( self )
 	BaseCharacter.server_onCreate( self )
 	local player = self.character:getPlayer()
 	if player then
+		player:setCharacter(self.character)
 		sm.event.sendToPlayer( player, "sv_e_onSpawnCharacter" )
 	end
 

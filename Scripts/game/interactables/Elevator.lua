@@ -240,13 +240,18 @@ function Elevator.client_onDestroy( self )
 end
 
 function Elevator.server_onCreate( self )
-	self.saved = self.storage:load()
+	local saved = self.storage:load()
+	if saved and not saved.costil0001 then
+		saved = nil
+	end
+	self.saved = saved
 	self.sv = {}
 	
 	assert( ( self.saved == nil ) ~= ( self.params == nil ), "Warehouse elevator created without params." )
 
 	if self.saved == nil then
 		self.saved = self.params
+		self.saved.costil0001 = true
 		self.saved.isUnlocked = false
 		self:findOrCreatePortal()
 		self.storage:save( self.saved )
@@ -446,7 +451,7 @@ function Elevator.sv_panelButtonPressed( self )
 		self:sv_createElevatorDestination()
 		ElevatorManager.Sv_Go( self.interactable )
 	end
-end
+end	
 
 function Elevator.cl_n_doorOpen( self, params )
 	local inside = ( params.contentsA and TriggerContentsContainsLocalPlayer( params.contentsA ) ) or ( params.contentsB and TriggerContentsContainsLocalPlayer( params.contentsB ) )

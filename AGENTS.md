@@ -3,6 +3,7 @@
 - Research implementation of code in this project and the game on `/mnt/p6/Steam/steamapps/common/Scrap\ Mechanic/`
 # DO NOT:
 - overcomplicate, search for a complete in-mod implementation
+- use the game's scripts directly (no `dofile`/`require` of `$GAME_DATA`, `$SURVIVAL_DATA` or any other path outside the mod). You may only copy the script from the game into the mod and reference that copy via `$CONTENT_DATA`.
 
 # DOCUMENTATION
 - ScriptableObjectSets set the scriptable objects the game relies on to execute scripts.

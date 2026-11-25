@@ -27,7 +27,9 @@ end
 
 -- Removes the unit once its deathTickTimestamp is reached; returns true when it did.
 -- A raider leftover is only destroyed when CanDespawnRaidLeftover allows it, any other unit is marked for removal.
-function BaseUnit.server_onFixedUpdate( self )
+function BaseUnit.server_onFixedUpdate( self, dt )
+	local server_onUnitUpdate = self.server_onUnitUpdate
+	if server_onUnitUpdate then server_onUnitUpdate(self, dt) end
 	if sm.exists( self.unit ) and not self.destroyed then
 		local deathTick = self.saved.deathTickTimestamp
 		local reached = deathTick ~= nil and sm.game.getCurrentTick() >= deathTick

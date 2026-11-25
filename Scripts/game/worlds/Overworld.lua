@@ -25,6 +25,7 @@ Overworld.cellMinY = -48
 Overworld.cellMaxY = 47
 Overworld.horizonWater = true
 Overworld.hLod = true
+Overworld.worldBorder = true
 
 function Overworld.server_onCreate( self )
 	print( "Overworld.server_onCreate" )

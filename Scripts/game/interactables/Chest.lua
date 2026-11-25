@@ -8,6 +8,7 @@ Chest.connectionInput = sm.interactable.connectionType.logic
 
 local AreaTriggerSize = 6
 
+
 function Chest.server_onCreate( self )
 	self.sv = {}
 	local container = self.shape.interactable:getContainer( 0 )
@@ -68,6 +69,7 @@ function Chest.server_onFixedUpdate( self )
 			self.network:sendToClients( "cl_n_looted", looted )
 		end
 	end
+	
 end
 
 function Chest.sv_n_open( self, _, player )

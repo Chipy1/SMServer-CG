@@ -98,6 +98,7 @@ function UndergroundElevatorManager.server_onCreate( self )
 	self.loadedCells = {}
 	self.loadCellHandles = {}
 	self.loadDestinationQueues = {}
+	self.forceFloorRequests = {}
 
 	for _, elevator in pairs( self.elevators ) do
 		if elevator.ticksToDestination >= 0 and elevator.destinationFloor > 0 then
@@ -127,6 +128,25 @@ end
 
 local function CellKey( world, x, y )
 	return world.id..":("..x..","..y..")"
+end
+
+-- Force-floor support (admin workaround for stuck rides).
+-- loadedCells is only populated by cell-load events that happen while the manager is
+-- alive, so a destination cell that was already resident is reported as "not ready"
+-- forever. Re-querying the engine keeps the forced transfer in sync with reality.
+local function IsFloorCellLoaded( floor )
+	if floor == nil or floor.world == nil or not sm.exists( floor.world ) then
+		return false
+	end
+	local ok, loaded = pcall( function()
+		return floor.world:isCellLoadedServer( floor.x, floor.y )
+	end )
+	return ok and loaded == true
+end
+
+local function GetMainFloorDebug( floorIndex )
+	local definition = UNDERGROUND_ELEVATORS["MAIN"] and UNDERGROUND_ELEVATORS["MAIN"].floors[floorIndex]
+	return definition and definition.debug or ( "floor "..tostring( floorIndex ) )
 end
 
 local function GetElevatorTravelDirection( elevator )
@@ -275,6 +295,15 @@ end
 
 function UndergroundElevatorManager.server_onFixedUpdate( self )
     local save = false
+	self.forceFloorRequests = self.forceFloorRequests or {}
+	for elevatorName, request in pairs( self.forceFloorRequests ) do
+		local elevator = self.elevators[elevatorName]
+		if elevator == nil or request == nil or elevator.floors[request.floor] == nil then
+			self.forceFloorRequests[elevatorName] = nil
+		elseif self:sv_tryApplyForceFloor( elevator, request ) then
+			self.forceFloorRequests[elevatorName] = nil
+		end
+	end
 	for i = #self.activeElevators, 1, -1 do
 		local elevator = self.activeElevators[i]
 		local hubFloorIndex = elevator.hubFloor or 1
@@ -474,7 +503,17 @@ function UndergroundElevatorManager.sv_loadWorlds( self, elevator )
 			hasWorld = sm.world.loadWorld( floorToLoad.world )
 		end
 
-		if not hasWorld then
+		if hasWorld then
+			-- A floor can already have a world reference saved while its elevator cell is
+			-- unloaded. Ensure the cell is explicitly loaded before the transfer checkpoint.
+			local loadCellHandleKey = elevator.name..floorIndex
+			if self.loadCellHandles[loadCellHandleKey] == nil then
+				local floor = elevator.floors[floorIndex]
+				if floor then
+					self.loadCellHandles[loadCellHandleKey] = floor.world:loadCellWithHandle( floor.x, floor.y, "sv_prepareCellsDone" )
+				end
+			end
+		else
 			local world = nil
 			local floorToCreate = UNDERGROUND_ELEVATORS[elevator.name].floors[floorIndex]
 			if floorToCreate.depth == 0 then -- Overworld is always created when game loads. We might end up here if teleporting to underground, bypassing cells with overworld elevators!
@@ -575,6 +614,253 @@ function UndergroundElevatorManager.sv_releaseLoadCellHandles( self, elevator )
         self.loadCellHandles[elevator.name..elevator.destinationFloor]:release()
         self.loadCellHandles[elevator.name..elevator.destinationFloor] = nil
     end
+end
+
+function UndergroundElevatorManager.sv_findOrCreateFloorWorld( self, elevatorName, floorIndex )
+	local definition = UNDERGROUND_ELEVATORS[elevatorName] and UNDERGROUND_ELEVATORS[elevatorName].floors[floorIndex]
+	if definition == nil then
+		return nil
+	end
+	if definition.depth == 0 then
+		local world = WorldManager.Sv_GetWorld( "overworld" )
+		if world and not sm.exists( world ) then
+			sm.world.loadWorld( world )
+		end
+		return world
+	end
+
+	local def = UNDERGROUND_DEFS[definition.depth]
+	if def == nil then
+		return nil
+	end
+	for _, worldToCheck in ipairs( sm.world.getWorlds() ) do
+		if worldToCheck:getScriptClass() == def.script.class then
+			if not sm.exists( worldToCheck ) then
+				sm.world.loadWorld( worldToCheck )
+			end
+			return worldToCheck
+		end
+	end
+	local world = sm.world.createWorld( def.script.file, def.script.class, { depth = definition.depth, worldFilePath = def.world }, math.random( 1073741823 ) )
+	sm.event.sendToGame( "sv_e_addUndergroundWorld", { depth = definition.depth, world = world }, sm.event.types.instant )
+	return world
+end
+
+function UndergroundElevatorManager.sv_ensureForceFloorCellLoaded( self, elevatorName, floorIndex )
+	local elevator = self.elevators[elevatorName]
+	local floor = elevator and elevator.floors[floorIndex]
+	if floor == nil or floor.world == nil then
+		return false
+	end
+	if not sm.exists( floor.world ) then
+		sm.world.loadWorld( floor.world )
+		return false
+	end
+	if IsFloorCellLoaded( floor ) then
+		self.loadedCells[CellKey( floor.world, floor.x, floor.y )] = true
+		return true
+	end
+	local key = elevatorName..floorIndex
+	if self.loadCellHandles[key] == nil then
+		printf( "Force floor: loading destination cell %s:(%s,%s)", floor.world.id, floor.x, floor.y )
+		self.loadCellHandles[key] = floor.world:loadCellWithHandle( floor.x, floor.y, "sv_prepareCellsDone" )
+	end
+	return false
+end
+
+-- A floor that has never been visited has no runtime entry in elevator.floors yet,
+-- so its elevator cell must be discovered from the terrain elevator locations and
+-- loaded first. The floor registers itself (Sv_RegisterElevatorFloor) once its cell
+-- is live, after which the normal forced-transfer path takes over.
+function UndergroundElevatorManager.sv_ensureForceFloorTarget( self, elevatorName, floorIndex, request )
+	local elevator = self.elevators[elevatorName]
+	local floor = elevator and elevator.floors[floorIndex]
+	if floor ~= nil then
+		return self:sv_ensureForceFloorCellLoaded( elevatorName, floorIndex )
+	end
+
+	local definition = UNDERGROUND_ELEVATORS[elevatorName] and UNDERGROUND_ELEVATORS[elevatorName].floors[floorIndex]
+	if definition == nil then
+		return false
+	end
+
+	local world = request.world
+	if world == nil or not sm.exists( world ) then
+		world = self:sv_findOrCreateFloorWorld( elevatorName, floorIndex )
+		request.world = world
+	end
+	if world == nil then
+		return false
+	end
+
+	local elevatorLocations = sm.storage.load( STORAGE_CHANNEL_ELEVATOR_LOCATIONS ) or {}
+	for _, locationNode in ipairs( elevatorLocations[world.id] or {} ) do
+		if locationNode.tags and isAnyOf( definition.connectionTag, locationNode.tags ) then
+			local x = math.floor( locationNode.pos.x / 64 )
+			local y = math.floor( locationNode.pos.y / 64 )
+			local ok, loaded = pcall( function() return world:isCellLoadedServer( x, y ) end )
+			if ok and loaded then
+				return false -- loaded, waiting for the harvestable script to register the floor
+			end
+			local key = elevatorName.."force"..floorIndex
+			if self.loadCellHandles[key] == nil then
+				printf( "Force floor: loading elevator cell %s:(%s,%s)", world.id, x, y )
+				self.loadCellHandles[key] = world:loadCellWithHandle( x, y, "sv_prepareCellsDone" )
+			end
+			return false
+		end
+	end
+	return false
+end
+
+function UndergroundElevatorManager.sv_requestForceFloor( self, elevatorName, targetFloor, player )
+	local elevator = self.elevators[elevatorName]
+	if elevator == nil then
+		return false, "Elevator '"..tostring( elevatorName ).."' is not registered yet."
+	end
+	local definition = UNDERGROUND_ELEVATORS[elevatorName] and UNDERGROUND_ELEVATORS[elevatorName].floors[targetFloor]
+	if definition == nil then
+		return false, "Unknown floor "..tostring( targetFloor ).."."
+	end
+
+	local debugName = GetMainFloorDebug( targetFloor )
+	if elevator.currentFloor == targetFloor and elevator.ticksToDestination == -1 then
+		return true, "Elevator '"..elevatorName.."' is already at floor "..targetFloor.." ("..debugName..")."
+	end
+
+	-- Cancel the current ride without touching currentFloor: occupants are still in
+	-- that floor's car until sv_tryApplyForceFloor performs the portal transfer.
+	elevator.ticksToDestination = -1
+	elevator.destinationFloor = elevator.currentFloor
+	local activeIndex = indexOf( self.activeElevators, function( value ) return value == elevator end )
+	if activeIndex ~= nil then
+		table.remove( self.activeElevators, activeIndex )
+	end
+	self:sv_releaseLoadCellHandles( elevator )
+
+	local request = { floor = targetFloor, player = player }
+	self.forceFloorRequests[elevatorName] = request
+
+	local loaded = self:sv_ensureForceFloorTarget( elevatorName, targetFloor, request )
+	return true, "Forcing elevator '"..elevatorName.."' to floor "..targetFloor.." ("..debugName..")"..
+		( loaded and "." or "; loading the destination world/cell..." )
+end
+
+function UndergroundElevatorManager.sv_tryApplyForceFloor( self, elevator, request )
+	local targetFloorIndex = request.floor
+	local targetFloor = elevator.floors[targetFloorIndex]
+	if targetFloor == nil then
+		self:sv_ensureForceFloorTarget( elevator.name, targetFloorIndex, request )
+		return false
+	end
+	if targetFloor.world == nil or not sm.exists( targetFloor.world ) then
+		self:sv_ensureForceFloorTarget( elevator.name, targetFloorIndex, request )
+		return false
+	end
+
+	if IsFloorCellLoaded( targetFloor ) then
+		self.loadedCells[CellKey( targetFloor.world, targetFloor.x, targetFloor.y )] = true
+	else
+		self:sv_ensureForceFloorCellLoaded( elevator.name, targetFloorIndex )
+		return false
+	end
+
+	local previousFloorIndex = elevator.currentFloor
+	if previousFloorIndex ~= 0 and previousFloorIndex ~= targetFloorIndex then
+		local previousFloor = elevator.floors[previousFloorIndex]
+		if previousFloor and IsFloorCellLoaded( previousFloor ) then
+			self.loadedCells[CellKey( previousFloor.world, previousFloor.x, previousFloor.y )] = true
+			local ok, transferred = pcall( self.sv_tryTransfer, self, elevator, previousFloorIndex, targetFloorIndex )
+			if not ok then
+				sm.log.error( "Forced elevator transfer failed: "..tostring( transferred ) )
+				return false
+			end
+			if not transferred then
+				return false
+			end
+		end
+	end
+
+	-- Match a normal arrival: move anything left in the other floor cars too. This also
+	-- rescues occupants that a completed ride already moved to its destination floor
+	-- before the admin forced the elevator somewhere else.
+	for floorIndex, floor in pairs( elevator.floors ) do
+		if floorIndex ~= targetFloorIndex and floorIndex ~= previousFloorIndex and IsFloorCellLoaded( floor ) then
+			self.loadedCells[CellKey( floor.world, floor.x, floor.y )] = true
+			local ok, transferred = pcall( self.sv_tryTransfer, self, elevator, floorIndex, targetFloorIndex )
+			if not ok then
+				sm.log.error( "Forced elevator transfer from floor "..floorIndex.." failed: "..tostring( transferred ) )
+				return false
+			end
+			if not transferred then
+				return false
+			end
+		end
+	end
+
+	self:sv_finishForcedFloor( elevator, targetFloorIndex, request.player )
+	return true
+end
+
+function UndergroundElevatorManager.sv_finishForcedFloor( self, elevator, targetFloor, player )
+	local debugName = GetMainFloorDebug( targetFloor )
+	local previousFloorIndex = elevator.currentFloor
+	local previousFloor = previousFloorIndex ~= 0 and elevator.floors[previousFloorIndex] or nil
+	local direction = previousFloorIndex > targetFloor and "up" or "down"
+
+	local forcedHandleKey = elevator.name..targetFloor
+	if self.loadCellHandles[forcedHandleKey] then
+		self.loadCellHandles[forcedHandleKey]:release()
+		self.loadCellHandles[forcedHandleKey] = nil
+	end
+	local dynamicHandleKey = elevator.name.."force"..targetFloor
+	if self.loadCellHandles[dynamicHandleKey] then
+		self.loadCellHandles[dynamicHandleKey]:release()
+		self.loadCellHandles[dynamicHandleKey] = nil
+	end
+
+	self:sv_releaseLoadCellHandles( elevator )
+	elevator.currentFloor = targetFloor
+	elevator.destinationFloor = targetFloor
+	elevator.ticksToDestination = -1
+
+	InitializeEmptyDoorStates( elevator )
+	for floorIndex in pairs( elevator.floors ) do
+		elevator.pendingDoorStates[floorIndex] = nil
+		SetElevatorDoorOpen( elevator, floorIndex, false )
+	end
+	self:sv_setElevatorDoorOpen( elevator, targetFloor, true )
+	SetElevatorDoorOpen( elevator, targetFloor, true )
+
+	local target = elevator.floors[targetFloor]
+	if target then
+		self:sv_lockDepthbotMarker( target.tileKey, elevator.name, targetFloor )
+	end
+	if previousFloorIndex ~= targetFloor then
+		self:sv_sendDepthbotEvent( elevator.name, previousFloorIndex, targetFloor, "sv_e_arrived" )
+	end
+
+	-- A forced change can happen mid-ride; make clients stop any travel audio/effects
+	-- that the regular arrival checkpoints would have stopped.
+	if self.network ~= nil then
+		local stopEffects = function( floor )
+			if floor and floor.world and sm.exists( floor.world ) then
+				self.network:sendToClients( "cl_n_stopTravelSound", { world = floor.world, tileKey = floor.tileKey, connection = floor.connectionTag } )
+				self.network:sendToClients( "cl_n_stopMovingEffects", { world = floor.world, tileKey = floor.tileKey, connection = floor.connectionTag, direction = direction, destinationFloor = targetFloor } )
+			end
+		end
+		stopEffects( previousFloor )
+		stopEffects( target )
+	end
+
+	self:sv_saveElevators()
+	sm.log.info( "Underground elevator '"..elevator.name.."' force-changed to floor "..targetFloor.." ("..debugName..")" )
+
+	if player ~= nil and self.network ~= nil then
+		pcall( function()
+			self.network:sendToClient( player, "client_showMessage", "MAIN elevator forced to floor "..targetFloor.." ("..debugName..")." )
+		end )
+	end
 end
 
 function UndergroundElevatorManager.sv_activateElevatorEffects( self, tileKey, world, connectionTag )

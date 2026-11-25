@@ -1,4 +1,4 @@
-dofile"$CONTENT_DATA/Scriptspts/game/AnimationUtil.lua"
+dofile"$CONTENT_DATA/Scripts/game/AnimationUtil.lua"
 dofile"$CONTENT_DATA/Scripts/util.lua"
 dofile"$CONTENT_DATA/Scripts/game/survival_harvestable.lua"
 dofile"$CONTENT_DATA/Scripts/game/survival_items.lua"

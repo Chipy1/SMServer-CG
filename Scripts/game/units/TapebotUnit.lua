@@ -14,17 +14,22 @@ dofile "$CONTENT_DATA/Scripts/game/units/states/RangedRaidPathingState.lua"
 
 TapebotUnit = class( BaseUnit )
 
-local AllyRange = 20.0
+local AllyRange = 30.0
 local SuppressionFireTickTime = 4 * 40
 local RandomRaidFireTickIntervalMin = 0 * 40
 local RandomRaidFireTickIntervalMax = 2 * 40
-local HearRange = 40.0
+local HearRange = 60.0
 local SwimSelfdestructTickTime = 40 * 8.0
 
 local RepositionTickDelay = 40 * 10
 local RepositionTickDuration = 40 * 2
 
 local StationaryWallHackTickDuration = 40 * 5 -- Continue tracking target for 5 seconds after losing sight
+
+-- Target-acceleration prediction. Spikes above the threshold are collision/teleport artifacts,
+-- and the acceleration lead is capped so one noisy sample cannot throw a shot.
+local MaxPredictedAcceleration = 60.0
+local MaxAccelerationLead = 1.0
 
 function TapebotUnit.server_onCreate( self )
 	self.target = nil
@@ -33,6 +38,9 @@ function TapebotUnit.server_onCreate( self )
 	self.lastTargetPosition = nil
 	self.ambushPosition = nil
 	self.stationaryWallHackStart = 0
+	self.aimTarget = nil
+	self.aimTargetVelocity = sm.vec3.new( 0, 0, 0 )
+	self.aimTargetAcceleration = sm.vec3.new( 0, 0, 0 )
 	
 	self.saved = self.storage:load()
 	if self.saved == nil then
@@ -69,17 +77,16 @@ function TapebotUnit.server_onCreate( self )
 	local rangeMargin = 5
 	self.attackRange = math.min( 40.0, math.max( rangeMargin, maxRange - rangeMargin ) )
 	self.fireLaneWidth = 0.6
-	self.predictedVelocity = sm.vec3.new( 0, 0, 0 )
 	self.isRanged = true
 
 	self.unit.eyeHeight = self.unit.character:getHeight() * 0.75
 	self.unit.visionFrustum = {
-		{ 16.0, math.rad( 80.0 ), math.rad( 50.0 ) },
-		{ 26.0, math.rad( 40.0 ), math.rad( 35.0 ) },
-		{ 40.0, math.rad( 20.0 ), math.rad( 20.0 ) }
+		{ 24.0, math.rad( 100.0 ), math.rad( 60.0 ) },
+		{ 40.0, math.rad( 50.0 ), math.rad( 40.0 ) },
+		{ 60.0, math.rad( 30.0 ), math.rad( 25.0 ) }
 	}
 	self.unit:setWhiskerData( 4, math.rad( 70.0 ), 1.0, 4.75 )
-	self.noiseScale = 1.0
+	self.noiseScale = 1.5
 	self.impactCooldownTicks = 0
 	
 	self.isInCombat = false
@@ -196,7 +203,7 @@ function TapebotUnit.server_onRefresh( self )
 end
 
 function TapebotUnit.server_onFixedUpdate( self, dt )
-	BaseUnit.server_onFixedUpdate( self )
+	BaseUnit.server_onFixedUpdate( self, dt )
 	if not sm.exists( self.unit ) then
 		return
 	end
@@ -293,7 +300,14 @@ function TapebotUnit.server_onFixedUpdate( self, dt )
 end
 
 function TapebotUnit.updateAim( self, dt )
-	if self.target and sm.exists( self.target ) and type( self.target ) == "Character" and not self.target:isDowned() then
+	if not self.target or not sm.exists( self.target ) then
+		self.aimTarget = nil
+		return false
+	end
+	-- Refresh target data every fixed tick, even while the fire lane is blocked.
+	local targetVelocity = self.target:getVelocity()
+	local targetAcceleration = self:updateTargetAcceleration( targetVelocity, dt )
+	if type( self.target ) == "Character" and not self.target:isDowned() then
 		local success, aimPoint = sm.ai.getAimPosition( self.unit.character, self.target, self.attackRange, self.fireLaneWidth, self.projectileBreachLevel )
 		if success then
 			self.wallHackTarget = nil
@@ -302,25 +316,85 @@ function TapebotUnit.updateAim( self, dt )
 			if self.wallHackTarget then
 				aimPoint = self.wallHackTarget.worldPosition
 			end
-			-- Predict target movement from its velocity
-			if self.predictedVelocity:length() > 0 and self.target:getVelocity():length() > self.predictedVelocity:length() then
-				self.predictedVelocity = magicPositionInterpolation( self.predictedVelocity, self.target:getVelocity(), dt, 1.0 / 10.0 )
-			else
-				self.predictedVelocity = self.target:getVelocity()
-			end
-			local distanceToTarget = ( aimPoint - self.unit.character.worldPosition ):length()
-			local predictionScale = distanceToTarget / math.max( TAPEBOT_MODEL_SETTINGS[self.robotModel].projectileVelocity, 1.0 )
-			self.rangedAttack:sv_setAimPoint( aimPoint + self.predictedVelocity * predictionScale )
+			self.rangedAttack:sv_setAimPoint( self:leadAimPoint( aimPoint, targetVelocity, targetAcceleration ) )
 			return true
 		end
-	elseif self.target and sm.exists( self.target ) and type( self.target ) == "Harvestable" then
+	elseif type( self.target ) == "Harvestable" then
 		local success, aimPoint = sm.ai.getAimPosition( self.unit.character, self.target, self.attackRange, self.fireLaneWidth )
 		if success then
-			self.rangedAttack:sv_setAimPoint( aimPoint )
+			self.rangedAttack:sv_setAimPoint( self:leadAimPoint( aimPoint, targetVelocity, targetAcceleration ) )
 			return true
 		end
 	end
 	return false
+end
+
+-- Target velocity is used directly (no smoothing lag). Acceleration is the raw velocity delta,
+-- with implausible collision/teleport spikes rejected so they cannot throw the shot.
+function TapebotUnit.updateTargetAcceleration( self, targetVelocity, dt )
+	if self.aimTarget ~= self.target then
+		self.aimTarget = self.target
+		self.aimTargetVelocity = targetVelocity
+		self.aimTargetAcceleration = sm.vec3.new( 0, 0, 0 )
+		return self.aimTargetAcceleration
+	end
+	if dt > FLT_EPSILON then
+		local instantAcceleration = ( targetVelocity - self.aimTargetVelocity ) / dt
+		if instantAcceleration:length() <= MaxPredictedAcceleration then
+			-- Character controllers produce noisy upward acceleration on steps and slopes.
+			-- Leading with it drifts shots above the target, so keep only downward (falling) z.
+			if type( self.target ) == "Character" and instantAcceleration.z > 0 then
+				instantAcceleration = sm.vec3.new( instantAcceleration.x, instantAcceleration.y, 0 )
+			end
+			self.aimTargetAcceleration = instantAcceleration
+		else
+			self.aimTargetAcceleration = sm.vec3.new( 0, 0, 0 )
+		end
+	end
+	self.aimTargetVelocity = targetVelocity
+	return self.aimTargetAcceleration
+end
+
+-- Lead a moving target to the exact point where the projectile can intercept it.
+-- The near-range speed switch depends on the lead point, so iterate until the speed band settles.
+function TapebotUnit.leadAimPoint( self, aimPoint, targetVelocity, targetAcceleration )
+	if targetVelocity:length2() < FLT_EPSILON and targetAcceleration:length2() < FLT_EPSILON then
+		return aimPoint
+	end
+	local predictedPoint = aimPoint
+	for i = 1, 6 do
+		local projectileVelocity = self.rangedAttack:getProjectileVelocityForAim( predictedPoint )
+		local travelTime = self:getAimTravelTime( predictedPoint, projectileVelocity )
+		local accelerationOffset = targetAcceleration * ( 0.5 * travelTime * travelTime )
+		if accelerationOffset:length2() > MaxAccelerationLead * MaxAccelerationLead then
+			accelerationOffset = accelerationOffset:normalize() * MaxAccelerationLead
+		end
+		local nextPoint = aimPoint + targetVelocity * travelTime + accelerationOffset
+		if ( nextPoint - predictedPoint ):length2() < 1e-6 then
+			return nextPoint
+		end
+		predictedPoint = nextPoint
+	end
+	return predictedPoint
+end
+
+-- Flight time of the projectile to a point, using the same low-arc ballistic solution
+-- the ranged attack state uses. Falls back to a straight-line estimate if unreachable.
+function TapebotUnit.getAimTravelTime( self, aimPoint, projectileVelocity )
+	local muzzle = self.unit.character.worldPosition
+	local relative = aimPoint - muzzle
+	local horizontalDistance = math.sqrt( relative.x * relative.x + relative.y * relative.y )
+	if horizontalDistance < FLT_EPSILON then
+		return 0.0
+	end
+	local direction = sm.projectile.solveBallisticArc( muzzle, aimPoint, projectileVelocity, GRAVITY )
+	if direction then
+		local horizontalSpeed = math.sqrt( direction.x * direction.x + direction.y * direction.y ) * projectileVelocity
+		if horizontalSpeed > FLT_EPSILON then
+			return horizontalDistance / horizontalSpeed
+		end
+	end
+	return relative:length() / math.max( projectileVelocity, 1.0 )
 end
 
 function TapebotUnit.server_onCharacterChangedColor( self, color )

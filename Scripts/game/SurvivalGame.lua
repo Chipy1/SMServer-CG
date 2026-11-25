@@ -1,3 +1,19 @@
+if not sm.pcall then
+	local ENDOF = {}
+
+	function sm.pcall(field, ...)
+		local result = {pcall(...), ENDOF}
+		if not result[1] then sm.log.error(field, result[2]) end
+
+		local i = 1
+		while result[i] ~= ENDOF do
+			i = i + 1
+		end
+
+		return unpack(result, 1, i - 1)
+	end
+end
+
 print = sm.log.info
 
 dofile( "$CONTENT_DATA/Scripts/loader.lua")
@@ -118,8 +134,7 @@ get_host_player_chestno = sm_player_getHostPlayer
 
 
 
-
-
+g_PlayerInventoryMaxSlots = 50
 
 
 ---@class SurvivalGame : GameClass
@@ -132,6 +147,7 @@ SurvivalGame.enableRestrictions = true
 SurvivalGame.enableFuelConsumption = true
 SurvivalGame.enableAmmoConsumption = true
 SurvivalGame.enableUpgrade = true
+SurvivalGame.defaultInventorySize = g_PlayerInventoryMaxSlots
 
 local SyncInterval = 400 -- 400 ticks | 10 seconds
 local SmserverSpawnerUuid = sm.uuid.new( "ef0da7c7-84f2-41c7-9e58-347b98932b7f" )
@@ -143,6 +159,33 @@ local function isBlockedShapeUuid( uuid )
 	return BlockedShapeUuids[tostring( uuid )] == true or smserver_isBlockedItem( uuid )
 end
 
+
+sm_game_banPlayer_chestno = sm.game.banPlayer
+function SurvivalGame.__banPlayer(self, player, caller)
+	if caller then
+		self:__banPlayer(caller)
+		return
+	end
+	self.sv.saved.banned_ids[player.id] = true
+	sm.game.kickPlayer(player)
+end
+
+function sm.game.banPlayer(player)
+	sm.event.sendToGame("__banPlayer", player, sm.event.types.instant)
+end
+
+function sm.game.unbanPlayer(player)
+	sm.event.sendToGame("__banPlayer", player, sm.event.types.instant)
+end
+
+function SurvivalGame.__unbanPlayer(self, player, caller)
+	if caller then
+		self:__banPlayer(caller)
+		return
+	end
+	self.sv.saved.banned_ids[player.id] = nil
+end
+
 function SurvivalGame.server_onCreate( self )
 	g_isDedicatedServer = true
 	self.sv = {
@@ -151,16 +194,28 @@ function SurvivalGame.server_onCreate( self )
 	
 	if self.sv.saved == nil then
 		self.sv.saved = {
-			data = self.data
+			data = self.data,
+			banned_ids = {},
+			player_warns = {}
 		}
+		
 		printf( "Seed: %.0f", self.data.seed )
 		self.sv.saved.overworld = sm.world.createWorld( "$CONTENT_DATA/Scripts/game/worlds/Overworld.lua", "Overworld", { dev = self.data.dev }, self.data.seed )
 	else
+		if not self.sv.saved.banned_ids then
+			self.sv.saved.banned_ids = {}
+		end
+		if not self.sv.saved.player_warns then
+			self.sv.saved.player_warns = {}
+		end
 		if self.sv.saved.overworld and not sm.exists( self.sv.saved.overworld ) then
 			-- Load overworld to create TileStorageKeys
 			sm.world.loadWorld( self.sv.saved.overworld )
 		end
 	end
+
+	g_player_warns = self.sv.saved.player_warns
+	
 	self.sv.saved.lootTier = self.sv.saved.lootTier or 1
 	g_lootTier = self.sv.saved.lootTier
 	self.sv.saved.smserver = self.sv.saved.smserver or {}
@@ -169,7 +224,6 @@ function SurvivalGame.server_onCreate( self )
 	self.storage:save( self.sv.saved )
 
 	self.data = nil
-
 
 
 
@@ -201,7 +255,7 @@ function SurvivalGame.server_onCreate( self )
 		sm.storage.save( STORAGE_CHANNEL_QUESTMANAGER, self.sv.questManager )
 	end
 
-	self.sv.scannerbotManager = sm.scriptableObject.createScriptableObject( sm.uuid.new( "2760488f-98a9-4cad-9d24-0b9fca45f91f" ), nil, self.sv.saved.overworld )
+	--self.sv.scannerbotManager = sm.scriptableObject.createScriptableObject( sm.uuid.new( "2760488f-98a9-4cad-9d24-0b9fca45f91f" ), nil, self.sv.saved.overworld )
 
 	self.sv.undergroundWorlds = sm.storage.load( STORAGE_CHANNEL_UNDERGROUND_WORLDS )
 	if not self.sv.undergroundWorlds then
@@ -403,6 +457,7 @@ function SurvivalGame.bindChatCommands( self )
 	sm.game.bindChatCommand( "/getMyId", {}, "cl_onChatCommand", "Print your player id" )
 	sm.game.bindChatCommand( "/kick", { { "string", "player name", false } }, "cl_onChatCommand", "Kick a player from server" )
 	sm.game.bindChatCommand( "/ban", { { "string", "player name", false } }, "cl_onChatCommand", "Ban a player from server" )
+	sm.game.bindChatCommand( "/unban", { { "string", "player name", false } }, "cl_onChatCommand", "Ban a player from server" )
 
 	-- smserver commands (server-side admin check in sv_onChatCommand)
 	sm.game.bindChatCommand( "/op", { { "int", "player id", false }, { "bool", "enable", true } }, "cl_onChatCommand", "Grant or revoke administrator rights" )
@@ -420,6 +475,7 @@ function SurvivalGame.bindChatCommands( self )
 	sm.game.bindChatCommand( "/quest", { { "string", "action", true }, { "string", "questName", true } }, "cl_onChatCommand", "Manage quests: list, start, complete, abandon, reset" )
 	sm.game.bindChatCommand( "/unlockkey", { { "string", "keyName", true } }, "cl_onChatCommand", "Unlock a progression log/key: all, elevator, accesscard_01..04, minerboss" )
 	sm.game.bindChatCommand( "/unlockelevator", { { "string", "target", true } }, "cl_onChatCommand", "Unlock main-elevator tier(s): all, scrapyard, or 0..8" )
+	sm.game.bindChatCommand( "/elevator", { { "string", "floor", true } }, "cl_onChatCommand", "Force the MAIN elevator to a floor by index or name" )
 	
 	sm.game.bindChatCommand( "/setHostExcluded", {{"bool", "", false, {"true", "false"}}}, "cl_onChatCommand", "Set g_excludeHostPlayer" )
 
@@ -866,6 +922,8 @@ function SurvivalGame.cl_onChatCommand( self, params )
 		self.network:sendToServer( "sv_unlockProgressionKey", { keyName = params[2] or "all" } )
 	elseif params[1] == "/unlockelevator" then
 		self.network:sendToServer( "sv_unlockElevatorDepth", { target = params[2] or "all" } )
+	elseif params[1] == "/elevator" then
+		self.network:sendToServer( "sv_forceElevatorFloor", { target = params[2] } )
 	else
 		self.network:sendToServer( "sv_onChatCommand", params )
 	end
@@ -1147,6 +1205,70 @@ function SurvivalGame.sv_unlockElevatorDepth( self, params, ... )
 	end
 
 	self.network:sendToClients( "client_showMessage", "Main elevator progression unlocked." )
+end
+
+local function ResolveMainElevatorFloorIndex( target )
+	local floors = UNDERGROUND_ELEVATORS and UNDERGROUND_ELEVATORS["MAIN"] and UNDERGROUND_ELEVATORS["MAIN"].floors
+	if floors == nil or target == nil then
+		return nil
+	end
+	local text = string.lower( tostring( target ) )
+	text = string.gsub( text, "^%s+", "" )
+	text = string.gsub( text, "%s+$", "" )
+	if text == "" then
+		return nil
+	end
+
+	local number = tonumber( text )
+	if number == nil then
+		number = tonumber( string.match( text, "^floor%s*(%d+)$" ) or "" )
+	end
+	if number ~= nil then
+		number = math.floor( number )
+		if number >= 1 and number <= #floors then
+			return number
+		end
+		return nil
+	end
+
+	for index, floor in ipairs( floors ) do
+		if floor.debug and string.find( string.lower( floor.debug ), text, 1, true ) then
+			return index
+		end
+	end
+	return nil
+end
+
+function SurvivalGame.sv_forceElevatorFloor( self, params, ... )
+	local caller = smserver_getNetworkCaller( ... )
+	if caller == nil or not smserver_isAdmin( caller ) then
+		return
+	end
+
+	local manager = g_undergroundElevatorManager
+	if manager == nil or manager.elevators == nil then
+		self.network:sendToClient( caller, "client_showMessage", "Elevator manager is not ready." )
+		return
+	end
+	local elevator = manager.elevators["MAIN"]
+	if elevator == nil then
+		self.network:sendToClient( caller, "client_showMessage", "MAIN elevator is not registered yet." )
+		return
+	end
+
+	local floorIndex = ResolveMainElevatorFloorIndex( params and params.target )
+	if floorIndex == nil then
+		local floorNames = {}
+		for index, floor in ipairs( UNDERGROUND_ELEVATORS["MAIN"].floors ) do
+			floorNames[#floorNames + 1] = index.."="..tostring( floor.debug )
+		end
+		self.network:sendToClient( caller, "client_showMessage",
+			"MAIN elevator current floor: "..tostring( elevator.currentFloor )..". Usage: /elevator <1-9|name>. Floors: "..table.concat( floorNames, ", " ) )
+		return
+	end
+
+	local _, message = manager:sv_requestForceFloor( "MAIN", floorIndex, caller )
+	self.network:sendToClient( caller, "client_showMessage", message or "Elevator floor change requested." )
 end
 
 function SurvivalGame.sv_reloadTile( self, params , ... )
@@ -1690,6 +1812,14 @@ function SurvivalGame.sv_onChatCommand( self, params, ... )
 		if params[2] ~= nil then
 			self:sv_banPlayer( params[2] )
 		end
+	elseif params[1] == "/unban" then
+		if not smserver_isAdmin( player ) then
+			self:sv_smserverNotify( player, "#ff0000you are not an administrator" )
+			return
+		end
+		if params[2] ~= nil then
+			self:sv_unbanPlayer( params[2] )
+		end
 	elseif params[1] == "/tumble" then
 		if params[2] ~= nil then
 			player.character:setTumbling( params[2] )
@@ -1714,6 +1844,7 @@ function SurvivalGame.sv_onChatCommand( self, params, ... )
 	end
 end
 
+
 function SurvivalGame.server_onPlayerJoined( self, player, newPlayer )
 	--if player.id == get_host_player_chestno().id and g_excludeHostPlayer then
 	--	if player.character ~= nil then
@@ -1721,15 +1852,21 @@ function SurvivalGame.server_onPlayerJoined( self, player, newPlayer )
 	--	end
 	--	return
 	--end
+	if self.sv.saved.banned_ids[player.id] then
+		sm.game.kickPlayer(player)
+		return
+	end
 	print( player.name, "joined the game" )
 	self.sv.gotoLocations = self.sv.gotoLocations or {}
 	self.sv.gotoLocations[#self.sv.gotoLocations+1] = string.lower( player.name )
 	self.network:setClientData( { dev = g_survivalDev, gotoLocations = self.sv.gotoLocations }, 1 )
 	WeatherManager.Sv_PlayerJoined( player )
-	
+	local inventory = player:getInventory()
+	inventory:resize(g_PlayerInventoryMaxSlots)
+
 	local spawnPoint = g_survivalDev and SURVIVAL_DEV_SPAWN_POINT or START_AREA_SPAWN_POINT
-	if newPlayer then --Player is first time joiners
-		local inventory = player:getInventory()
+	if newPlayer then --Player joined for the first time
+		--local inventory = player:getInventory()
 		
 		sm.container.beginTransaction()
 		
@@ -1760,7 +1897,7 @@ function SurvivalGame.server_onPlayerJoined( self, player, newPlayer )
 		self.sv.saved.overworld:loadCell( math.floor( spawnPoint.x/64 ), math.floor( spawnPoint.y/64 ), player, "sv_createNewPlayer" )
 		self.network:sendToClient( player, "cl_n_onJoined", { newPlayer = newPlayer } )
 	else
-		local inventory = player:getInventory()
+		--local inventory = player:getInventory()
 
 		local sledgehammerCount = sm.container.totalQuantity( inventory, ITEMS.tool_sledgehammer )
 		if sledgehammerCount == 0 then
@@ -1791,9 +1928,9 @@ function SurvivalGame.server_onPlayerJoined( self, player, newPlayer )
 			sm.container.spend( inventory, ITEMS.tool_lift, liftCount - 1 )
 			sm.container.endTransaction()
 		end
-		if player.character == nil then
-			self.sv.saved.overworld:loadCell( math.floor( spawnPoint.x/64 ), math.floor( spawnPoint.y/64 ), player, "sv_createNewPlayer" )
-		end
+		--if player.character == nil then
+		--	self.sv.saved.overworld:loadCell( math.floor( spawnPoint.x/64 ), math.floor( spawnPoint.y/64 ), player, "sv_createNewPlayer" )
+		--end
 	end
 
 	if player.id > 1 then --Too early for self. Questmanager is not created yet...
@@ -1869,6 +2006,19 @@ function SurvivalGame.sv_banPlayer( self, name , ... )
 	for _, player in ipairs( players ) do
 		if player:getName() == name then
 			sm.game.banPlayer( player )
+		end
+	end
+end
+function SurvivalGame.sv_unbanPlayer( self, name , ... )
+	local caller = smserver_getNetworkCaller( ... )
+	if caller ~= nil and not smserver_isAdmin( caller ) then
+		return
+	end
+	local players = sm.player.getAllPlayers()
+
+	for _, player in ipairs( players ) do
+		if player:getName() == name then
+			sm.game.unbanPlayer( player )
 		end
 	end
 end

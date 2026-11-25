@@ -166,7 +166,7 @@ function TotebotRedUnit.server_onRefresh( self )
 end
 
 function TotebotRedUnit.server_onFixedUpdate( self, dt )
-	BaseUnit.server_onFixedUpdate( self )
+	BaseUnit.server_onFixedUpdate( self, dt )
 
 	if updateCrushing( self ) then
 		self:sv_onDeath( sm.vec3.new( 0, 0, 0 ) )

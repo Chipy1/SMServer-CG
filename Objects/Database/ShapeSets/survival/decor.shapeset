@@ -672,9 +672,14 @@
 				"y" : 2,
 				"z" : 4
 			},
-			"chest" : 
+			"scripted" : 
 			{
-				"slots" : 2
+				"classname" : "Chest",
+				"data" : 
+				{
+					"slots" : 2
+				},
+				"filename" : "$CONTENT_DATA/Scripts/game/interactables/Chest.lua"
 			},
 			"color" : "246084",
 			"flammable" : true,

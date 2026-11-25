@@ -1,4 +1,4 @@
-dofile "$CONTENT_DATA/Scriptspts/game/AnimationUtil.lua"
+dofile "$CONTENT_DATA/Scripts/game/AnimationUtil.lua"
 dofile "$CONTENT_DATA/Scripts/game/managers/BabyWocManager.lua"
 dofile "$CONTENT_DATA/Scripts/game/managers/BeaconManager.lua"
 dofile "$CONTENT_DATA/Scripts/game/managers/QuestManager.lua"

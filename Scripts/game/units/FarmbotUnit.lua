@@ -297,7 +297,7 @@ function FarmbotUnit.server_onDestroy( self )
 end
 
 function FarmbotUnit.server_onFixedUpdate( self, dt )
-	BaseUnit.server_onFixedUpdate( self )
+	BaseUnit.server_onFixedUpdate( self, dt )
 
 	if not sm.exists( self.unit ) then
 		return

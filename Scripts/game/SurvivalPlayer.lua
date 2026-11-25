@@ -7,6 +7,7 @@ dofile( "$CONTENT_DATA/Scripts/util.lua" )
 dofile( "$CONTENT_DATA/Scripts/game/quest_util.lua" )
 dofile( "$CONTENT_DATA/Scripts/game/managers/TutorialManager.lua" )
 
+
 ---@class SurvivalPlayer : BasePlayer
 ---@field sv table
 ---@field cl table
@@ -621,7 +622,7 @@ function SurvivalPlayer.client_onInteract( self, character, state )
 end
 
 function SurvivalPlayer.server_onFixedUpdate(self, dt)
-	print("self.SHUTDOWN", self.SHUTDOWN)
+	--print("self.SHUTDOWN", self.SHUTDOWN)
 	if self.SHUTDOWN then
 		print("self.player.character", self.player.character)
 		self.player:setCharacter(nil)
@@ -861,6 +862,7 @@ function SurvivalPlayer.cl_e_onPlacedInteractable( self, uuid, parentType )
 end
 
 function SurvivalPlayer.server_onInventoryChanges( self, container, changes )
+	--print(self.player, container, changes)
 	if self.SHUTDOWN then return end
 	QuestManager.Sv_SendEvent( QuestEvent.InventoryChanges, { container = container, changes = changes } )
 
@@ -1045,6 +1047,27 @@ function SurvivalPlayer.sv_takeDamage( self, damage, source, typeUuid , ... )
 	end
 end
 
+function SurvivalPlayer.sv_n_onInventoryChanges(self, limited, caller)
+	local sm = sm
+	local sm_game = sm.game
+	if not limited and sm_game.getLimitedInventory() then
+		sm.log.info("Player", caller, "presumably used unlimited inventory and was kicked.")
+		-- TODO: добавить счётчик нарушений, на 2-м - забанить.
+		local caller_id = caller.id
+		local prev_warns = g_player_warns[caller_id]
+		if not prev_warns then prev_warns = 0 end
+		prev_warns = prev_warns + 1
+		g_player_warns[caller_id] = prev_warns
+		
+
+		if prev_warns >= 2 then
+			sm_game.banPlayer( caller )
+		else
+			sm_game.kickPlayer( caller )
+		end
+	end
+end
+
 function SurvivalPlayer.sv_n_revive( self, params, ... )
 	local caller = smserver_getNetworkCaller( ... )
 	if caller ~= nil then
@@ -1221,6 +1244,7 @@ function SurvivalPlayer.sv_e_minidungeonEject( self , ... )
 end
 
 function SurvivalPlayer.cl_n_onInventoryChanges( self, params )
+	self.network:sendToServer("sv_n_onInventoryChanges", sm.game.getLimitedInventory())
 	if params.container == sm.localPlayer.getInventory() then
 		for _, item in ipairs( params.changes ) do
 			if item.difference > 0 then

@@ -35,7 +35,7 @@ function TapebotRangedState.sv_onCreate( self, unit, robotModel )
 
 	-- Ranged attack
 	self.rangedAttack = self.unit:createState( "rangedAttack" )
-	self.rangedAttack.spreadAngle = 3.0
+	self.rangedAttack.spreadAngle = 0.0
 	self.rangedAttack.projectile = self.modelSettings.projectile
 	self.rangedAttack.cooldown = self.modelSettings.cooldown
 	self.rangedAttack.aimTime = self.modelSettings.aimTime
@@ -55,6 +55,18 @@ end
 
 function TapebotRangedState.sv_setSpawnTick( self, spawnTick )
 	self.spawnTick = spawnTick
+end
+
+-- Effective projectile speed, including the near-range switch, for a given aim point.
+function TapebotRangedState.getProjectileVelocityForAim( self, aimPoint )
+	local nearSettings = self.modelSettings.nearProjectileSettings
+	if nearSettings then
+		local distance2 = ( aimPoint - self.unit.character.worldPosition ):length2()
+		if distance2 <= nearSettings.range * nearSettings.range then
+			return nearSettings.projectileVelocity
+		end
+	end
+	return self.modelSettings.projectileVelocity
 end
 
 --[[API functions]]
@@ -176,14 +188,7 @@ function TapebotRangedState.onFixedUpdate( self, dt )
 			self.sidestepState.desiredDirection = ( self.rangedAttack.aimPoint - self.unit.character.worldPosition ):safeNormalize( self.unit:getCurrentFacingDirection() )
 		end
 	elseif self.currentState == self.rangedAttack then
-		if self.modelSettings.nearProjectileSettings then
-			local distance2 = ( self.rangedAttack.aimPoint - self.unit.character.worldPosition ):length2()
-			if distance2 <= self.modelSettings.nearProjectileSettings.range * self.modelSettings.nearProjectileSettings.range then
-				self.rangedAttack.velocity = self.modelSettings.nearProjectileSettings.projectileVelocity
-			else
-				self.rangedAttack.velocity = self.modelSettings.projectileVelocity
-			end
-		end
+		self.rangedAttack.velocity = self:getProjectileVelocityForAim( self.rangedAttack.aimPoint )
 		if self.modelSettings.burstSettings then
 			if self.rangedAttack.shotsFired >= self.modelSettings.burstSettings.shots then
 				self.burstCooldownTicks = 0
