@@ -11,13 +11,28 @@ local AreaTriggerSize = 6
 
 function Chest.server_onCreate( self )
 	self.sv = {}
+	local targetSize = self.data.slots or 30
 	local container = self.shape.interactable:getContainer( 0 )
 	if container then
 		-- Custom game: an existing container keeps the size it was created with,
 		-- so re-apply the size declared in the shape data.
-		container:resize( self.data.slots or 30 )
+		-- Slots beyond the new size do not fit, so their items are removed.
+		local oldSize = container:getSize()
+		if oldSize > targetSize then
+			sm.container.beginTransaction()
+			for slot = targetSize, oldSize - 1 do
+				local item = container:getItem( slot )
+				if item and item.uuid and not item.uuid:isNil() and item.quantity > 0 then
+					sm.container.spendFromSlot( container, slot, item.uuid, item.quantity, true )
+				end
+			end
+			if not sm.container.endTransaction() then
+				sm.log.error( "Chest: failed to remove items from slots beyond the resized container" )
+			end
+		end
+		container:resize( targetSize )
 	else
-		container = self.shape:getInteractable():addContainer( 0, self.data.slots or 30 )
+		container = self.shape:getInteractable():addContainer( 0, targetSize )
 	end
 end
 
